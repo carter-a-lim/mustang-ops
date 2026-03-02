@@ -5,6 +5,7 @@ import subprocess
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 import requests
 from dotenv import load_dotenv
@@ -66,6 +67,81 @@ def read_context() -> dict:
     return json.loads(CONTEXT_PATH.read_text())
 
 
+def _tail_lines(path: Path, n: int = 20) -> list[str]:
+    if not path.exists():
+        return []
+    try:
+        raw = path.read_text(errors="ignore").replace("\x00", "")
+        lines = ["".join(ch for ch in line if ch.isprintable() or ch.isspace()).strip() for line in raw.splitlines()]
+        lines = [l for l in lines if l]
+        return lines[-n:]
+    except Exception:
+        return []
+
+
+def _agent_inbox() -> dict[str, Any]:
+    now = datetime.now(timezone.utc).isoformat()
+    items = []
+
+    # Running background jobs related to Mustang Ops
+    try:
+        ps = subprocess.run(["ps", "-eo", "pid,etimes,args"], capture_output=True, text=True, check=False)
+        for line in ps.stdout.splitlines()[1:]:
+            if "jobs/" in line and "python3" in line and "mustang-ops" in line:
+                parts = line.strip().split(maxsplit=2)
+                if len(parts) < 3:
+                    continue
+                pid, etimes, cmd = parts[0], parts[1], parts[2]
+                items.append(
+                    {
+                        "type": "job",
+                        "name": cmd.split("jobs/")[-1].split()[0],
+                        "status": "running",
+                        "pid": int(pid),
+                        "seconds_running": int(etimes),
+                        "summary": cmd,
+                    }
+                )
+    except Exception:
+        pass
+
+    # Recent cron/server activity as monitor feed
+    for source, file_name in (("cron", "logs/cron.log"), ("server", "logs/server.log")):
+        lines = [l for l in _tail_lines(ROOT / file_name, 12) if l.strip()]
+        for l in lines[-4:]:
+            items.append(
+                {
+                    "type": source,
+                    "name": source,
+                    "status": "activity",
+                    "summary": l[-180:],
+                }
+            )
+
+    # Chat sessions recently active (treated as active threads)
+    store = _load_chat_store()
+    for s in store.get("sessions", [])[:12]:
+        items.append(
+            {
+                "type": "session",
+                "name": s.get("title", "Untitled"),
+                "status": "idle",
+                "updated_at": s.get("updated_at"),
+                "summary": f"{len(s.get('messages', []))} messages",
+                "id": s.get("id"),
+            }
+        )
+
+    # newest first for session/activity, running jobs pinned first
+    def _k(x):
+        if x.get("status") == "running":
+            return (0, x.get("seconds_running", 0))
+        return (1, 0)
+
+    items.sort(key=_k)
+    return {"updated_at": now, "items": items[:40]}
+
+
 def _load_chat_store() -> dict:
     if not CHAT_SESSIONS_PATH.exists():
         return {"sessions": []}
@@ -124,6 +200,15 @@ def _load_usage_events() -> list[dict]:
 
 def _estimate_cost(prompt_tokens: int, completion_tokens: int) -> float:
     return (prompt_tokens / 1_000_000) * COST_INPUT_PER_1M + (completion_tokens / 1_000_000) * COST_OUTPUT_PER_1M
+
+
+def _read_json_file(path: Path, default: dict | list):
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return default
 
 
 def _sum_events(events: list[dict]) -> dict:
@@ -242,6 +327,7 @@ def get_context():
 @app.get("/api/skills")
 def get_skills():
     workspace_skills_dir = ROOT.parent / "skills"
+    user_skills_dir = Path.home() / ".agents" / "skills"
     core_skills_dir = Path.home() / ".npm-global" / "lib" / "node_modules" / "openclaw" / "skills"
 
     cfg = _load_openclaw_config()
@@ -249,7 +335,7 @@ def get_skills():
 
     discovered: dict[str, dict] = {}
 
-    for skills_dir, source in ((workspace_skills_dir, "workspace"), (core_skills_dir, "core")):
+    for skills_dir, source in ((workspace_skills_dir, "workspace"), (user_skills_dir, "user"), (core_skills_dir, "core")):
         if not skills_dir.exists():
             continue
         for d in sorted(skills_dir.iterdir()):
@@ -326,44 +412,64 @@ def get_skills():
 @app.get("/api/github")
 def get_github_snapshot():
     p = ROOT / "data" / "github_snapshot.json"
-    if not p.exists():
-        return {"updated_at": None, "repos": []}
-    return json.loads(p.read_text())
+    return _read_json_file(p, {"updated_at": None, "repos": []})
 
 
 @app.get("/api/network/jobs")
 def get_network_jobs():
-    if not JOB_PIPELINE_PATH.exists():
-        return {
+    return _read_json_file(
+        JOB_PIPELINE_PATH,
+        {
             "updated_at": None,
             "roles": [],
             "applications": [],
             "outreach_targets": [],
-        }
-    try:
-        return json.loads(JOB_PIPELINE_PATH.read_text())
-    except Exception:
-        raise HTTPException(status_code=500, detail="Invalid job pipeline data")
+        },
+    )
+
+
+@app.get("/api/agents/inbox")
+def agents_inbox():
+    return _agent_inbox()
 
 
 @app.get("/api/network")
 def get_network():
     p = ROOT / "data" / "network_context.json"
-    if not p.exists():
-        return {
+    return _read_json_file(
+        p,
+        {
             "updated_at": None,
             "contacts": [],
             "interactions": [],
             "opportunities": [],
             "introductions": [],
             "summary": {"pending_followups": 0, "warm_leads": 0, "intros_available": 0, "reply_rate": 0},
-        }
-    return json.loads(p.read_text())
+        },
+    )
 
 
 @app.get("/api/system/stats")
 def system_stats():
     return _system_stats()
+
+
+@app.get("/api/cron/list")
+def cron_list():
+    cron_path = ROOT / "config" / "crontab.txt"
+    jobs = []
+    if cron_path.exists():
+        for line in cron_path.read_text().splitlines():
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            parts = s.split(maxsplit=5)
+            if len(parts) < 6:
+                continue
+            schedule = " ".join(parts[:5])
+            command = parts[5]
+            jobs.append({"schedule": schedule, "command": command})
+    return {"jobs": jobs}
 
 
 @app.get("/api/usage/summary")
@@ -503,15 +609,23 @@ def chat(body: ChatBody):
         "model": OPENCLAW_MODEL,
         "messages": messages,
     }
-    res = requests.post(
-        f"{OPENCLAW_BASE_URL}/v1/chat/completions",
-        headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=90,
-    )
+    try:
+        res = requests.post(
+            f"{OPENCLAW_BASE_URL}/v1/chat/completions",
+            headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=90,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"OpenClaw upstream request failed: {exc}")
+
     if res.status_code >= 400:
         raise HTTPException(status_code=res.status_code, detail=res.text)
-    data = res.json()
+
+    try:
+        data = res.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="OpenClaw upstream returned invalid JSON")
 
     event = _usage_from_response(data)
     _append_usage_event(event)
