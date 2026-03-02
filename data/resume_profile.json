@@ -1,11 +1,9 @@
 {
   "updated_at": null,
-  "count": 0,
-  "filters": {},
-  "resume_profile": {
+  "source": null,
+  "profile": {
     "skills": [],
     "grad_year": null,
     "work_auth": "unknown"
-  },
-  "queue": []
+  }
 }

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import subprocess
 import uuid
@@ -24,6 +25,8 @@ CHAT_SESSIONS_PATH = DATA_DIR / "chat_sessions.json"
 JOB_PIPELINE_PATH = DATA_DIR / "job_pipeline.json"
 ANSWER_MEMORY_PATH = DATA_DIR / "application_answer_memory.json"
 ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
+RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
+RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -80,6 +83,11 @@ class AssistedQueueBuildBody(BaseModel):
     limit: int = 25
     include_keywords: list[str] = Field(default_factory=list)
     exclude_keywords: list[str] = Field(default_factory=list)
+    use_resume_fit: bool = True
+
+
+class ResumeSyncBody(BaseModel):
+    doc_id: str | None = None
 
 
 def read_context() -> dict:
@@ -266,6 +274,107 @@ def _keyword_match(text: str, include: list[str], exclude: list[str]) -> bool:
     if exclude and any(k.lower() in low for k in exclude):
         return False
     return True
+
+
+def _extract_resume_profile(text: str) -> dict:
+    lower = text.lower()
+
+    skill_terms = [
+        "python",
+        "javascript",
+        "typescript",
+        "react",
+        "node.js",
+        "node",
+        "firebase",
+        "supabase",
+        "vercel",
+        "git",
+        "google cloud",
+    ]
+    skills = sorted({s for s in skill_terms if s in lower})
+
+    grad_year = None
+    m = re.search(r"class of\s*(20\d{2})", lower)
+    if m:
+        grad_year = int(m.group(1))
+
+    work_auth = "unknown"
+    if "u.s. citizen" in lower or "us citizen" in lower:
+        work_auth = "us-citizen"
+
+    return {
+        "skills": skills,
+        "grad_year": grad_year,
+        "work_auth": work_auth,
+    }
+
+
+def _load_resume_profile() -> dict:
+    if RESUME_PROFILE_PATH.exists():
+        return _read_json_file(RESUME_PROFILE_PATH, {})
+
+    if not RESUME_TXT_PATH.exists():
+        return {"updated_at": None, "profile": {"skills": [], "grad_year": None, "work_auth": "unknown"}}
+
+    text = RESUME_TXT_PATH.read_text(encoding="utf-8", errors="ignore")
+    profile = _extract_resume_profile(text)
+    payload = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "source": str(RESUME_TXT_PATH),
+        "profile": profile,
+    }
+    RESUME_PROFILE_PATH.write_text(json.dumps(payload, indent=2) + "\n")
+    return payload
+
+
+def _fit_score_role(role: dict, profile: dict) -> tuple[int, list[str], str]:
+    title = (role.get("title") or "").lower()
+    location = (role.get("location") or "").lower()
+    score = 35
+    reasons: list[str] = []
+
+    swe_terms = ["software", "backend", "frontend", "full stack", "developer", "engineer", "swe"]
+    if any(t in title for t in swe_terms):
+        score += 25
+        reasons.append("Role aligns with software engineering path")
+
+    role_skill_hints = {
+        "python": ["python", "ml", "data"],
+        "javascript": ["javascript", "js", "frontend", "web"],
+        "typescript": ["typescript", "ts"],
+        "react": ["react", "frontend"],
+        "node": ["node", "backend", "api"],
+    }
+
+    matched_skills = 0
+    profile_skills = [s.lower() for s in profile.get("skills", [])]
+    for skill in profile_skills:
+        hints = role_skill_hints.get(skill, [skill])
+        if any(h in title for h in hints):
+            matched_skills += 1
+    if matched_skills:
+        bump = min(25, matched_skills * 7)
+        score += bump
+        reasons.append(f"Skill overlap inferred from title ({matched_skills} signal{'s' if matched_skills != 1 else ''})")
+
+    if "remote" in location:
+        score += 5
+        reasons.append("Remote-friendly location")
+
+    if "citizenship" in title or "clearance" in title:
+        if profile.get("work_auth") != "us-citizen":
+            score -= 20
+            reasons.append("Possible citizenship/clearance constraint")
+
+    score = max(0, min(100, score))
+    tier = "low-fit"
+    if score >= 72:
+        tier = "strong-fit"
+    elif score >= 55:
+        tier = "reach"
+
+    return score, reasons, tier
 
 
 def _read_meminfo_kb() -> tuple[int, int]:
@@ -521,6 +630,77 @@ def agents_inbox():
     return _agent_inbox()
 
 
+@app.get("/api/network/resume-profile")
+def get_resume_profile():
+    return _load_resume_profile()
+
+
+@app.post("/api/network/resume/sync")
+def sync_resume_from_docs(body: ResumeSyncBody):
+    # If doc_id not provided, discover latest doc with "resume" in name.
+    doc_id = body.doc_id
+    account = os.getenv("GOG_ACCOUNT", "carter.limster@gmail.com")
+
+    if not doc_id:
+        search = subprocess.run(
+            [
+                "gog",
+                "drive",
+                "search",
+                "name contains 'resume' or name contains 'Resume' or name contains 'CV'",
+                "--max",
+                "5",
+                "--json",
+                "--no-input",
+            ],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "GOG_ACCOUNT": account},
+            check=False,
+        )
+        if search.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"gog drive search failed: {search.stderr.strip()}")
+        try:
+            files = (json.loads(search.stdout) or {}).get("files", [])
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to parse gog output: {exc}")
+        docs = [f for f in files if f.get("mimeType") == "application/vnd.google-apps.document"]
+        if not docs:
+            raise HTTPException(status_code=404, detail="No resume Google Doc found")
+        docs.sort(key=lambda x: x.get("modifiedTime", ""), reverse=True)
+        doc_id = docs[0].get("id")
+
+    RESUME_TXT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    export = subprocess.run(
+        [
+            "gog",
+            "docs",
+            "export",
+            doc_id,
+            "--format",
+            "txt",
+            "--out",
+            str(RESUME_TXT_PATH),
+            "--no-input",
+        ],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GOG_ACCOUNT": account},
+        check=False,
+    )
+    if export.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"gog docs export failed: {export.stderr.strip()}")
+
+    text = RESUME_TXT_PATH.read_text(encoding="utf-8", errors="ignore")
+    payload = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "source": f"gdoc:{doc_id}",
+        "profile": _extract_resume_profile(text),
+    }
+    RESUME_PROFILE_PATH.write_text(json.dumps(payload, indent=2) + "\n")
+    return payload
+
+
 @app.get("/api/network/answer-memory")
 def get_answer_memory():
     return _load_answer_memory()
@@ -552,8 +732,10 @@ def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
     roles = jobs.get("roles", [])
     include = body.include_keywords or []
     exclude = body.exclude_keywords or []
+    resume_payload = _load_resume_profile() if body.use_resume_fit else {"profile": {"skills": []}}
+    profile = resume_payload.get("profile", {})
 
-    queue = []
+    candidates = []
     for role in roles:
         title = role.get("title", "")
         company = role.get("company", "")
@@ -561,7 +743,12 @@ def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
         text = f"{company} {title} {location}"
         if not _keyword_match(text, include, exclude):
             continue
-        queue.append(
+
+        fit_score, fit_reasons, fit_tier = _fit_score_role(role, profile) if body.use_resume_fit else (60, ["Keyword match"], "reach")
+        if fit_tier == "low-fit":
+            continue
+
+        candidates.append(
             {
                 "company": company,
                 "title": title,
@@ -569,6 +756,9 @@ def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
                 "apply_url": role.get("apply_url", ""),
                 "source": role.get("source", "network"),
                 "status": "needs-review",
+                "fit_score": fit_score,
+                "fit_tier": fit_tier,
+                "fit_reasons": fit_reasons,
                 "questions_needed": [
                     "Why this company?",
                     "Tell us about yourself",
@@ -576,8 +766,9 @@ def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
                 ],
             }
         )
-        if len(queue) >= max(1, min(body.limit, 200)):
-            break
+
+    candidates.sort(key=lambda x: x.get("fit_score", 0), reverse=True)
+    queue = candidates[: max(1, min(body.limit, 200))]
 
     payload = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -586,7 +777,9 @@ def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
             "include_keywords": include,
             "exclude_keywords": exclude,
             "limit": body.limit,
+            "use_resume_fit": body.use_resume_fit,
         },
+        "resume_profile": profile,
         "queue": queue,
     }
     ASSISTED_QUEUE_PATH.write_text(json.dumps(payload, indent=2) + "\n")

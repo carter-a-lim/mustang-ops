@@ -290,6 +290,7 @@
               <div class="flex gap-2">
                 <input id="apply-include" placeholder="include keywords (comma)" class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
                 <input id="apply-exclude" placeholder="exclude keywords (comma)" class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
+                <button onclick="syncResumeAndBuildQueue()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Sync resume + build</button>
                 <button onclick="buildApplyQueue()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Build</button>
               </div>
               <div id="apply-queue" class="space-y-2"></div>
@@ -1007,7 +1008,8 @@ async function loadApplyQueue() {
       <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${item.company} — ${item.title}</div>
         <div class="text-[10px] text-gray-500">${item.location || ''}</div>
-        <div class="text-[10px] text-primary mt-1 uppercase">${item.status || 'needs-review'} · ${item.source || 'source'}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase">${item.status || 'needs-review'} · ${item.source || 'source'} · ${item.fit_tier || 'unrated'} (${item.fit_score ?? '--'})</div>
+        ${Array.isArray(item.fit_reasons) && item.fit_reasons.length ? `<div class="text-[10px] text-gray-500 mt-1">${item.fit_reasons[0]}</div>` : ''}
         ${item.apply_url ? `<a class="text-[10px] text-blue-500 hover:underline" href="${item.apply_url}" target="_blank" rel="noopener">Open application</a>` : ''}
       </div>
     `).join('') : '<div class="text-xs text-gray-500">No assisted queue yet. Click Build.</div>';
@@ -1022,9 +1024,18 @@ async function buildApplyQueue() {
   await fetch('/api/network/apply/prepare', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ limit: 25, include_keywords: include, exclude_keywords: exclude }),
+    body: JSON.stringify({ limit: 25, include_keywords: include, exclude_keywords: exclude, use_resume_fit: true }),
   });
   loadApplyQueue();
+}
+
+async function syncResumeAndBuildQueue() {
+  await fetch('/api/network/resume/sync', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({}),
+  });
+  await buildApplyQueue();
 }
 
 async function loadAnswerMemory() {
