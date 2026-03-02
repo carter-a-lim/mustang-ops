@@ -270,14 +270,45 @@ async function loadGithub() {
     }
     githubList.innerHTML = repos.map((r, idx) => {
       const issues = r.issues || [];
+      const prsBadge = Number(r.open_prs || 0) > 0
+        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+        : 'bg-gray-700/40 text-gray-400 border-gray-600/30';
+      const issuesBadge = Number(r.open_issues || 0) > 0
+        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+        : 'bg-gray-700/40 text-gray-400 border-gray-600/30';
+
       const issueHtml = issues.length
-        ? issues.map(it => {
+        ? issues.slice(0, 6).map(it => {
             const assigned = (it.assignees && it.assignees.length) ? `Assigned: ${it.assignees.join(', ')}` : 'Assigned: nobody';
-            return `<div class="bg-background-light dark:bg-[#0f111a] rounded-lg p-3 border border-border-light dark:border-border-dark/50"><a href="${it.html_url || '#'}" target="_blank" class="text-sm text-gray-700 dark:text-gray-200 hover:text-primary">#${it.number} ${it.title || ''}</a><div class="text-[10px] text-gray-500 mt-1">${assigned}</div></div>`;
+            return `<div class="bg-background-light dark:bg-[#0f111a] rounded-lg p-3 border border-border-light dark:border-border-dark/50">
+              <div class="flex items-start space-x-2">
+                <span class="material-icons text-[14px] text-orange-400 mt-0.5">bug_report</span>
+                <div class="flex-1 min-w-0">
+                  <a href="${it.html_url || '#'}" target="_blank" class="text-sm text-gray-700 dark:text-gray-200 hover:text-primary block truncate">#${it.number} ${it.title || ''}</a>
+                  <div class="text-[10px] text-gray-500 mt-1 font-mono">${assigned}</div>
+                </div>
+              </div>
+            </div>`;
           }).join('')
         : '<div class="text-[11px] text-gray-500">No open issues.</div>';
 
-      return `<details class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden" ${idx===0?'open':''}><summary class="p-4 list-none cursor-pointer flex justify-between items-center"><div class="flex items-center space-x-3"><span class="material-icons text-gray-400 text-xl">folder</span><div><h4 class="text-base font-semibold text-gray-900 dark:text-white">${r.repo}</h4><p class="text-xs text-gray-500 mt-0.5">Updated ${r.updated_at || 'n/a'}</p></div></div><div class="flex items-center space-x-2"><span class="px-2 py-1 rounded-md bg-purple-500/10 text-purple-400 text-xs border border-purple-500/20 font-mono">PRs: ${r.open_prs}</span><span class="px-2 py-1 rounded-md bg-orange-500/10 text-orange-400 text-xs border border-orange-500/20 font-mono">Issues: ${r.open_issues}</span><span class="material-icons text-gray-500">expand_more</span></div></summary><div class="px-4 pb-4 space-y-2">${issueHtml}</div></details>`;
+      return `<details class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200" ${idx===0?'open':''}>
+        <summary class="p-5 list-none cursor-pointer flex justify-between items-center">
+          <div class="flex items-center space-x-3 min-w-0">
+            <span class="material-icons text-gray-400 text-xl">folder</span>
+            <div class="min-w-0">
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">${r.repo}</h4>
+              <p class="text-xs text-gray-500 mt-0.5">Updated ${r.updated_at || 'n/a'}</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <span class="px-2 py-1 rounded-md text-xs border font-mono ${prsBadge}">PRs: ${r.open_prs}</span>
+            <span class="px-2 py-1 rounded-md text-xs border font-mono ${issuesBadge}">Issues: ${r.open_issues}</span>
+            <span class="material-icons text-gray-500">expand_more</span>
+          </div>
+        </summary>
+        <div class="px-5 pb-5 space-y-2">${issueHtml}</div>
+      </details>`;
     }).join('');
   } catch {
     githubList.innerHTML = '<div class="text-xs text-red-500">Failed to load github snapshot.</div>';
