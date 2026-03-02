@@ -61,6 +61,10 @@ class CreateSessionBody(BaseModel):
     title: str | None = None
 
 
+class RenameSessionBody(BaseModel):
+    title: str
+
+
 def read_context() -> dict:
     if not CONTEXT_PATH.exists():
         raise HTTPException(status_code=404, detail=f"Context not found: {CONTEXT_PATH}")
@@ -582,6 +586,33 @@ def get_chat_session(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
+
+
+@app.patch("/api/chat/sessions/{session_id}")
+def rename_chat_session(session_id: str, body: RenameSessionBody):
+    store = _load_chat_store()
+    session = _find_session(store, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    title = (body.title or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="title is required")
+    session["title"] = title[:80]
+    session["updated_at"] = datetime.now(timezone.utc).isoformat()
+    _save_chat_store(store)
+    return {"ok": True, "id": session_id, "title": session["title"]}
+
+
+@app.delete("/api/chat/sessions/{session_id}")
+def delete_chat_session(session_id: str):
+    store = _load_chat_store()
+    sessions = store.get("sessions", [])
+    new_sessions = [s for s in sessions if s.get("id") != session_id]
+    if len(new_sessions) == len(sessions):
+        raise HTTPException(status_code=404, detail="Session not found")
+    store["sessions"] = new_sessions
+    _save_chat_store(store)
+    return {"ok": True, "deleted": session_id}
 
 
 @app.post("/api/chat")

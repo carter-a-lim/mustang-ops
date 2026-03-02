@@ -84,7 +84,7 @@
         <a id="nav-cron" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('cron')"><span class="material-icons text-[18px]">schedule</span><span>Cron</span></a>
       </div>
 
-      <div id="chat-sessions" class="space-y-3"></div>
+      <div id="chat-sessions" class="hidden"></div>
     </nav>
 
     <div class="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-black/20">
@@ -180,21 +180,18 @@
         </div>
 
         <div id="section-chat" class="section-content hidden max-w-6xl mx-auto h-[calc(100vh-9rem)] flex flex-col">
-          <div class="px-1 py-2 flex items-center justify-between">
-            <div>
-              <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
-              <div class="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Chat • Online</div>
-            </div>
-            <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
+          <div class="px-1 py-2">
+            <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
           </div>
 
           <div id="chat-history" class="flex-1 overflow-y-auto px-1 md:px-4 lg:px-8 py-3 space-y-6"></div>
 
           <div class="pt-2 pb-2">
-            <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
-              <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3 pl-4 pr-14"/>
-              <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
-                <span class="material-icons text-base">send</span>
+            <div class="relative rounded-2xl bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 shadow-[0_6px_24px_rgba(0,0,0,0.06)] focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary/60 transition-all duration-200">
+              <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3.5 pl-4 pr-20 text-[15px]"/>
+              <button id="send-btn" onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 h-9 px-3 bg-primary hover:bg-primary-dark text-white rounded-xl transition-colors inline-flex items-center gap-1.5 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="material-icons text-[18px]">send</span>
+                <span class="text-xs">Send</span>
               </button>
             </div>
           </div>
@@ -331,6 +328,7 @@ const calendarMonthLabel = document.getElementById('calendar-month-label');
 const cronList = document.getElementById('cron-list');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
+const sendBtn = document.getElementById('send-btn');
 const chatSessionsEl = document.getElementById('chat-sessions');
 const activeSessionTitle = document.getElementById('active-session-title');
 const jobStatusPill = document.getElementById('job-status-pill');
@@ -357,6 +355,20 @@ const jobhubOutreach = document.getElementById('jobhub-outreach');
 const agentInbox = document.getElementById('agent-inbox');
 const agentInboxToggle = document.getElementById('agent-inbox-toggle');
 let activeSessionId = null;
+const sessionBusy = {};
+const sessionDoneBadge = {};
+
+function deriveTaskTitle(text='') {
+  const clean = String(text).replace(/\s+/g,' ').trim();
+  if (!clean) return 'New Chat';
+  const low = clean.toLowerCase();
+  if (low.includes('fix')) return 'Fixing issue';
+  if (low.includes('build') || low.includes('create')) return 'Building feature';
+  if (low.includes('refactor')) return 'Refactoring';
+  if (low.includes('debug') || low.includes('error')) return 'Debugging';
+  if (low.includes('design') || low.includes('ui')) return 'UI update';
+  return clean.slice(0, 36);
+}
 
 function applyTheme(mode) {
   const root = document.documentElement;
@@ -423,6 +435,34 @@ function appendMessage(role, text) {
   chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+function showLoadingMessage() {
+  if (!chatHistory) return;
+  removeLoadingMessage();
+  const row = document.createElement('div');
+  row.id = 'chat-loading-row';
+  row.className = 'flex gap-4';
+  row.innerHTML = `
+    <div class="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-md shadow-primary/20">
+      <span class="material-icons text-sm md:text-base">smart_toy</span>
+    </div>
+    <div class="max-w-[90%] md:max-w-[80%] flex flex-col">
+      <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed">
+        <span class="inline-flex items-center gap-1.5 text-gray-500">
+          <span class="w-2 h-2 rounded-full bg-primary/60 animate-pulse"></span>
+          Thinking...
+        </span>
+      </div>
+    </div>
+  `;
+  chatHistory.appendChild(row);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+function removeLoadingMessage() {
+  const el = document.getElementById('chat-loading-row');
+  if (el) el.remove();
+}
+
 function _sessionBucket(ts) {
   if (!ts) return 'Older';
   const d = new Date(ts);
@@ -460,12 +500,17 @@ function renderSessionList(sessions) {
   const renderBtn = (s) => {
     const active = activeSessionId === s.id;
     return `
-      <button onclick="openSession('${s.id}')" class="w-full text-left px-3 py-2 text-sm rounded-md truncate transition-colors ${active
-        ? 'bg-gray-100 dark:bg-primary/10 text-primary dark:text-blue-400'
-        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-accent-dark'}">
-        <div class="truncate">${escapeHtml(s.title || 'Untitled')}</div>
-        <div class="text-[10px] text-gray-500 mt-0.5">${_timeAgo(s.updated_at)}</div>
-      </button>
+      <div class="group relative">
+        <button onclick="openSession('${s.id}')" class="w-full text-left px-3 py-2 text-sm rounded-md truncate transition-colors pr-8 ${active
+          ? 'bg-gray-100 dark:bg-primary/10 text-primary dark:text-blue-400'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-accent-dark'}">
+          <div class="truncate">${escapeHtml(s.title || 'Untitled')}</div>
+        </button>
+        <button onclick="toggleSessionMenu(event, '${s.id}')" class="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-accent-dark transition">⋯</button>
+        <div id="session-menu-${s.id}" class="hidden absolute right-1 top-8 z-20 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-md shadow-lg min-w-[120px]">
+          <button onclick="deleteSession('${s.id}')" class="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-gray-100 dark:hover:bg-accent-dark rounded-md">Delete chat</button>
+        </div>
+      </div>
     `;
   };
 
@@ -492,6 +537,28 @@ async function loadSessions() {
   }
 }
 
+function closeAllSessionMenus() {
+  document.querySelectorAll('[id^="session-menu-"]').forEach(el => el.classList.add('hidden'));
+}
+
+function toggleSessionMenu(ev, id) {
+  ev.stopPropagation();
+  const menu = document.getElementById(`session-menu-${id}`);
+  if (!menu) return;
+  const isHidden = menu.classList.contains('hidden');
+  closeAllSessionMenus();
+  if (isHidden) menu.classList.remove('hidden');
+}
+
+async function deleteSession(id) {
+  closeAllSessionMenus();
+  try {
+    await fetch(`/api/chat/sessions/${id}`, { method: 'DELETE' });
+    if (activeSessionId === id) activeSessionId = null;
+    await loadSessions();
+  } catch {}
+}
+
 async function createSession() {
   try {
     const res = await fetch('/api/chat/sessions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:'New Chat'})});
@@ -503,28 +570,57 @@ async function createSession() {
 
 async function openSession(id, reloadList=true) {
   activeSessionId = id;
+  sessionDoneBadge[id] = false;
   try {
     const res = await fetch(`/api/chat/sessions/${id}`);
     const s = await res.json();
     if (activeSessionTitle) activeSessionTitle.textContent = s.title || 'Untitled';
     if (chatHistory) chatHistory.innerHTML = '';
+    removeLoadingMessage();
     (s.messages || []).forEach(m => appendMessage(m.role, m.content));
     if (reloadList) loadSessions();
+    loadAgentInbox();
   } catch {}
 }
 
 async function sendChat() {
   const message = (msgInput?.value || '').trim();
   if (!message || !activeSessionId) return;
+
   appendMessage('user', message);
   msgInput.value = '';
+  if (msgInput) msgInput.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
+
+  const taskTitle = deriveTaskTitle(message);
+  sessionBusy[activeSessionId] = true;
+  sessionDoneBadge[activeSessionId] = false;
+  showLoadingMessage();
+  loadAgentInbox();
+
   try {
+    await fetch(`/api/chat/sessions/${activeSessionId}`, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({title: taskTitle})
+    });
+    if (activeSessionTitle) activeSessionTitle.textContent = taskTitle;
+
     const res = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message, session_id: activeSessionId})});
     const data = await res.json();
+    removeLoadingMessage();
     appendMessage('assistant', data.reply || 'No response.');
     loadSessions();
   } catch {
+    removeLoadingMessage();
     appendMessage('assistant', 'Chat failed.');
+  } finally {
+    sessionBusy[activeSessionId] = false;
+    sessionDoneBadge[activeSessionId] = true;
+    loadAgentInbox();
+    if (msgInput) msgInput.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    msgInput?.focus();
   }
 }
 
@@ -842,30 +938,49 @@ async function loadAgentInbox() {
   if (!agentInbox || agentInbox.classList.contains('hidden')) return;
   agentInbox.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
   try {
-    const res = await fetch('/api/agents/inbox');
-    const data = await res.json();
-    const items = data.items || [];
-    if (!items.length) {
-      agentInbox.innerHTML = '<div class="text-xs text-gray-500">No active agents right now.</div>';
-      return;
-    }
-    agentInbox.innerHTML = items.map(it => {
-      const running = it.status === 'running';
-      const badge = running
-        ? '<span class="px-1.5 py-0.5 rounded border text-[10px] text-green-500 border-green-500/30">running</span>'
-        : '<span class="px-1.5 py-0.5 rounded border text-[10px] text-gray-500 border-border-light dark:border-border-dark">'+(it.status||'idle')+'</span>';
-      const meta = it.seconds_running ? `${it.seconds_running}s` : (it.updated_at || '');
+    const [sRes, iRes] = await Promise.all([
+      fetch('/api/chat/sessions'),
+      fetch('/api/agents/inbox')
+    ]);
+    const sData = await sRes.json();
+    const iData = await iRes.json();
+    const sessions = sData.sessions || [];
+    const items = (iData.items || []).filter(i => i.type !== 'session').slice(0, 6);
+
+    const sessionHtml = sessions.length ? sessions.map(s => {
+      const active = activeSessionId === s.id;
+      const busy = !!sessionBusy[s.id];
+      const done = !!sessionDoneBadge[s.id] && !active;
+      const indicator = busy
+        ? '<span class="inline-block w-2 h-2 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>'
+        : (done ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>' : '<span class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>');
       return `
-        <div class="p-2 rounded border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]">
+        <button onclick="openSession('${s.id}')" class="w-full text-left p-2 rounded-md ${active ? 'bg-gray-100 dark:bg-primary/10' : 'hover:bg-gray-100 dark:hover:bg-accent-dark'}">
           <div class="flex items-center justify-between gap-2">
-            <div class="text-xs font-semibold truncate">${it.name || it.type || 'agent'}</div>
-            ${badge}
+            <div class="text-xs font-medium truncate ${active ? 'text-primary dark:text-blue-300' : ''}">${escapeHtml(s.title || 'Untitled')}</div>
+            ${indicator}
           </div>
-          <div class="text-[10px] text-gray-500 mt-1 truncate">${it.summary || ''}</div>
-          <div class="text-[10px] text-gray-400 mt-1 font-mono">${meta}</div>
-        </div>
+        </button>
       `;
-    }).join('');
+    }).join('') : '<div class="text-xs text-gray-500">No chats yet.</div>';
+
+    const feedHtml = items.map(it => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]">
+        <div class="text-[11px] font-semibold truncate">${it.name || it.type || 'agent'}</div>
+        <div class="text-[10px] text-gray-500 mt-1 truncate">${it.summary || ''}</div>
+      </div>
+    `).join('');
+
+    agentInbox.innerHTML = `
+      <div>
+        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Chats</div>
+        <div class="space-y-1">${sessionHtml}</div>
+      </div>
+      <div class="mt-3">
+        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Recent completions</div>
+        <div class="space-y-2">${feedHtml || '<div class="text-xs text-gray-500">No recent events.</div>'}</div>
+      </div>
+    `;
   } catch {
     agentInbox.innerHTML = '<div class="text-xs text-red-500">Failed to load inbox.</div>';
   }
@@ -929,6 +1044,7 @@ async function runJob(name) {
   }
 }
 
+document.addEventListener('click', () => closeAllSessionMenus());
 msgInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
 applyTheme(localStorage.getItem('mustang_theme') || 'dark');
 const initialSection = (window.location.hash || '').replace('#', '') || localStorage.getItem('mustang_active_section') || 'coding';
