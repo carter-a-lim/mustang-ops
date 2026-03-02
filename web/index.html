@@ -80,19 +80,28 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-slate-200 dark:border-border-dark">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Usage Metering</p>
-            <div class="grid grid-cols-2 gap-2">
-                <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-2 border border-slate-200 dark:border-border-dark">
-                    <p class="text-[10px] text-slate-500">Last 5h</p>
-                    <p id="usage-5h" class="text-xs font-mono font-bold text-slate-900 dark:text-white">0 tok</p>
+        <div class="p-4 border-t border-slate-200 dark:border-border-dark space-y-3">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Usage Metering</p>
+
+            <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-3 border border-slate-200 dark:border-border-dark">
+                <p class="text-[10px] text-slate-500">5 hour usage limit</p>
+                <p id="usage-5h-label" class="text-sm font-bold text-slate-900 dark:text-white">100% remaining</p>
+                <div class="mt-2 h-2 w-full rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden">
+                    <div id="usage-5h-bar" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
                 </div>
-                <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-2 border border-slate-200 dark:border-border-dark">
-                    <p class="text-[10px] text-slate-500">Last 7d</p>
-                    <p id="usage-7d" class="text-xs font-mono font-bold text-slate-900 dark:text-white">0 tok</p>
-                </div>
+                <p id="usage-5h" class="mt-1 text-[10px] font-mono text-slate-500">0 / 0 tok</p>
             </div>
-            <p id="usage-cost" class="mt-2 text-[10px] text-slate-500 font-mono">Cost est: --</p>
+
+            <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-3 border border-slate-200 dark:border-border-dark">
+                <p class="text-[10px] text-slate-500">Weekly usage limit</p>
+                <p id="usage-7d-label" class="text-sm font-bold text-slate-900 dark:text-white">100% remaining</p>
+                <div class="mt-2 h-2 w-full rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden">
+                    <div id="usage-7d-bar" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="usage-7d" class="mt-1 text-[10px] font-mono text-slate-500">0 / 0 tok</p>
+            </div>
+
+            <p id="usage-cost" class="text-[10px] text-slate-500 font-mono">Cost est: --</p>
         </div>
     </aside>
 
@@ -383,6 +392,10 @@
         const githubList = document.getElementById('github-list');
         const usage5h = document.getElementById('usage-5h');
         const usage7d = document.getElementById('usage-7d');
+        const usage5hBar = document.getElementById('usage-5h-bar');
+        const usage7dBar = document.getElementById('usage-7d-bar');
+        const usage5hLabel = document.getElementById('usage-5h-label');
+        const usage7dLabel = document.getElementById('usage-7d-label');
         const usageCost = document.getElementById('usage-cost');
 
         function showSection(sectionId) {
@@ -637,8 +650,21 @@
                 const data = await res.json();
                 const w5h = data?.windows?.last_5h || {};
                 const w7d = data?.windows?.last_7d || {};
-                usage5h.textContent = formatTokens(w5h.total_tokens || 0);
-                usage7d.textContent = formatTokens(w7d.total_tokens || 0);
+                const l5h = data?.limits?.last_5h_tokens || 1;
+                const l7d = data?.limits?.last_7d_tokens || 1;
+
+                const used5 = Number(w5h.percent_used || 0);
+                const used7 = Number(w7d.percent_used || 0);
+                const rem5 = Math.max(0, 100 - used5);
+                const rem7 = Math.max(0, 100 - used7);
+
+                usage5hLabel.textContent = `${rem5.toFixed(1)}% remaining`;
+                usage7dLabel.textContent = `${rem7.toFixed(1)}% remaining`;
+                usage5hBar.style.width = `${Math.min(100, used5)}%`;
+                usage7dBar.style.width = `${Math.min(100, used7)}%`;
+
+                usage5h.textContent = `${Number(w5h.total_tokens || 0).toLocaleString()} / ${Number(l5h).toLocaleString()} tok`;
+                usage7d.textContent = `${Number(w7d.total_tokens || 0).toLocaleString()} / ${Number(l7d).toLocaleString()} tok`;
 
                 const costEnabled = data?.pricing?.cost_estimation_enabled;
                 if (costEnabled) {

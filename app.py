@@ -31,6 +31,8 @@ OPENCLAW_MODEL = os.getenv("OPENCLAW_MODEL", "openclaw:main")
 # Example: 1.5 means $1.50 per 1M tokens.
 COST_INPUT_PER_1M = float(os.getenv("MUSTANG_COST_INPUT_PER_1M", "0"))
 COST_OUTPUT_PER_1M = float(os.getenv("MUSTANG_COST_OUTPUT_PER_1M", "0"))
+LIMIT_5H_TOKENS = int(os.getenv("MUSTANG_LIMIT_5H_TOKENS", "200000"))
+LIMIT_7D_TOKENS = int(os.getenv("MUSTANG_LIMIT_7D_TOKENS", "2000000"))
 
 JOBS = {
     "sync_canvas": ROOT / "jobs" / "sync_canvas.py",
@@ -169,15 +171,33 @@ def usage_summary():
         sums["date"] = day
         daily_buckets.append(sums)
 
+    last_5h = _sum_events(last_5h_events)
+    last_7d = _sum_events(last_7d_events)
+
+    limit_5h = max(LIMIT_5H_TOKENS, 1)
+    limit_7d = max(LIMIT_7D_TOKENS, 1)
+
     return {
         "pricing": {
             "input_per_1m": COST_INPUT_PER_1M,
             "output_per_1m": COST_OUTPUT_PER_1M,
             "cost_estimation_enabled": COST_INPUT_PER_1M > 0 or COST_OUTPUT_PER_1M > 0,
         },
+        "limits": {
+            "last_5h_tokens": limit_5h,
+            "last_7d_tokens": limit_7d,
+        },
         "windows": {
-            "last_5h": _sum_events(last_5h_events),
-            "last_7d": _sum_events(last_7d_events),
+            "last_5h": {
+                **last_5h,
+                "percent_used": round((last_5h["total_tokens"] / limit_5h) * 100, 2),
+                "percent_remaining": round(max(0.0, 100 - (last_5h["total_tokens"] / limit_5h) * 100), 2),
+            },
+            "last_7d": {
+                **last_7d,
+                "percent_used": round((last_7d["total_tokens"] / limit_7d) * 100, 2),
+                "percent_remaining": round(max(0.0, 100 - (last_7d["total_tokens"] / limit_7d) * 100), 2),
+            },
         },
         "daily_last_7d": daily_buckets,
         "event_count": len(events_with_dt),
