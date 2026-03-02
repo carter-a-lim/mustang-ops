@@ -537,25 +537,20 @@ async function loadSessions() {
   }
 }
 
-function closeAllSessionMenus() {
-  document.querySelectorAll('[id^="session-menu-"]').forEach(el => el.classList.add('hidden'));
-}
+function closeAllSessionMenus() {}
 
-function toggleSessionMenu(ev, id) {
+function deleteSessionPrompt(ev, id) {
   ev.stopPropagation();
-  const menu = document.getElementById(`session-menu-${id}`);
-  if (!menu) return;
-  const isHidden = menu.classList.contains('hidden');
-  closeAllSessionMenus();
-  if (isHidden) menu.classList.remove('hidden');
+  const ok = window.confirm('Delete this chat?');
+  if (ok) deleteSession(id);
 }
 
 async function deleteSession(id) {
-  closeAllSessionMenus();
   try {
     await fetch(`/api/chat/sessions/${id}`, { method: 'DELETE' });
     if (activeSessionId === id) activeSessionId = null;
     await loadSessions();
+    loadAgentInbox();
   } catch {}
 }
 
@@ -568,7 +563,7 @@ async function createSession() {
   } catch {}
 }
 
-async function openSession(id, reloadList=true) {
+async function openSession(id, reloadList=false) {
   activeSessionId = id;
   sessionDoneBadge[id] = false;
   try {
@@ -578,8 +573,8 @@ async function openSession(id, reloadList=true) {
     if (chatHistory) chatHistory.innerHTML = '';
     removeLoadingMessage();
     (s.messages || []).forEach(m => appendMessage(m.role, m.content));
+    if (sessionBusy[id]) showLoadingMessage();
     if (reloadList) loadSessions();
-    loadAgentInbox();
   } catch {}
 }
 
@@ -936,7 +931,9 @@ function toggleAgentInbox() {
 
 async function loadAgentInbox() {
   if (!agentInbox || agentInbox.classList.contains('hidden')) return;
-  agentInbox.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
+  if (!agentInbox.innerHTML.trim()) {
+    agentInbox.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
+  }
   try {
     const [sRes, iRes] = await Promise.all([
       fetch('/api/chat/sessions'),
@@ -962,10 +959,7 @@ async function loadAgentInbox() {
               ${indicator}
             </div>
           </button>
-          <button onclick="toggleSessionMenu(event, '${s.id}')" class="absolute z-30 right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-accent-dark transition">⋯</button>
-          <div onclick="event.stopPropagation()" id="session-menu-${s.id}" class="hidden absolute right-1 top-8 z-40 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-md shadow-lg min-w-[120px]">
-            <button onclick="deleteSession('${s.id}')" class="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-gray-100 dark:hover:bg-accent-dark rounded-md">Delete chat</button>
-          </div>
+          <button onclick="deleteSessionPrompt(event, '${s.id}')" class="absolute z-30 right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-accent-dark transition">⋯</button>
         </div>
       `;
     }).join('') : '<div class="text-xs text-gray-500">No chats yet.</div>';
@@ -1018,14 +1012,21 @@ async function loadUsageSummary() {
     const data = await res.json();
     const w5h = data?.windows?.last_5h || {};
     const w7d = data?.windows?.last_7d || {};
-    usage5h.textContent = formatTokens(w5h.total_tokens || 0);
-    usage7d.textContent = formatTokens(w7d.total_tokens || 0);
-    const pct5h = Math.max(0, Math.min(100, Number(w5h.percent_used || 0)));
-    const pct7d = Math.max(0, Math.min(100, Number(w7d.percent_used || 0)));
-    if (usage5hBar) usage5hBar.style.width = `${pct5h}%`;
-    if (usage7dBar) usage7dBar.style.width = `${pct7d}%`;
-    if (usage5hPct) usage5hPct.textContent = `${pct5h.toFixed(1)}%`;
-    if (usage7dPct) usage7dPct.textContent = `${pct7d.toFixed(1)}%`;
+    const pct5hUsed = Math.max(0, Math.min(100, Number(w5h.percent_used || 0)));
+    const pct7dUsed = Math.max(0, Math.min(100, Number(w7d.percent_used || 0)));
+    const pct5hRemain = Math.max(0, 100 - pct5hUsed);
+    const pct7dRemain = Math.max(0, 100 - pct7dUsed);
+
+    if (usage5hBar) usage5hBar.style.width = `${pct5hUsed}%`;
+    if (usage7dBar) usage7dBar.style.width = `${pct7dUsed}%`;
+    if (usage5hPct) usage5hPct.textContent = `${pct5hRemain.toFixed(1)}% remaining`;
+    if (usage7dPct) usage7dPct.textContent = `${pct7dRemain.toFixed(1)}% remaining`;
+
+    const reset5 = w5h.active_window && w5h.reset_at ? `Resets ${new Date(w5h.reset_at).toLocaleString()}` : 'Resets on first use';
+    const reset7 = w7d.active_window && w7d.reset_at ? `Resets ${new Date(w7d.reset_at).toLocaleString()}` : 'Resets on first use';
+    usage5h.textContent = `${formatTokens(w5h.tokens_remaining || 0)} left · ${reset5}`;
+    usage7d.textContent = `${formatTokens(w7d.tokens_remaining || 0)} left · ${reset7}`;
+
     usageCost.textContent = data?.pricing?.cost_estimation_enabled ? `Cost est: ${formatUsd(w5h.estimated_cost_usd || 0)} (5h) · ${formatUsd(w7d.estimated_cost_usd || 0)} (7d)` : 'Cost est: set MUSTANG_COST_INPUT_PER_1M / MUSTANG_COST_OUTPUT_PER_1M';
   } catch {
     usageCost.textContent = 'Cost est: failed to load usage summary';

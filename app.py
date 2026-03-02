@@ -517,6 +517,16 @@ def usage_summary():
     limit_5h = max(LIMIT_5H_TOKENS, 1)
     limit_7d = max(LIMIT_7D_TOKENS, 1)
 
+    # Rolling-window reset hints ("when oldest included usage expires")
+    reset_5h_at = None
+    reset_7d_at = None
+    if last_5h_events:
+        oldest_5h = min(dt for dt, e in events_with_dt if dt >= last_5h_cutoff)
+        reset_5h_at = (oldest_5h + timedelta(hours=5)).isoformat()
+    if last_7d_events:
+        oldest_7d = min(dt for dt, e in events_with_dt if dt >= last_7d_cutoff)
+        reset_7d_at = (oldest_7d + timedelta(days=7)).isoformat()
+
     return {
         "pricing": {
             "input_per_1m": COST_INPUT_PER_1M,
@@ -532,11 +542,17 @@ def usage_summary():
                 **last_5h,
                 "percent_used": round((last_5h["total_tokens"] / limit_5h) * 100, 2),
                 "percent_remaining": round(max(0.0, 100 - (last_5h["total_tokens"] / limit_5h) * 100), 2),
+                "tokens_remaining": max(0, limit_5h - last_5h["total_tokens"]),
+                "reset_at": reset_5h_at,
+                "active_window": bool(last_5h_events),
             },
             "last_7d": {
                 **last_7d,
                 "percent_used": round((last_7d["total_tokens"] / limit_7d) * 100, 2),
                 "percent_remaining": round(max(0.0, 100 - (last_7d["total_tokens"] / limit_7d) * 100), 2),
+                "tokens_remaining": max(0, limit_7d - last_7d["total_tokens"]),
+                "reset_at": reset_7d_at,
+                "active_window": bool(last_7d_events),
             },
         },
         "daily_last_7d": daily_buckets,
