@@ -271,17 +271,11 @@
                         <h3 class="text-2xl font-bold mb-6">Build & Ship</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
-                                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Infrastructure</h4>
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center text-xs">
-                                        <span class="text-slate-500">Node Engine</span>
-                                        <span class="font-mono text-primary">v20.11.0</span>
-                                    </div>
-                                    <div class="flex justify-between items-center text-xs">
-                                        <span class="text-slate-500">Process Latency</span>
-                                        <span class="font-mono text-emerald-500">0.02ms</span>
-                                    </div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">GitHub Snapshot</h4>
+                                    <button onclick="loadGithub()" class="text-[10px] font-bold text-primary hover:underline">REFRESH</button>
                                 </div>
+                                <div id="github-list" class="space-y-3 text-xs text-slate-600 dark:text-slate-300"></div>
                             </div>
                             <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
                                 <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Mistake Tracker</h4>
@@ -328,6 +322,12 @@
                                         <td class="px-6 py-4 text-xs font-medium">6 Hours</td>
                                         <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
                                         <td class="px-6 py-4 text-right"><button onclick="runJob('sync_canvas')" class="text-[10px] font-bold text-primary hover:underline">RE-SYNC</button></td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td class="px-6 py-4 font-mono text-xs">sync_github</td>
+                                        <td class="px-6 py-4 text-xs font-medium">Every 30 min</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
+                                        <td class="px-6 py-4 text-right"><button onclick="runJob('sync_github')" class="text-[10px] font-bold text-primary hover:underline">SYNC NOW</button></td>
                                     </tr>
                                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td class="px-6 py-4 font-mono text-xs">morning_brief</td>
@@ -379,6 +379,7 @@
         const jobStatusPill = document.getElementById('job-status-pill');
         const currentJobTitle = document.getElementById('current-job');
         const skillsGrid = document.getElementById('skills-grid');
+        const githubList = document.getElementById('github-list');
 
         function showSection(sectionId) {
             // Update Active Link State
@@ -423,6 +424,21 @@
             }
         }
 
+        function courseColor(courseName = '') {
+            const palette = [
+                { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-500' },
+                { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-500' },
+                { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-500' },
+                { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-500' },
+                { bg: 'bg-rose-500/10', border: 'border-rose-500/20', text: 'text-rose-500' },
+                { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-500' },
+            ];
+            const s = (courseName || 'general').toLowerCase();
+            let hash = 0;
+            for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+            return palette[hash % palette.length];
+        }
+
         function renderCalendar(context) {
             const grid = document.getElementById('calendar-grid');
             if (!grid) return;
@@ -458,9 +474,11 @@
                 if (context && context.deadlines) {
                     context.deadlines.forEach(dl => {
                         if (dl.date === dateStr) {
+                            const c = courseColor(dl.course || dl.title || 'deadline');
                             const pill = document.createElement('div');
-                            pill.className = 'px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-[9px] font-bold text-red-500 truncate';
+                            pill.className = `px-1.5 py-0.5 rounded border text-[9px] font-bold truncate ${c.bg} ${c.border} ${c.text}`;
                             pill.textContent = dl.task;
+                            pill.title = `${dl.task}\nCourse: ${dl.course || 'Unknown'}\nDue: ${dl.due_at || dl.date}\nSource: ${dl.source || 'n/a'}`;
                             day.appendChild(pill);
                         }
                     });
@@ -469,9 +487,11 @@
                 if (context && context.events) {
                     context.events.forEach(ev => {
                         if (ev.date === dateStr) {
+                            const c = courseColor(ev.course || ev.title || 'event');
                             const pill = document.createElement('div');
-                            pill.className = 'px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold text-blue-500 truncate';
+                            pill.className = `px-1.5 py-0.5 rounded border text-[9px] font-bold truncate ${c.bg} ${c.border} ${c.text}`;
                             pill.textContent = ev.title;
+                            pill.title = `${ev.title}\nCourse: ${ev.course || 'General'}\nDate: ${ev.start_at || ev.date}\nSource: ${ev.source || 'n/a'}`;
                             day.appendChild(pill);
                         }
                     });
@@ -553,6 +573,28 @@
             }
         }
 
+        async function loadGithub() {
+            if (!githubList) return;
+            githubList.innerHTML = '<p class="text-slate-500">Loading...</p>';
+            try {
+                const res = await fetch('/api/github');
+                const data = await res.json();
+                const repos = data.repos || [];
+                if (!repos.length) {
+                    githubList.innerHTML = '<p class="text-slate-500">No snapshot yet. Run sync_github.</p>';
+                    return;
+                }
+                githubList.innerHTML = repos.map(r => `
+                    <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-border-dark">
+                        <div class="font-mono text-[11px] font-bold text-slate-900 dark:text-white">${r.repo}</div>
+                        <div class="mt-1 text-[10px] text-slate-500">PRs: <b>${r.open_prs}</b> · Issues: <b>${r.open_issues}</b></div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                githubList.innerHTML = '<p class="text-red-500">Failed to load github snapshot.</p>';
+            }
+        }
+
         async function sendChat() {
             const message = msgInput.value.trim();
             if (!message) return;
@@ -582,6 +624,8 @@
                 const res = await fetch('/api/run/' + name, { method: 'POST' });
                 const data = await res.json();
                 appendMessage('ai', `Job **${name}** completed with exit code ${data.exit_code}.`);
+                if (name === 'sync_canvas') loadContext();
+                if (name === 'sync_github') loadGithub();
             } catch (e) {
                 appendMessage('ai', `Failed to run job **${name}**.`);
             } finally {
@@ -603,6 +647,7 @@
         showSection('chat');
         loadContext();
         loadSkills();
+        loadGithub();
     </script>
 </body>
 </html>

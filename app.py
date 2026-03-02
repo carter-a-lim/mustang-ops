@@ -25,6 +25,7 @@ OPENCLAW_MODEL = os.getenv("OPENCLAW_MODEL", "openclaw:main")
 
 JOBS = {
     "sync_canvas": ROOT / "jobs" / "sync_canvas.py",
+    "sync_github": ROOT / "jobs" / "sync_github.py",
     "morning_brief": ROOT / "jobs" / "morning_brief.py",
     "linkedin_scout": ROOT / "jobs" / "linkedin_scout.py",
     "token_sync": ROOT / "jobs" / "token_sync.py",
@@ -63,6 +64,14 @@ def get_skills():
             if d.is_dir() and (d / "SKILL.md").exists():
                 skills.append({"name": d.name, "status": "installed"})
     return {"skills": skills}
+
+
+@app.get("/api/github")
+def get_github_snapshot():
+    p = ROOT / "data" / "github_snapshot.json"
+    if not p.exists():
+        return {"updated_at": None, "repos": []}
+    return json.loads(p.read_text())
 
 
 @app.post("/api/chat")
