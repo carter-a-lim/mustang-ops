@@ -20,6 +20,7 @@ DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 USAGE_EVENTS_PATH = DATA_DIR / "usage_events.jsonl"
 CHAT_SESSIONS_PATH = DATA_DIR / "chat_sessions.json"
+JOB_PIPELINE_PATH = DATA_DIR / "job_pipeline.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -218,6 +219,21 @@ def get_github_snapshot():
     if not p.exists():
         return {"updated_at": None, "repos": []}
     return json.loads(p.read_text())
+
+
+@app.get("/api/network/jobs")
+def get_network_jobs():
+    if not JOB_PIPELINE_PATH.exists():
+        return {
+            "updated_at": None,
+            "roles": [],
+            "applications": [],
+            "outreach_targets": [],
+        }
+    try:
+        return json.loads(JOB_PIPELINE_PATH.read_text())
+    except Exception:
+        raise HTTPException(status_code=500, detail="Invalid job pipeline data")
 
 
 @app.get("/api/network")

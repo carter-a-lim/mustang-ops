@@ -191,28 +191,34 @@
         <div id="section-network" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Network Engine</h1>
-            <button onclick="runJob('sync_network')" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Sync Network</button>
+            <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh Job Hub</button>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Pending Followups</p><p id="net-pending" class="text-2xl font-bold">0</p></div>
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Warm Leads</p><p id="net-warm" class="text-2xl font-bold">0</p></div>
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Intros Available</p><p id="net-intros" class="text-2xl font-bold">0</p></div>
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Reply Rate</p><p id="net-reply" class="text-2xl font-bold">0%</p></div>
+          <div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">Jobs / Applications / Internships</h3>
+              <span id="jobhub-updated" class="text-[10px] text-gray-500 font-mono">Updated: --</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Open Roles</p><p id="jobhub-open-roles" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Interviewing</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Warm Targets</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Priority Reachouts</h3>
-              <div id="net-contacts" class="space-y-2"></div>
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Role Pipeline</h3>
+              <div id="jobhub-roles" class="space-y-2"></div>
             </div>
             <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Opportunity Feed</h3>
-              <div id="net-opps" class="space-y-2"></div>
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Application Tracker</h3>
+              <div id="jobhub-apps" class="space-y-2"></div>
             </div>
             <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Intro Graph</h3>
-              <div id="net-intro-list" class="space-y-2"></div>
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Warm Intro Targets</h3>
+              <div id="jobhub-outreach" class="space-y-2"></div>
             </div>
           </div>
         </div>
@@ -250,13 +256,14 @@ const nodeDetail = document.getElementById('node-detail');
 const cpuStatus = document.getElementById('cpu-status');
 const memStatus = document.getElementById('mem-status');
 const nodeStatus = document.getElementById('node-status');
-const netPending = document.getElementById('net-pending');
-const netWarm = document.getElementById('net-warm');
-const netIntros = document.getElementById('net-intros');
-const netReply = document.getElementById('net-reply');
-const netContacts = document.getElementById('net-contacts');
-const netOpps = document.getElementById('net-opps');
-const netIntroList = document.getElementById('net-intro-list');
+const jobhubUpdated = document.getElementById('jobhub-updated');
+const jobhubOpenRoles = document.getElementById('jobhub-open-roles');
+const jobhubApplied = document.getElementById('jobhub-applied');
+const jobhubInterviewing = document.getElementById('jobhub-interviewing');
+const jobhubTargets = document.getElementById('jobhub-targets');
+const jobhubRoles = document.getElementById('jobhub-roles');
+const jobhubApps = document.getElementById('jobhub-apps');
+const jobhubOutreach = document.getElementById('jobhub-outreach');
 let activeSessionId = null;
 
 function applyTheme(mode) {
@@ -439,45 +446,49 @@ async function loadSystemStats() {
   }
 }
 
-async function loadNetwork() {
+async function loadNetworkJobs() {
   try {
-    const res = await fetch('/api/network');
+    const res = await fetch('/api/network/jobs');
     const data = await res.json();
-    const summary = data.summary || {};
-    if (netPending) netPending.textContent = summary.pending_followups || 0;
-    if (netWarm) netWarm.textContent = summary.warm_leads || 0;
-    if (netIntros) netIntros.textContent = summary.intros_available || 0;
-    if (netReply) netReply.textContent = `${summary.reply_rate || 0}%`;
 
-    const contacts = (data.contacts || []).slice(0, 8);
-    if (netContacts) netContacts.innerHTML = contacts.length ? contacts.map(c => `
-      <div class="p-2 rounded border border-border-light dark:border-border-dark">
-        <div class="text-sm font-semibold truncate">${c.name}</div>
-        <div class="text-[10px] text-gray-500">${(c.tags || []).join(' · ')}</div>
-        <div class="text-[10px] text-primary mt-1">Next: ${c.next_action || 'Follow up'}</div>
-      </div>
-    `).join('') : '<div class="text-xs text-gray-500">No contacts yet. Run sync_network.</div>';
+    const roles = data.roles || [];
+    const apps = data.applications || [];
+    const targets = data.outreach_targets || [];
 
-    const opps = (data.opportunities || []).slice(0, 8);
-    if (netOpps) netOpps.innerHTML = opps.length ? opps.map(o => `
-      <div class="p-2 rounded border border-border-light dark:border-border-dark">
-        <div class="text-sm font-semibold truncate">${o.title || o.company || 'Opportunity'}</div>
-        <div class="text-[10px] text-gray-500">Issues: ${o.open_issues || 0} · PRs: ${o.open_prs || 0}</div>
-        <div class="text-[10px] text-primary mt-1">${o.action || ''}</div>
-      </div>
-    `).join('') : '<div class="text-xs text-gray-500">No opportunities yet.</div>';
+    if (jobhubUpdated) jobhubUpdated.textContent = `Updated: ${data.updated_at || 'n/a'}`;
+    if (jobhubOpenRoles) jobhubOpenRoles.textContent = roles.length;
+    if (jobhubApplied) jobhubApplied.textContent = apps.filter(a => (a.stage || '').toLowerCase().includes('applied')).length;
+    if (jobhubInterviewing) jobhubInterviewing.textContent = apps.filter(a => (a.stage || '').toLowerCase().includes('interview')).length;
+    if (jobhubTargets) jobhubTargets.textContent = targets.length;
 
-    const intros = (data.introductions || []).slice(0, 8);
-    if (netIntroList) netIntroList.innerHTML = intros.length ? intros.map(i => `
+    if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0, 8).map(r => `
       <div class="p-2 rounded border border-border-light dark:border-border-dark">
-        <div class="text-sm font-semibold truncate">${i.from} → ${i.target}</div>
-        <div class="text-[10px] text-gray-500">status: ${i.status || 'possible'} · conf: ${Math.round((i.confidence || 0)*100)}%</div>
+        <div class="text-sm font-semibold truncate">${r.company} — ${r.title}</div>
+        <div class="text-[10px] text-gray-500">${r.location || ''}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'sourcing'}</div>
       </div>
-    `).join('') : '<div class="text-xs text-gray-500">No intro paths yet.</div>';
+    `).join('') : '<div class="text-xs text-gray-500">No roles tracked yet.</div>';
+
+    if (jobhubApps) jobhubApps.innerHTML = apps.length ? apps.slice(0, 8).map(a => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+        <div class="text-sm font-semibold truncate">${a.company} — ${a.title}</div>
+        <div class="text-[10px] text-gray-500">Stage: ${a.stage || 'n/a'}</div>
+        <div class="text-[10px] text-primary mt-1">Next: ${a.next_step || 'n/a'} ${a.deadline ? `· due ${a.deadline}` : ''}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No applications yet.</div>';
+
+    if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0, 8).map(t => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+        <div class="text-sm font-semibold truncate">${t.name}</div>
+        <div class="text-[10px] text-gray-500">Mutuals: ${t.mutual_count || 0} · ${t.status || 'queued'}</div>
+        <div class="text-[10px] text-primary mt-1">${t.reason || ''}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No warm targets yet.</div>';
   } catch {
-    if (netContacts) netContacts.innerHTML = '<div class="text-xs text-red-500">Failed to load network data.</div>';
+    if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load job hub.</div>';
   }
 }
+
 
 async function loadGithub() {
   if (!githubList) return;
@@ -563,7 +574,6 @@ async function runJob(name) {
     appendMessage('ai', `Job ${name} completed with exit code ${data.exit_code}.`);
     if (name === 'sync_github') loadGithub();
     if (name === 'sync_canvas') loadContext();
-    if (name === 'sync_network') loadNetwork();
   } catch {
     appendMessage('ai', `Job ${name} failed.`);
   } finally {
@@ -578,7 +588,7 @@ loadGithub();
 loadSkills();
 loadContext();
 loadUsageSummary();
-loadNetwork();
+loadNetworkJobs();
 loadSystemStats();
 setInterval(loadSystemStats, 30000);
 loadSessions();
