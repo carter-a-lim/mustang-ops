@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -22,6 +22,8 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 USAGE_EVENTS_PATH = DATA_DIR / "usage_events.jsonl"
 CHAT_SESSIONS_PATH = DATA_DIR / "chat_sessions.json"
 JOB_PIPELINE_PATH = DATA_DIR / "job_pipeline.json"
+ANSWER_MEMORY_PATH = DATA_DIR / "application_answer_memory.json"
+ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -65,6 +67,19 @@ class CreateSessionBody(BaseModel):
 
 class RenameSessionBody(BaseModel):
     title: str
+
+
+class AnswerMemoryEntry(BaseModel):
+    question_type: str = Field(description="Short label, e.g. behavioral, motivation, strengths")
+    prompt: str = Field(description="Original question prompt")
+    answer: str = Field(description="Your preferred answer in your natural voice")
+    tags: list[str] = Field(default_factory=list)
+
+
+class AssistedQueueBuildBody(BaseModel):
+    limit: int = 25
+    include_keywords: list[str] = Field(default_factory=list)
+    exclude_keywords: list[str] = Field(default_factory=list)
 
 
 def read_context() -> dict:
@@ -227,6 +242,30 @@ def _sum_events(events: list[dict]) -> dict:
         "total_tokens": total,
         "estimated_cost_usd": round(_estimate_cost(prompt, completion), 6),
     }
+
+
+def _load_answer_memory() -> dict:
+    return _read_json_file(
+        ANSWER_MEMORY_PATH,
+        {
+            "updated_at": None,
+            "entries": [],
+            "notes": "Store your best answers so assisted apply can match your voice.",
+        },
+    )
+
+
+def _save_answer_memory(payload: dict) -> None:
+    ANSWER_MEMORY_PATH.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def _keyword_match(text: str, include: list[str], exclude: list[str]) -> bool:
+    low = text.lower()
+    if include and not any(k.lower() in low for k in include):
+        return False
+    if exclude and any(k.lower() in low for k in exclude):
+        return False
+    return True
 
 
 def _read_meminfo_kb() -> tuple[int, int]:
@@ -480,6 +519,91 @@ def get_network_jobs():
 @app.get("/api/agents/inbox")
 def agents_inbox():
     return _agent_inbox()
+
+
+@app.get("/api/network/answer-memory")
+def get_answer_memory():
+    return _load_answer_memory()
+
+
+@app.post("/api/network/answer-memory")
+def add_answer_memory(entry: AnswerMemoryEntry):
+    data = _load_answer_memory()
+    entries = data.get("entries", [])
+    entries.insert(
+        0,
+        {
+            "question_type": entry.question_type,
+            "prompt": entry.prompt,
+            "answer": entry.answer,
+            "tags": entry.tags,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    data["entries"] = entries[:300]
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    _save_answer_memory(data)
+    return {"ok": True, "count": len(data["entries"])}
+
+
+@app.post("/api/network/apply/prepare")
+def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
+    jobs = get_network_jobs()
+    roles = jobs.get("roles", [])
+    include = body.include_keywords or []
+    exclude = body.exclude_keywords or []
+
+    queue = []
+    for role in roles:
+        title = role.get("title", "")
+        company = role.get("company", "")
+        location = role.get("location", "")
+        text = f"{company} {title} {location}"
+        if not _keyword_match(text, include, exclude):
+            continue
+        queue.append(
+            {
+                "company": company,
+                "title": title,
+                "location": location,
+                "apply_url": role.get("apply_url", ""),
+                "source": role.get("source", "network"),
+                "status": "needs-review",
+                "questions_needed": [
+                    "Why this company?",
+                    "Tell us about yourself",
+                    "Relevant project highlight",
+                ],
+            }
+        )
+        if len(queue) >= max(1, min(body.limit, 200)):
+            break
+
+    payload = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "count": len(queue),
+        "filters": {
+            "include_keywords": include,
+            "exclude_keywords": exclude,
+            "limit": body.limit,
+        },
+        "queue": queue,
+    }
+    ASSISTED_QUEUE_PATH.write_text(json.dumps(payload, indent=2) + "\n")
+    return payload
+
+
+@app.get("/api/network/apply/queue")
+def get_assisted_apply_queue():
+    return _read_json_file(
+        ASSISTED_QUEUE_PATH,
+        {
+            "updated_at": None,
+            "count": 0,
+            "filters": {},
+            "queue": [],
+        },
+    )
 
 
 @app.get("/api/network")

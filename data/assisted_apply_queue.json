@@ -1,0 +1,78 @@
+{
+  "updated_at": "2026-03-02T22:48:57.167057+00:00",
+  "count": 5,
+  "filters": {
+    "include_keywords": [
+      "software"
+    ],
+    "exclude_keywords": [],
+    "limit": 5
+  },
+  "queue": [
+    {
+      "company": "Elsevier",
+      "title": "Simulation Software Engineer Intern",
+      "location": "5 locations : NYC, Florida, Massachusetts, Pennsylvania, North Carolina",
+      "apply_url": "https://relx.wd3.myworkdayjobs.com/ElsevierJobs/job/Pennsylvania/Simulation-Software-Engineer-Intern_R110008?utm_source=Simplify&ref=Simplify",
+      "source": "simplify",
+      "status": "needs-review",
+      "questions_needed": [
+        "Why this company?",
+        "Tell us about yourself",
+        "Relevant project highlight"
+      ]
+    },
+    {
+      "company": "MAXISIQ",
+      "title": "Software Engineer Intern - Spring - Summer",
+      "location": "Arlington, VA",
+      "apply_url": "https://jobs.smartrecruiters.com/IOMAXISLLC/3743990011915576?utm_source=Simplify&ref=Simplify",
+      "source": "simplify",
+      "status": "needs-review",
+      "questions_needed": [
+        "Why this company?",
+        "Tell us about yourself",
+        "Relevant project highlight"
+      ]
+    },
+    {
+      "company": "MFS",
+      "title": "Software Engineer Intern",
+      "location": "Boston, MA",
+      "apply_url": "https://mfs.wd1.myworkdayjobs.com/en-US/MFS-Careers/job/Boston/Software-Engineering-Intern_MFS-231622?utm_source=Simplify&ref=Simplify",
+      "source": "simplify",
+      "status": "needs-review",
+      "questions_needed": [
+        "Why this company?",
+        "Tell us about yourself",
+        "Relevant project highlight"
+      ]
+    },
+    {
+      "company": "Serval",
+      "title": "Software Engineer Intern",
+      "location": "SF",
+      "apply_url": "https://jobs.ashbyhq.com/Serval/d7fb089c-db8a-4877-a5f3-73a09e67f54b/application?utm_source=Simplify&ref=Simplify",
+      "source": "simplify",
+      "status": "needs-review",
+      "questions_needed": [
+        "Why this company?",
+        "Tell us about yourself",
+        "Relevant project highlight"
+      ]
+    },
+    {
+      "company": "Thales",
+      "title": "Software Development Intern",
+      "location": "Pennsylvania",
+      "apply_url": "https://thales.wd3.myworkdayjobs.com/en-US/Careers/job/Pennsylvania/Software-Development-Intern_R0317650-1?utm_source=Simplify&ref=Simplify",
+      "source": "simplify",
+      "status": "needs-review",
+      "questions_needed": [
+        "Why this company?",
+        "Tell us about yourself",
+        "Relevant project highlight"
+      ]
+    }
+  ]
+}

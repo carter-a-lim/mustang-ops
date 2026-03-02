@@ -283,6 +283,26 @@
               <div id="jobhub-events" class="space-y-2"></div>
             </div>
           </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 panel-card space-y-3">
+              <h3 class="text-xs uppercase text-gray-500 font-bold">Assisted Apply Queue (v1)</h3>
+              <div class="flex gap-2">
+                <input id="apply-include" placeholder="include keywords (comma)" class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
+                <input id="apply-exclude" placeholder="exclude keywords (comma)" class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
+                <button onclick="buildApplyQueue()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Build</button>
+              </div>
+              <div id="apply-queue" class="space-y-2"></div>
+            </div>
+            <div class="p-4 panel-card space-y-3">
+              <h3 class="text-xs uppercase text-gray-500 font-bold">Answer Memory (Your Voice)</h3>
+              <input id="answer-type" placeholder="question type (e.g. behavioral)" class="w-full text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
+              <textarea id="answer-prompt" placeholder="question prompt" class="w-full text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent h-16"></textarea>
+              <textarea id="answer-text" placeholder="your preferred answer" class="w-full text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent h-20"></textarea>
+              <button onclick="saveAnswerMemory()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Save answer memory</button>
+              <div id="answer-memory-list" class="space-y-2"></div>
+            </div>
+          </div>
         </div>
         <div id="section-skills" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
@@ -427,6 +447,13 @@ const jobhubApps = document.getElementById('jobhub-apps');
 const jobhubOutreach = document.getElementById('jobhub-outreach');
 const jobhubPeople = document.getElementById('jobhub-people');
 const jobhubEvents = document.getElementById('jobhub-events');
+const applyInclude = document.getElementById('apply-include');
+const applyExclude = document.getElementById('apply-exclude');
+const applyQueue = document.getElementById('apply-queue');
+const answerType = document.getElementById('answer-type');
+const answerPrompt = document.getElementById('answer-prompt');
+const answerText = document.getElementById('answer-text');
+const answerMemoryList = document.getElementById('answer-memory-list');
 const agentInbox = document.getElementById('agent-inbox');
 const agentInboxToggle = document.getElementById('agent-inbox-toggle');
 let activeSessionId = null;
@@ -961,11 +988,81 @@ async function loadNetworkJobs() {
     if (jobhubEvents) jobhubEvents.innerHTML = mergedEvents.length ? mergedEvents.map(ev => `
       <div class="p-2 panel-soft"><div class="text-sm font-semibold truncate">${ev.title || 'Event'}</div><div class="text-[10px] text-gray-500">${ev.date || 'TBD'} · ${ev.source || 'Campus'}</div></div>
     `).join('') : '<div class="text-xs text-gray-500">No interesting events yet.</div>';
+
+    loadApplyQueue();
+    loadAnswerMemory();
   } catch {
     if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load network engine.</div>';
   }
 }
 
+
+async function loadApplyQueue() {
+  if (!applyQueue) return;
+  try {
+    const res = await fetch('/api/network/apply/queue');
+    const data = await res.json();
+    const queue = data.queue || [];
+    applyQueue.innerHTML = queue.length ? queue.slice(0, 10).map(item => `
+      <div class="p-2 panel-soft">
+        <div class="text-sm font-semibold truncate">${item.company} — ${item.title}</div>
+        <div class="text-[10px] text-gray-500">${item.location || ''}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase">${item.status || 'needs-review'} · ${item.source || 'source'}</div>
+        ${item.apply_url ? `<a class="text-[10px] text-blue-500 hover:underline" href="${item.apply_url}" target="_blank" rel="noopener">Open application</a>` : ''}
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No assisted queue yet. Click Build.</div>';
+  } catch {
+    applyQueue.innerHTML = '<div class="text-xs text-red-500">Failed to load assisted queue.</div>';
+  }
+}
+
+async function buildApplyQueue() {
+  const include = (applyInclude?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const exclude = (applyExclude?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+  await fetch('/api/network/apply/prepare', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ limit: 25, include_keywords: include, exclude_keywords: exclude }),
+  });
+  loadApplyQueue();
+}
+
+async function loadAnswerMemory() {
+  if (!answerMemoryList) return;
+  try {
+    const res = await fetch('/api/network/answer-memory');
+    const data = await res.json();
+    const entries = data.entries || [];
+    answerMemoryList.innerHTML = entries.length ? entries.slice(0, 6).map(e => `
+      <div class="p-2 panel-soft">
+        <div class="text-[11px] font-semibold uppercase text-primary">${e.question_type || 'answer'}</div>
+        <div class="text-[10px] text-gray-500 mt-1">Q: ${(e.prompt || '').slice(0, 120)}</div>
+        <div class="text-[10px] mt-1">A: ${(e.answer || '').slice(0, 180)}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No saved answer voice yet.</div>';
+  } catch {
+    answerMemoryList.innerHTML = '<div class="text-xs text-red-500">Failed to load answer memory.</div>';
+  }
+}
+
+async function saveAnswerMemory() {
+  const payload = {
+    question_type: (answerType?.value || '').trim(),
+    prompt: (answerPrompt?.value || '').trim(),
+    answer: (answerText?.value || '').trim(),
+    tags: [],
+  };
+  if (!payload.question_type || !payload.prompt || !payload.answer) return;
+  await fetch('/api/network/answer-memory', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  if (answerType) answerType.value = '';
+  if (answerPrompt) answerPrompt.value = '';
+  if (answerText) answerText.value = '';
+  loadAnswerMemory();
+}
 
 async function loadGithub() {
   if (!githubList) return;
