@@ -174,13 +174,25 @@
 
         <div id="section-chat" class="section-content hidden max-w-7xl mx-auto space-y-4 h-[calc(100vh-9rem)]">
           <div class="grid grid-cols-1 gap-4 h-full">
-            <div class="rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0">
-              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex items-center justify-between">
-                <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
+            <div class="rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0 overflow-hidden">
+              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-surface-light dark:bg-surface-dark">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white"><span class="material-icons text-sm">smart_toy</span></div>
+                  <div>
+                    <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
+                    <div class="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Chat • Online</div>
+                  </div>
+                </div>
                 <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
               </div>
-              <div id="chat-history" class="flex-1 overflow-y-auto px-4 py-6 space-y-5"></div>
-              <div class="border-t border-border-light dark:border-border-dark p-3 bg-white/80 dark:bg-background-dark/80 backdrop-blur">
+
+              <div id="chat-history" class="flex-1 overflow-y-auto px-4 md:px-8 lg:px-14 py-6 space-y-6"></div>
+
+              <div class="border-t border-border-light dark:border-border-dark p-3 md:p-4 bg-white/90 dark:bg-background-dark/90 backdrop-blur">
+                <div class="flex gap-2 mb-2 overflow-x-auto">
+                  <button onclick="msgInput.value='Debug this and suggest fixes';sendChat()" class="px-3 py-1 rounded-full text-[11px] panel-soft whitespace-nowrap">Debug this</button>
+                  <button onclick="msgInput.value='Optimize this implementation';sendChat()" class="px-3 py-1 rounded-full text-[11px] panel-soft whitespace-nowrap">Optimize</button>
+                </div>
                 <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
                   <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3 pl-4 pr-14"/>
                   <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
@@ -393,22 +405,22 @@ function escapeHtml(input) {
 function appendMessage(role, text) {
   if (!chatHistory) return;
   const isUser = role === 'user';
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const row = document.createElement('div');
-  row.className = `flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+  row.className = `flex gap-4 group ${isUser ? 'flex-row-reverse' : ''}`;
   const avatarClass = isUser
-    ? 'w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-[10px] font-bold shrink-0'
-    : 'w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0';
+    ? 'w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-[10px] font-bold shrink-0'
+    : 'w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-md shadow-primary/20';
   const bubbleClass = isUser
-    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed'
-    : 'px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed';
+    ? 'px-5 py-3.5 rounded-2xl rounded-tr-sm bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm md:text-base leading-relaxed'
+    : 'px-5 py-3.5 rounded-2xl rounded-tl-sm bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm md:text-base leading-relaxed';
   row.innerHTML = `
     <div class="${avatarClass}">
-      ${isUser ? 'YOU' : '<span class="material-icons text-sm">smart_toy</span>'}
+      ${isUser ? 'YOU' : '<span class="material-icons text-sm md:text-base">smart_toy</span>'}
     </div>
-    <div class="max-w-[85%] ${isUser ? 'items-end' : 'items-start'} flex flex-col">
-      <div class="${bubbleClass}">
-        ${escapeHtml(text).replace(/\n/g,'<br>')}
-      </div>
+    <div class="max-w-[90%] md:max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col">
+      <div class="${bubbleClass}">${escapeHtml(text).replace(/\n/g,'<br>')}</div>
+      <span class="text-[10px] text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">${now}</span>
     </div>
   `;
   chatHistory.appendChild(row);
