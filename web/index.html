@@ -292,7 +292,10 @@
       <div class="p-6 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Agent Inbox</h3>
-          <button onclick="loadAgentInbox()" class="text-[10px] text-primary hover:underline">Refresh</button>
+          <div class="flex items-center gap-2">
+            <button onclick="toggleAgentInbox()" id="agent-inbox-toggle" class="text-[10px] text-gray-500 hover:text-primary">Hide</button>
+            <button onclick="loadAgentInbox()" class="text-[10px] text-primary hover:underline">Refresh</button>
+          </div>
         </div>
         <div id="agent-inbox" class="space-y-2"></div>
       </div>
@@ -344,6 +347,7 @@ const jobhubRoles = document.getElementById('jobhub-roles');
 const jobhubApps = document.getElementById('jobhub-apps');
 const jobhubOutreach = document.getElementById('jobhub-outreach');
 const agentInbox = document.getElementById('agent-inbox');
+const agentInboxToggle = document.getElementById('agent-inbox-toggle');
 let activeSessionId = null;
 
 function applyTheme(mode) {
@@ -499,8 +503,8 @@ function renderCalendarGrid() {
   for (const r of calendarRows) {
     const iso = toIsoDate(r.date);
     if (!iso) continue;
-    byDate[iso] = byDate[iso] || { deadline: 0, event: 0 };
-    byDate[iso][r.type === 'deadline' ? 'deadline' : 'event'] += 1;
+    byDate[iso] = byDate[iso] || [];
+    byDate[iso].push(r);
   }
 
   const cells = [];
@@ -511,16 +515,16 @@ function renderCalendarGrid() {
   const todayIso = new Date().toISOString().slice(0, 10);
   for (let d = 1; d <= daysInMonth; d++) {
     const iso = new Date(y, m, d).toISOString().slice(0, 10);
-    const counts = byDate[iso] || { deadline: 0, event: 0 };
+    const items = byDate[iso] || [];
     const isToday = iso === todayIso;
-    const total = counts.deadline + counts.event;
+    const names = items.slice(0, 2).map(it => it.title || 'Untitled');
+    const moreCount = items.length - names.length;
     cells.push(`
       <div class="panel-soft min-h-[86px] p-2 ${isToday ? 'ring-1 ring-primary' : ''}">
         <div class="text-xs font-semibold ${isToday ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}">${d}</div>
         <div class="mt-2 space-y-1">
-          ${counts.deadline ? `<div class="text-[10px] px-1 py-0.5 rounded badge-warn">${counts.deadline} deadline</div>` : ''}
-          ${counts.event ? `<div class="text-[10px] px-1 py-0.5 rounded border border-blue-500/20 text-blue-400">${counts.event} event</div>` : ''}
-          ${!total ? '<div class="text-[10px] text-gray-500">—</div>' : ''}
+          ${names.length ? names.map(n => `<div class="text-[10px] px-1 py-0.5 rounded border border-blue-500/20 text-blue-400 truncate" title="${n}">${n}</div>`).join('') : '<div class="text-[10px] text-gray-500">—</div>'}
+          ${moreCount > 0 ? `<div class="text-[10px] text-gray-500">+${moreCount} more</div>` : ''}
         </div>
       </div>
     `);
@@ -772,8 +776,20 @@ async function loadGithub() {
   }
 }
 
-async function loadAgentInbox() {
+function setAgentInboxCollapsed(collapsed) {
   if (!agentInbox) return;
+  agentInbox.classList.toggle('hidden', collapsed);
+  if (agentInboxToggle) agentInboxToggle.textContent = collapsed ? 'Show' : 'Hide';
+  localStorage.setItem('mustang_agent_inbox_collapsed', collapsed ? '1' : '0');
+}
+
+function toggleAgentInbox() {
+  const collapsed = !agentInbox?.classList.contains('hidden');
+  setAgentInboxCollapsed(collapsed);
+}
+
+async function loadAgentInbox() {
+  if (!agentInbox || agentInbox.classList.contains('hidden')) return;
   agentInbox.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
   try {
     const res = await fetch('/api/agents/inbox');
@@ -867,6 +883,7 @@ msgInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && !e.shiftKe
 applyTheme(localStorage.getItem('mustang_theme') || 'dark');
 const initialSection = (window.location.hash || '').replace('#', '') || localStorage.getItem('mustang_active_section') || 'coding';
 showSection(initialSection);
+setAgentInboxCollapsed(localStorage.getItem('mustang_agent_inbox_collapsed') === '1');
 loadUsageSummary();
 loadAgentInbox();
 setInterval(() => {
