@@ -106,45 +106,51 @@
             <button onclick="runJob('sync_github')" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Sync GitHub</button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
+              <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="relative w-14 h-14 flex items-center justify-center">
                 <svg class="transform -rotate-90 w-14 h-14">
                   <circle class="text-gray-200 dark:text-gray-700" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-width="4"></circle>
                   <circle id="cpu-ring" class="text-blue-500" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-width="4"></circle>
                 </svg>
-                <span id="cpu-pct" class="absolute text-xs font-bold text-gray-900 dark:text-white">0%</span>
+                <span id="cpu-pct" class="absolute text-xs font-bold text-gray-900 dark:text-white">--</span>
               </div>
               <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">CPU Load</p>
-                <p id="cpu-detail" class="text-sm font-mono text-gray-700 dark:text-gray-300">--</p>
+                <p id="cpu-detail" class="text-sm font-mono text-gray-700 dark:text-gray-300">Loading…</p>
+                <span id="cpu-status" class="text-xs text-success flex items-center mt-1"><span class="material-icons text-[10px] mr-1">arrow_downward</span> Stable</span>
               </div>
             </div>
 
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4">
+            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
+              <div class="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="relative w-14 h-14 flex items-center justify-center">
                 <svg class="transform -rotate-90 w-14 h-14">
                   <circle class="text-gray-200 dark:text-gray-700" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-width="4"></circle>
                   <circle id="mem-ring" class="text-purple-500" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-width="4"></circle>
                 </svg>
-                <span id="mem-pct" class="absolute text-xs font-bold text-gray-900 dark:text-white">0%</span>
+                <span id="mem-pct" class="absolute text-xs font-bold text-gray-900 dark:text-white">--</span>
               </div>
               <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Memory</p>
-                <p id="mem-detail" class="text-sm font-mono text-gray-700 dark:text-gray-300">--</p>
+                <p id="mem-detail" class="text-sm font-mono text-gray-700 dark:text-gray-300">Loading…</p>
+                <span id="mem-status" class="text-xs text-yellow-500 flex items-center mt-1"><span class="material-icons text-[10px] mr-1">trending_up</span> Monitoring</span>
               </div>
             </div>
 
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4">
+            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
+              <div class="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 text-green-500">
                 <span id="node-value" class="font-bold text-sm">--</span>
               </div>
               <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Active Node.js</p>
-                <p id="node-detail" class="text-sm font-mono text-gray-700 dark:text-gray-300">--</p>
+                <p id="node-detail" class="text-sm font-mono text-gray-700 dark:text-gray-300">Loading…</p>
+                <div class="flex space-x-2 mt-1"><span class="w-2 h-2 rounded-full bg-green-500 shadow-glow-success animate-pulse"></span><span id="node-status" class="text-xs text-gray-500">Ecosystem Healthy</span></div>
               </div>
             </div>
-          </div>
+          </div></div>
 
           <div class="space-y-4">
             <div class="flex justify-between items-end mb-2">
@@ -214,6 +220,9 @@ const cpuDetail = document.getElementById('cpu-detail');
 const memDetail = document.getElementById('mem-detail');
 const nodeValue = document.getElementById('node-value');
 const nodeDetail = document.getElementById('node-detail');
+const cpuStatus = document.getElementById('cpu-status');
+const memStatus = document.getElementById('mem-status');
+const nodeStatus = document.getElementById('node-status');
 let activeSessionId = null;
 
 function applyTheme(mode) {
@@ -361,17 +370,38 @@ function setRing(el, pct) {
 async function loadSystemStats() {
   try {
     const res = await fetch('/api/system/stats');
+    if (!res.ok) throw new Error('stats endpoint unavailable');
     const s = await res.json();
-    cpuPct.textContent = `${Math.round(s.cpu.percent || 0)}%`;
-    memPct.textContent = `${Math.round(s.memory.percent || 0)}%`;
-    cpuDetail.textContent = s.cpu.detail || '--';
-    memDetail.textContent = s.memory.detail || '--';
-    nodeValue.textContent = (s.system.value || '--').replace('v','');
-    nodeDetail.textContent = s.system.detail || '--';
-    setRing(cpuRing, s.cpu.percent || 0);
-    setRing(memRing, s.memory.percent || 0);
+    const cpu = Number(s?.cpu?.percent || 0);
+    const mem = Number(s?.memory?.percent || 0);
+
+    cpuPct.textContent = `${Math.round(cpu)}%`;
+    memPct.textContent = `${Math.round(mem)}%`;
+    cpuDetail.textContent = s?.cpu?.detail || '--';
+    memDetail.textContent = s?.memory?.detail || '--';
+    nodeValue.textContent = (s?.system?.value || '--').replace('v','');
+    nodeDetail.textContent = s?.system?.detail || '--';
+
+    cpuStatus.innerHTML = cpu > 75
+      ? '<span class="material-icons text-[10px] mr-1">trending_up</span> High load'
+      : '<span class="material-icons text-[10px] mr-1">arrow_downward</span> Stable';
+    cpuStatus.className = `text-xs flex items-center mt-1 ${cpu > 75 ? 'text-yellow-500' : 'text-success'}`;
+
+    memStatus.innerHTML = mem > 80
+      ? '<span class="material-icons text-[10px] mr-1">warning</span> Near limit'
+      : '<span class="material-icons text-[10px] mr-1">check_circle</span> Healthy';
+    memStatus.className = `text-xs flex items-center mt-1 ${mem > 80 ? 'text-orange-400' : 'text-success'}`;
+
+    nodeStatus.textContent = 'Ecosystem Healthy';
+    setRing(cpuRing, cpu);
+    setRing(memRing, mem);
   } catch {
-    // ignore
+    cpuPct.textContent = '--';
+    memPct.textContent = '--';
+    cpuDetail.textContent = 'Restart server to load stats';
+    memDetail.textContent = 'Restart server to load stats';
+    nodeValue.textContent = '--';
+    nodeDetail.textContent = 'API unavailable';
   }
 }
 
