@@ -1,70 +1,585 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mustang Ops</title>
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Mustang Ops | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b6cee",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-dark": "#1a202c",
+                        "border-dark": "#2d3748",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
     <style>
-      body { font-family: Inter, Arial, sans-serif; margin: 24px; background:#0b1020; color:#e5e7eb; }
-      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      .card { background:#121a31; border:1px solid #233056; border-radius:14px; padding:16px; }
-      button { background:#2563eb; color:white; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; margin-right:8px; }
-      textarea,input { width:100%; background:#0f172a; color:#e5e7eb; border:1px solid #334155; border-radius:8px; padding:8px; }
-      pre { white-space: pre-wrap; word-break: break-word; background:#0f172a; padding:10px; border-radius:8px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #101622; }
+        ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4a5568; }
+        .message-stream { scroll-behavior: smooth; }
     </style>
-  </head>
-  <body>
-    <h1>Mustang Ops Dashboard</h1>
-    <div class="grid">
-      <div class="card">
-        <h3>Mustang Context</h3>
-        <button onclick="loadContext()">Refresh Context</button>
-        <pre id="context">Loading...</pre>
-      </div>
-      <div class="card">
-        <h3>Chat Command Center</h3>
-        <input id="msg" placeholder="Ask OpenClaw..." />
-        <button onclick="sendChat()">Send</button>
-        <pre id="reply"></pre>
-      </div>
-      <div class="card">
-        <h3>Jobs</h3>
-        <button onclick="runJob('sync_canvas')">sync_canvas</button>
-        <button onclick="runJob('morning_brief')">morning_brief</button>
-        <button onclick="runJob('linkedin_scout')">linkedin_scout</button>
-        <button onclick="runJob('token_sync')">token_sync</button>
-        <pre id="jobOut"></pre>
-      </div>
-      <div class="card">
-        <h3>Source of Truth Path</h3>
-        <p>/home/ubuntu/mustang-ops/data/mustang_context.json</p>
-        <p style="opacity:.8">(Falls back to local repo data path if missing)</p>
-      </div>
-    </div>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display overflow-hidden h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-background-light dark:bg-[#111318] border-r border-slate-200 dark:border-border-dark flex flex-col justify-between shrink-0 h-full">
+        <div class="p-4 flex flex-col gap-6">
+            <div class="flex gap-3 items-center">
+                <div class="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 shadow-lg shadow-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBnIugPrZCgHxprIYJobQ98c4ggSY7gGYlDaAdbDy_Dgh-ioLtgTIyoRY0ZRc7HhmIVcrbD41-dNSDxsD-yKVAEJJoLySdQzK1hxD7DedV19sAVjfpUXtCBwKhvgZqbjBJPwiF5RIaGeCX0oCBGB6OBhkJdr8Ccz2TUUVVvXVQqnDUEmAlWkcv6g8czrNtoIqwMASDo3FAdHYVv6oezdoxKzvOLPgnrRvFEAY6vg8QJL3I3XxFZTj4zzz5YgZQnfPOcfuKF3fMh0zNr");'></div>
+                <div class="flex flex-col">
+                    <h1 class="text-slate-900 dark:text-white text-base font-bold leading-normal tracking-wide">Mustang Ops</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-xs font-mono">v2.4.0 <span id="system-status" class="text-emerald-500">• Online</span></p>
+                </div>
+            </div>
+            <nav id="sidebar-nav" class="flex flex-col gap-2">
+                <a id="nav-chat" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20" href="#" onclick="showSection('chat')">
+                    <span class="material-symbols-outlined text-xl">chat</span>
+                    <span class="text-sm font-semibold">Chat</span>
+                </a>
+                <a id="nav-calendar" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('calendar')">
+                    <span class="material-symbols-outlined text-xl">calendar_month</span>
+                    <span class="text-sm font-medium">Calendar</span>
+                </a>
+                <a id="nav-network" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('network')">
+                    <span class="material-symbols-outlined text-xl">hub</span>
+                    <span class="text-sm font-medium">Network</span>
+                </a>
+                <a id="nav-coding" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('coding')">
+                    <span class="material-symbols-outlined text-xl">code</span>
+                    <span class="text-sm font-medium">Coding</span>
+                </a>
+                <a id="nav-skills" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('skills')">
+                    <span class="material-symbols-outlined text-xl">workspace_premium</span>
+                    <span class="text-sm font-medium">Skills</span>
+                </a>
+                <a id="nav-cron" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('cron')">
+                    <span class="material-symbols-outlined text-xl">schedule</span>
+                    <span class="text-sm font-medium">Cron</span>
+                </a>
+            </nav>
+            <div class="pt-4 border-t border-slate-200 dark:border-border-dark flex flex-col gap-2">
+                <p class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">System</p>
+                <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="runJob('token_sync')">
+                    <span class="material-symbols-outlined text-lg">sync</span>
+                    <span class="text-sm font-medium">Token Sync</span>
+                </a>
+            </div>
+        </div>
+        <div class="p-4 border-t border-slate-200 dark:border-border-dark">
+            <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-200 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
+                <span class="material-symbols-outlined text-lg">logout</span> Disconnect
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark relative">
+        <header class="h-16 shrink-0 border-b border-slate-200 dark:border-border-dark flex items-center justify-between px-6 bg-background-light dark:bg-background-dark z-20">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 text-slate-900 dark:text-white">
+                    <span class="material-symbols-outlined text-primary">grid_view</span>
+                    <h2 class="text-lg font-bold leading-tight">Command Center</h2>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden lg:flex items-center gap-2 bg-slate-100 dark:bg-[#1c1f27] rounded-lg p-1 pr-3">
+                    <div class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-500 text-xs font-bold border border-emerald-500/20">LIVE</div>
+                    <span class="text-xs font-mono text-slate-500 dark:text-slate-400">Node: v20.x</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="h-12 shrink-0 border-b border-slate-200 dark:border-border-dark flex items-center px-6 overflow-x-auto gap-3 bg-slate-50 dark:bg-[#161b26]">
+            <div class="flex items-center gap-2 px-3 py-1 rounded bg-slate-200 dark:bg-[#282e39] border border-slate-300 dark:border-slate-700/50 shrink-0">
+                <span class="material-symbols-outlined text-emerald-400 text-sm">circle</span>
+                <span class="text-xs font-mono text-slate-700 dark:text-slate-300">OpenClaw: Active</span>
+            </div>
+            <div id="job-status-pill" class="hidden items-center gap-2 px-3 py-1 rounded bg-slate-200 dark:bg-[#282e39] border border-primary/50 shrink-0">
+                <span class="material-symbols-outlined text-primary text-sm animate-spin">sync</span>
+                <span class="text-xs font-mono text-slate-700 dark:text-slate-300" id="current-job">Running Job...</span>
+            </div>
+        </div>
+
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Sections Content -->
+            <div id="content-sections" class="flex-1 flex flex-col relative bg-background-light dark:bg-background-dark overflow-hidden">
+                <!-- Chat Interface -->
+                <div id="section-chat" class="section-content flex-1 flex flex-col overflow-hidden">
+                    <div id="chat-history" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 message-stream">
+                        <!-- AI Message -->
+                        <div class="flex gap-4 max-w-3xl">
+                            <div class="size-8 rounded-full bg-gradient-to-br from-primary to-purple-600 shrink-0 flex items-center justify-center shadow-lg shadow-primary/20">
+                                <span class="material-symbols-outlined text-white text-sm">smart_toy</span>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white">Mustang AI</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">System</span>
+                                </div>
+                                <div class="p-4 rounded-xl rounded-tl-none bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark shadow-sm text-slate-700 dark:text-slate-200 text-sm leading-relaxed">
+                                    <p>Welcome to Mustang Ops. I'm connected to OpenClaw and ready for your commands.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="p-4 pb-6 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-border-dark">
+                        <div class="max-w-4xl mx-auto flex flex-col gap-2">
+                            <div class="flex justify-between items-center px-1">
+                                <div class="flex gap-3">
+                                    <span class="text-[10px] font-bold text-primary uppercase tracking-tighter">Model: Gemini 1.5 Pro</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter" id="token-display">Tokens: 0</span>
+                                </div>
+                            </div>
+                            <div class="relative rounded-2xl bg-white dark:bg-[#1c1f27] shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus-within:ring-2 focus-within:ring-primary">
+                                <textarea id="msg" class="block w-full resize-none border-0 bg-transparent py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6" placeholder="Send a command to Mustang..." rows="3"></textarea>
+                                <div class="flex justify-between items-center py-2 px-3 pl-4">
+                                    <div class="flex gap-2 text-slate-400">
+                                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">attach_file</span></button>
+                                        <button class="hover:text-primary transition-colors" onclick="showSection('calendar')"><span class="material-symbols-outlined text-[20px]">inventory_2</span></button>
+                                    </div>
+                                    <button onclick="sendChat()" class="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 flex items-center gap-2">
+                                        Execute <span class="material-symbols-outlined text-sm">send</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar (Visual + JSON Brain) -->
+                <div id="section-calendar" class="section-content hidden flex-1 flex flex-col overflow-hidden">
+                    <header class="p-6 border-b border-slate-200 dark:border-border-dark flex justify-between items-center bg-white dark:bg-[#1c1f27]">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Mustang Intelligence</h3>
+                            <p class="text-xs text-slate-500">Events, deadlines, and neural brain state.</p>
+                        </div>
+                        <div class="flex bg-slate-100 dark:bg-[#111318] p-1 rounded-lg">
+                            <button id="tab-visual" onclick="switchCalendarMode('visual')" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-800 shadow-sm text-slate-900 dark:text-white">Visual View</button>
+                            <button id="tab-brain" onclick="switchCalendarMode('brain')" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Brain Mode</button>
+                        </div>
+                    </header>
+
+                    <div id="calendar-visual-view" class="flex-1 overflow-y-auto p-6">
+                        <div class="max-w-6xl mx-auto">
+                            <!-- Calendar Navigation -->
+                            <div class="flex justify-between items-center mb-6">
+                                <h4 id="current-month-display" class="text-lg font-bold">March 2026</h4>
+                                <div class="flex gap-2">
+                                    <button class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+                                    <button class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-bold">Today</button>
+                                    <button class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+                                </div>
+                            </div>
+
+                            <!-- Calendar Grid -->
+                            <div class="bg-white dark:bg-[#1c1f27] rounded-2xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
+                                <div class="grid grid-cols-7 border-b border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318]">
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sun</div>
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mon</div>
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tue</div>
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wed</div>
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thu</div>
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fri</div>
+                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sat</div>
+                                </div>
+                                <div id="calendar-grid" class="grid grid-cols-7 auto-rows-[120px]">
+                                    <!-- Days will be injected here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="calendar-brain-view" class="hidden flex-1 overflow-y-auto p-6 bg-slate-900">
+                        <div class="max-w-5xl mx-auto">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-xs font-mono text-emerald-500">mustang_context.json</span>
+                                <button onclick="loadContext()" class="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] uppercase font-bold tracking-tighter">
+                                    <span class="material-symbols-outlined text-xs">refresh</span> Sync Raw
+                                </button>
+                            </div>
+                            <textarea id="context-editor" class="w-full h-[600px] bg-transparent text-emerald-400 font-mono text-xs p-0 outline-none resize-none" spellcheck="false"></textarea>
+                            <div class="mt-4 flex justify-end">
+                                <button class="px-6 py-2 rounded-lg bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-blue-600">Update Brain</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network (Outreach) -->
+                <div id="section-network" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
+                    <div class="max-w-5xl mx-auto w-full">
+                        <h3 class="text-2xl font-bold mb-6">Intelligence & Outreach</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-2 space-y-6">
+                                <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Outreach Queue</h4>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase">4 Active</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-[#111318] border border-slate-200 dark:border-slate-700/50">
+                                            <div class="flex items-center gap-4">
+                                                <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                                                <div>
+                                                    <p class="text-sm font-bold">Sarah Jenkins</p>
+                                                    <p class="text-xs text-slate-500 italic line-clamp-1">"Looking for AI specialized growth..."</p>
+                                                </div>
+                                            </div>
+                                            <button class="text-[10px] font-bold text-primary px-3 py-1.5 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors">Draft</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-6">
+                                <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
+                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Hiring Signals</h4>
+                                    <div class="space-y-4">
+                                        <div class="flex items-start gap-3">
+                                            <span class="material-symbols-outlined text-green-400 text-lg">trending_up</span>
+                                            <div>
+                                                <p class="text-xs font-bold">Series A: TechCorp</p>
+                                                <p class="text-[10px] text-slate-500">2h ago • 84% Match</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coding (Build & Ship) -->
+                <div id="section-coding" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
+                    <div class="max-w-5xl mx-auto w-full">
+                        <h3 class="text-2xl font-bold mb-6">Build & Ship</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
+                                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Infrastructure</h4>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <span class="text-slate-500">Node Engine</span>
+                                        <span class="font-mono text-primary">v20.11.0</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-xs">
+                                        <span class="text-slate-500">Process Latency</span>
+                                        <span class="font-mono text-emerald-500">0.02ms</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
+                                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Mistake Tracker</h4>
+                                <div class="p-4 rounded-lg bg-orange-400/5 border border-orange-400/10 space-y-3">
+                                    <p class="text-[10px] text-orange-400 font-bold uppercase">Repeated Issues</p>
+                                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">• Forgetting `await` on context writer calls.</p>
+                                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">• Sidebar width clipping on viewport < 1024px.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div id="section-skills" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
+                    <div class="max-w-5xl mx-auto w-full">
+                        <h3 class="text-2xl font-bold mb-6">Skill Inventory</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-white dark:bg-[#1c1f27] p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col items-center text-center group hover:border-primary transition-all shadow-sm">
+                                <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+                                    <span class="material-symbols-outlined text-2xl">code</span>
+                                </div>
+                                <h4 class="text-sm font-bold mb-1">Coder</h4>
+                                <p class="text-[10px] text-slate-500">v1.2.4 • Active</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cron -->
+                <div id="section-cron" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
+                    <div class="max-w-5xl mx-auto w-full">
+                        <div class="flex justify-between items-end mb-6">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-900 dark:text-white leading-tight">Heartbeat & Cron</h3>
+                                <p class="text-sm text-slate-500">Automated synchronization and scout frequency.</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-[#1c1f27] rounded-2xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 dark:bg-[#111318] border-b border-slate-200 dark:border-border-dark text-slate-500">
+                                    <tr>
+                                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Job Identifier</th>
+                                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Frequency</th>
+                                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Health</th>
+                                        <th class="px-6 py-4"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 dark:divide-border-dark">
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td class="px-6 py-4 font-mono text-xs">sync_canvas</td>
+                                        <td class="px-6 py-4 text-xs font-medium">6 Hours</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
+                                        <td class="px-6 py-4 text-right"><button onclick="runJob('sync_canvas')" class="text-[10px] font-bold text-primary hover:underline">RE-SYNC</button></td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td class="px-6 py-4 font-mono text-xs">morning_brief</td>
+                                        <td class="px-6 py-4 text-xs font-medium">Daily @ 8am</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
+                                        <td class="px-6 py-4 text-right"><button onclick="runJob('morning_brief')" class="text-[10px] font-bold text-primary hover:underline">RUN NOW</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Side Panel (Signals) -->
+            <aside id="side-panel" class="w-80 border-l border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] shrink-0 hidden xl:flex flex-col overflow-y-auto p-6 gap-8">
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Neural Activity</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark rounded-xl shadow-sm">
+                            <p class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Latency Heartbeat</p>
+                            <div class="flex items-center gap-3">
+                                <div class="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary w-[12%] animate-pulse"></div>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold text-primary">12ms</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Recent Findings</h3>
+                    <div id="mini-signals" class="space-y-3">
+                        <div class="p-3 bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark rounded-xl shadow-sm group cursor-pointer hover:border-primary transition-colors">
+                            <p class="text-[10px] font-bold text-slate-900 dark:text-white mb-1">Canvas Sync</p>
+                            <p class="text-[10px] text-slate-500 line-clamp-1">Detected priority shift in Q1 goals.</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
 
     <script>
-      async function loadContext() {
-        const res = await fetch('/api/context');
-        const data = await res.json();
-        document.getElementById('context').textContent = JSON.stringify(data, null, 2);
-      }
-      async function sendChat() {
-        const message = document.getElementById('msg').value.trim();
-        if (!message) return;
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
+        const chatHistory = document.getElementById('chat-history');
+        const contextDisplay = document.getElementById('context');
+        const contextEditor = document.getElementById('context-editor');
+        const msgInput = document.getElementById('msg');
+        const jobStatusPill = document.getElementById('job-status-pill');
+        const currentJobTitle = document.getElementById('current-job');
+
+        function showSection(sectionId) {
+            // Update Active Link State
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                link.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+            const activeLink = document.getElementById(`nav-${sectionId}`);
+            if (activeLink) {
+                activeLink.classList.remove('text-slate-600', 'dark:text-slate-400');
+                activeLink.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+            }
+
+            // Show Section Content
+            document.querySelectorAll('.section-content').forEach(section => section.classList.add('hidden'));
+            const activeSection = document.getElementById(`section-${sectionId}`);
+            if (activeSection) {
+                activeSection.classList.remove('hidden');
+            }
+        }
+
+        function switchCalendarMode(mode) {
+            const visualTab = document.getElementById('tab-visual');
+            const brainTab = document.getElementById('tab-brain');
+            const visualView = document.getElementById('calendar-visual-view');
+            const brainView = document.getElementById('calendar-brain-view');
+
+            if (mode === 'visual') {
+                visualTab.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
+                visualTab.classList.remove('text-slate-500');
+                brainTab.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
+                brainTab.classList.add('text-slate-500');
+                visualView.classList.remove('hidden');
+                brainView.classList.add('hidden');
+            } else {
+                brainTab.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
+                brainTab.classList.remove('text-slate-500');
+                visualTab.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
+                visualTab.classList.add('text-slate-500');
+                brainView.classList.remove('hidden');
+                visualView.classList.add('hidden');
+            }
+        }
+
+        function renderCalendar(context) {
+            const grid = document.getElementById('calendar-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const date = new Date(2026, 2, 1); // March 2026
+            const firstDay = date.getDay();
+            const daysInMonth = new Date(2026, 3, 0).getDate();
+
+            // Padding for previous month
+            for (let i = 0; i < firstDay; i++) {
+                const day = document.createElement('div');
+                day.className = 'border-r border-b border-slate-200 dark:border-border-dark bg-slate-50/50 dark:bg-[#111318]/50';
+                grid.appendChild(day);
+            }
+
+            // Current month days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const isToday = i === 2; // Assuming March 2nd
+                const day = document.createElement('div');
+                day.className = `border-r border-b border-slate-200 dark:border-border-dark p-2 flex flex-col gap-1 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors ${isToday ? 'bg-primary/5' : ''}`;
+                
+                day.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold ${isToday ? 'text-primary' : 'text-slate-500'}">${i}</span>
+                        ${isToday ? '<span class="size-1.5 rounded-full bg-primary animate-ping"></span>' : ''}
+                    </div>
+                `;
+
+                // Add events/deadlines from context
+                const dateStr = `2026-03-${i < 10 ? '0' + i : i}`;
+                
+                if (context && context.deadlines) {
+                    context.deadlines.forEach(dl => {
+                        if (dl.date === dateStr) {
+                            const pill = document.createElement('div');
+                            pill.className = 'px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-[9px] font-bold text-red-500 truncate';
+                            pill.textContent = dl.task;
+                            day.appendChild(pill);
+                        }
+                    });
+                }
+
+                if (context && context.events) {
+                    context.events.forEach(ev => {
+                        if (ev.date === dateStr) {
+                            const pill = document.createElement('div');
+                            pill.className = 'px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold text-blue-500 truncate';
+                            pill.textContent = ev.title;
+                            day.appendChild(pill);
+                        }
+                    });
+                }
+
+                grid.appendChild(day);
+            }
+        }
+
+        function appendMessage(role, text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex gap-4 max-w-3xl ${role === 'user' ? 'self-end flex-row-reverse' : ''}`;
+            
+            const icon = role === 'user' 
+                ? `<div class="bg-slate-500 rounded-full size-8 shrink-0 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm">person</span></div>`
+                : `<div class="size-8 rounded-full bg-gradient-to-br from-primary to-purple-600 shrink-0 flex items-center justify-center shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-white text-sm">smart_toy</span></div>`;
+
+            const contentClass = role === 'user'
+                ? `p-4 rounded-xl rounded-tr-none bg-primary/10 border border-primary/20 text-slate-900 dark:text-slate-100 text-sm leading-relaxed shadow-sm`
+                : `p-4 rounded-xl rounded-tl-none bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark shadow-sm text-slate-700 dark:text-slate-200 text-sm leading-relaxed`;
+
+            wrapper.innerHTML = `
+                ${icon}
+                <div class="flex flex-col gap-2 ${role === 'user' ? 'items-end' : ''}">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">${role === 'user' ? 'Admin' : 'Mustang AI'}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <div class="${contentClass}">
+                        <p>${text.replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>
+            `;
+            chatHistory.appendChild(wrapper);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        async function loadContext() {
+            if (contextDisplay) contextDisplay.textContent = 'Fetching context...';
+            if (contextEditor) contextEditor.value = 'Fetching context...';
+            try {
+                const res = await fetch('/api/context');
+                const data = await res.json();
+                const jsonStr = JSON.stringify(data, null, 2);
+                if (contextDisplay) contextDisplay.textContent = jsonStr;
+                if (contextEditor) contextEditor.value = jsonStr;
+                renderCalendar(data);
+            } catch (e) {
+                if (contextDisplay) contextDisplay.textContent = 'Error loading context.';
+            }
+        }
+
+        async function sendChat() {
+            const message = msgInput.value.trim();
+            if (!message) return;
+            
+            appendMessage('user', message);
+            msgInput.value = '';
+            
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                appendMessage('ai', data.reply || "No response received.");
+            } catch (e) {
+                appendMessage('ai', "Error connecting to OpenClaw.");
+            }
+        }
+
+        async function runJob(name) {
+            jobStatusPill.classList.remove('hidden');
+            jobStatusPill.classList.add('flex');
+            currentJobTitle.textContent = `Running ${name}...`;
+            
+            try {
+                const res = await fetch('/api/run/' + name, { method: 'POST' });
+                const data = await res.json();
+                appendMessage('ai', `Job **${name}** completed with exit code ${data.exit_code}.`);
+            } catch (e) {
+                appendMessage('ai', `Failed to run job **${name}**.`);
+            } finally {
+                setTimeout(() => {
+                    jobStatusPill.classList.remove('flex');
+                    jobStatusPill.classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        msgInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChat();
+            }
         });
-        const data = await res.json();
-        document.getElementById('reply').textContent = data.reply || JSON.stringify(data, null, 2);
-      }
-      async function runJob(name) {
-        const res = await fetch('/api/run/' + name, { method: 'POST' });
-        const data = await res.json();
-        document.getElementById('jobOut').textContent = JSON.stringify(data, null, 2);
-      }
-      loadContext();
+
+        // Initialize state
+        showSection('chat');
+        loadContext();
     </script>
-  </body>
+</body>
 </html>
