@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -135,6 +136,60 @@ def _sum_events(events: list[dict]) -> dict:
     }
 
 
+def _read_meminfo_kb() -> tuple[int, int]:
+    total = 0
+    available = 0
+    try:
+        with open("/proc/meminfo", "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    total = int(line.split()[1])
+                elif line.startswith("MemAvailable:"):
+                    available = int(line.split()[1])
+    except Exception:
+        pass
+    return total, available
+
+
+def _node_version() -> str:
+    try:
+        out = subprocess.run(["node", "-v"], capture_output=True, text=True, timeout=2)
+        if out.returncode == 0:
+            return out.stdout.strip()
+    except Exception:
+        pass
+    return "unknown"
+
+
+def _system_stats() -> dict:
+    load1 = os.getloadavg()[0] if hasattr(os, "getloadavg") else 0.0
+
+    mem_total_kb, mem_avail_kb = _read_meminfo_kb()
+    mem_used_kb = max(mem_total_kb - mem_avail_kb, 0)
+    mem_pct = (mem_used_kb / mem_total_kb * 100) if mem_total_kb else 0
+
+    du = shutil.disk_usage("/")
+    disk_pct = (du.used / du.total * 100) if du.total else 0
+
+    return {
+        "cpu": {
+            "label": "CPU Load",
+            "percent": round(min(100.0, max(0.0, (load1 / max(os.cpu_count() or 1, 1)) * 100)), 1),
+            "detail": f"{(os.cpu_count() or 1)} cores · load1 {load1:.2f}",
+        },
+        "memory": {
+            "label": "Memory",
+            "percent": round(mem_pct, 1),
+            "detail": f"{mem_used_kb/1024/1024:.1f}GB / {mem_total_kb/1024/1024:.1f}GB" if mem_total_kb else "n/a",
+        },
+        "system": {
+            "label": "Active Node.js",
+            "value": _node_version(),
+            "detail": f"Disk {du.used/1024/1024/1024:.1f}GB / {du.total/1024/1024/1024:.1f}GB ({disk_pct:.0f}%)",
+        },
+    }
+
+
 @app.get("/")
 def home():
     return FileResponse(ROOT / "web" / "index.html")
@@ -162,6 +217,11 @@ def get_github_snapshot():
     if not p.exists():
         return {"updated_at": None, "repos": []}
     return json.loads(p.read_text())
+
+
+@app.get("/api/system/stats")
+def system_stats():
+    return _system_stats()
 
 
 @app.get("/api/usage/summary")
