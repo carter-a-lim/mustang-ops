@@ -43,7 +43,7 @@
     .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4,0,0.6,1) infinite; }
   </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex dark">
+<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex">
   <aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] relative z-20">
     <div class="p-6 flex items-center space-x-3">
       <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-glow relative overflow-hidden">
@@ -91,7 +91,12 @@
     <section class="flex-1 flex flex-col overflow-hidden">
       <header class="flex-shrink-0 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] h-16 flex items-center justify-between px-6 z-10">
         <div class="flex items-center space-x-4"><span class="material-icons text-primary text-2xl">dashboard</span><h2 class="text-lg font-semibold text-gray-900 dark:text-white">Command Center</h2></div>
-        <div id="job-status-pill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark"><span class="w-2 h-2 rounded-full bg-success animate-pulse"></span><span id="current-job" class="text-xs font-medium">Running…</span></div>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleTheme()" class="p-2 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-surface-dark rounded-md transition-colors" title="Toggle light/dark">
+            <span id="theme-icon" class="material-icons">dark_mode</span>
+          </button>
+          <div id="job-status-pill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark"><span class="w-2 h-2 rounded-full bg-success animate-pulse"></span><span id="current-job" class="text-xs font-medium">Running…</span></div>
+        </div>
       </header>
 
       <div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6">
@@ -150,20 +155,28 @@
           </div>
         </div>
 
-        <div id="section-chat" class="section-content hidden max-w-7xl mx-auto space-y-4">
-          <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Chat</h1>
-            <button onclick="createSession()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">+ New Session</button>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="md:col-span-1 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-3">
-              <h3 class="text-xs font-bold uppercase text-gray-500 mb-2">Sessions</h3>
-              <div id="chat-sessions" class="space-y-2"></div>
+        <div id="section-chat" class="section-content hidden max-w-7xl mx-auto space-y-4 h-[calc(100vh-9rem)]">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
+            <div class="md:col-span-1 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0f1623] p-3 flex flex-col min-h-0">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-bold uppercase text-gray-500 mb-2">Sessions</h3>
+                <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
+              </div>
+              <div id="chat-sessions" class="space-y-2 overflow-y-auto"></div>
             </div>
-            <div class="md:col-span-3 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-3 flex flex-col">
-              <div id="active-session-title" class="text-sm font-semibold mb-2">No session selected</div>
-              <div id="chat-history" class="space-y-3 min-h-[320px] max-h-[420px] overflow-y-auto"></div>
-              <div class="flex gap-2 mt-3"><input id="msg" placeholder="Message current session..." class="flex-1 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#0f111a]"/><button onclick="sendChat()" class="px-4 rounded-lg bg-primary text-white">Send</button></div>
+            <div class="md:col-span-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0">
+              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
+              </div>
+              <div id="chat-history" class="flex-1 overflow-y-auto px-4 py-6 space-y-5"></div>
+              <div class="border-t border-border-light dark:border-border-dark p-3 bg-white/80 dark:bg-background-dark/80 backdrop-blur">
+                <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
+                  <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3 pl-4 pr-14"/>
+                  <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
+                    <span class="material-icons text-base">send</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -203,6 +216,21 @@ const nodeValue = document.getElementById('node-value');
 const nodeDetail = document.getElementById('node-detail');
 let activeSessionId = null;
 
+function applyTheme(mode) {
+  const root = document.documentElement;
+  const dark = mode === 'dark';
+  root.classList.toggle('dark', dark);
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.textContent = dark ? 'light_mode' : 'dark_mode';
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem('mustang_theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('mustang_theme', next);
+  applyTheme(next);
+}
+
 function showSection(sectionId) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   document.getElementById(`section-${sectionId}`)?.classList.remove('hidden');
@@ -213,10 +241,26 @@ function showSection(sectionId) {
 
 function appendMessage(role, text) {
   if (!chatHistory) return;
-  const d = document.createElement('div');
-  d.className = 'p-3 rounded-lg bg-background-light dark:bg-[#0f111a] border border-border-light dark:border-border-dark text-sm';
-  d.innerHTML = `<b>${role === 'user' ? 'You' : 'Mustang AI'}:</b> ${String(text || '').replace(/\n/g,'<br>')}`;
-  chatHistory.appendChild(d);
+  const isUser = role === 'user';
+  const row = document.createElement('div');
+  row.className = `flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+  const avatarClass = isUser
+    ? 'w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-[10px] font-bold shrink-0'
+    : 'w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0';
+  const bubbleClass = isUser
+    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed'
+    : 'px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed';
+  row.innerHTML = `
+    <div class="${avatarClass}">
+      ${isUser ? 'YOU' : '<span class="material-icons text-sm">smart_toy</span>'}
+    </div>
+    <div class="max-w-[85%] ${isUser ? 'items-end' : 'items-start'} flex flex-col">
+      <div class="${bubbleClass}">
+        ${String(text || '').replace(/\n/g,'<br>')}
+      </div>
+    </div>
+  `;
+  chatHistory.appendChild(row);
   chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
@@ -423,6 +467,7 @@ async function runJob(name) {
 }
 
 msgInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+applyTheme(localStorage.getItem('mustang_theme') || 'dark');
 showSection('coding');
 loadGithub();
 loadSkills();
