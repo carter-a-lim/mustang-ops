@@ -299,15 +299,7 @@
                 <div id="section-skills" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
                     <div class="max-w-5xl mx-auto w-full">
                         <h3 class="text-2xl font-bold mb-6">Skill Inventory</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-white dark:bg-[#1c1f27] p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col items-center text-center group hover:border-primary transition-all shadow-sm">
-                                <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
-                                    <span class="material-symbols-outlined text-2xl">code</span>
-                                </div>
-                                <h4 class="text-sm font-bold mb-1">Coder</h4>
-                                <p class="text-[10px] text-slate-500">v1.2.4 • Active</p>
-                            </div>
-                        </div>
+                        <div id="skills-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
                     </div>
                 </div>
 
@@ -386,6 +378,7 @@
         const msgInput = document.getElementById('msg');
         const jobStatusPill = document.getElementById('job-status-pill');
         const currentJobTitle = document.getElementById('current-job');
+        const skillsGrid = document.getElementById('skills-grid');
 
         function showSection(sectionId) {
             // Update Active Link State
@@ -531,6 +524,35 @@
             }
         }
 
+        async function loadSkills() {
+            if (!skillsGrid) return;
+            skillsGrid.innerHTML = '<p class="text-sm text-slate-500">Loading skills...</p>';
+            try {
+                const res = await fetch('/api/skills');
+                const data = await res.json();
+                skillsGrid.innerHTML = '';
+                const skills = data.skills || [];
+                if (!skills.length) {
+                    skillsGrid.innerHTML = '<p class="text-sm text-slate-500">No skills found.</p>';
+                    return;
+                }
+                skills.forEach((s) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white dark:bg-[#1c1f27] p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col items-center text-center group hover:border-primary transition-all shadow-sm';
+                    card.innerHTML = `
+                        <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-2xl">extension</span>
+                        </div>
+                        <h4 class="text-sm font-bold mb-1">${s.name}</h4>
+                        <p class="text-[10px] text-slate-500">${s.status}</p>
+                    `;
+                    skillsGrid.appendChild(card);
+                });
+            } catch (e) {
+                skillsGrid.innerHTML = '<p class="text-sm text-red-500">Failed to load skills.</p>';
+            }
+        }
+
         async function sendChat() {
             const message = msgInput.value.trim();
             if (!message) return;
@@ -580,6 +602,7 @@
         // Initialize state
         showSection('chat');
         loadContext();
+        loadSkills();
     </script>
 </body>
 </html>

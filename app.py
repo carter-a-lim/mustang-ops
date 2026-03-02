@@ -54,6 +54,17 @@ def get_context():
     return read_context()
 
 
+@app.get("/api/skills")
+def get_skills():
+    skills_dir = ROOT.parent / "skills"
+    skills = []
+    if skills_dir.exists():
+        for d in sorted(skills_dir.iterdir()):
+            if d.is_dir() and (d / "SKILL.md").exists():
+                skills.append({"name": d.name, "status": "installed"})
+    return {"skills": skills}
+
+
 @app.post("/api/chat")
 def chat(body: ChatBody):
     if not OPENCLAW_TOKEN:
