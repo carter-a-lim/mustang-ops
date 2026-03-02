@@ -90,6 +90,7 @@
         <a id="nav-coding" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('coding')"><span class="material-icons text-[18px]">code</span><span>Coding</span></a>
         <a id="nav-skills" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('skills')"><span class="material-icons text-[18px]">military_tech</span><span>Skills</span></a>
         <a id="nav-cron" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('cron')"><span class="material-icons text-[18px]">schedule</span><span>Cron</span></a>
+        <a id="nav-todo" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('todo')"><span class="material-icons text-[18px]">checklist</span><span>Todo</span></a>
       </div>
 
       <div id="chat-sessions" class="hidden"></div>
@@ -362,51 +363,50 @@
             <button onclick="loadCronList()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button id="cron-tab-jobs" onclick="showCronPanel('jobs')" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark bg-gray-100 dark:bg-accent-dark/40">Cron Jobs</button>
-            <button id="cron-tab-todo" onclick="showCronPanel('todo')" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark">Todo List</button>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Total Jobs</p><p id="cron-total" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">High Frequency</p><p id="cron-highfreq" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Daily+</p><p id="cron-daily" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Manual Actions</p><p class="text-2xl font-bold">6</p></div>
           </div>
 
-          <div id="cron-panel-jobs" class="space-y-5">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Total Jobs</p><p id="cron-total" class="text-2xl font-bold">0</p></div>
-              <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">High Frequency</p><p id="cron-highfreq" class="text-2xl font-bold">0</p></div>
-              <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Daily+</p><p id="cron-daily" class="text-2xl font-bold">0</p></div>
-              <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Manual Actions</p><p class="text-2xl font-bold">6</p></div>
-            </div>
-
-            <div class="panel-card p-4">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Run now</h3>
-              <div class="flex flex-wrap gap-2">
-                <button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_canvas</button>
-                <button onclick="runJob('sync_github')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_github</button>
-                <button onclick="runJob('sync_network')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_network</button>
-                <button onclick="runJob('morning_brief')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">morning_brief</button>
-                <button onclick="runJob('token_sync')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">token_sync</button>
-                <button onclick="runJob('scrape_simplify_jobs')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">scrape_simplify_jobs</button>
-              </div>
-            </div>
-
-            <div class="panel-card overflow-hidden">
-              <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark text-[10px] uppercase text-gray-500 font-semibold tracking-wider">
-                <div class="col-span-3">Job</div>
-                <div class="col-span-3">Schedule</div>
-                <div class="col-span-4">Command</div>
-                <div class="col-span-2 text-right">Action</div>
-              </div>
-              <div id="cron-list" class="divide-y divide-border-light dark:divide-border-dark"></div>
+          <div class="panel-card p-4">
+            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Run now</h3>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_canvas</button>
+              <button onclick="runJob('sync_github')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_github</button>
+              <button onclick="runJob('sync_network')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_network</button>
+              <button onclick="runJob('morning_brief')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">morning_brief</button>
+              <button onclick="runJob('token_sync')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">token_sync</button>
+              <button onclick="runJob('scrape_simplify_jobs')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">scrape_simplify_jobs</button>
             </div>
           </div>
 
-          <div id="cron-panel-todo" class="space-y-4 hidden">
-            <div class="panel-card p-4">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Cron Todo</h3>
-              <div class="flex gap-2 mb-3">
-                <input id="cron-todo-input" placeholder="Add a todo for cron ops..." class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
-                <button onclick="addCronTodo()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Add</button>
-              </div>
-              <div id="cron-todo-list" class="space-y-2"></div>
+          <div class="panel-card overflow-hidden">
+            <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark text-[10px] uppercase text-gray-500 font-semibold tracking-wider">
+              <div class="col-span-3">Job</div>
+              <div class="col-span-3">Schedule</div>
+              <div class="col-span-4">Command</div>
+              <div class="col-span-2 text-right">Action</div>
             </div>
+            <div id="cron-list" class="divide-y divide-border-light dark:divide-border-dark"></div>
+          </div>
+        </div>
+
+        <div id="section-todo" class="section-content hidden max-w-7xl mx-auto space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo List</h1>
+              <p class="text-sm text-gray-500">General task list, separate from cron jobs.</p>
+            </div>
+          </div>
+          <div class="panel-card p-4">
+            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Tasks</h3>
+            <div class="flex gap-2 mb-3">
+              <input id="cron-todo-input" placeholder="Add a todo..." class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
+              <button onclick="addCronTodo()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Add</button>
+            </div>
+            <div id="cron-todo-list" class="space-y-2"></div>
           </div>
         </div>
       </div>
@@ -455,10 +455,6 @@ const cronHighfreq = document.getElementById('cron-highfreq');
 const cronDaily = document.getElementById('cron-daily');
 const cronTodoInput = document.getElementById('cron-todo-input');
 const cronTodoList = document.getElementById('cron-todo-list');
-const cronTabJobs = document.getElementById('cron-tab-jobs');
-const cronTabTodo = document.getElementById('cron-tab-todo');
-const cronPanelJobs = document.getElementById('cron-panel-jobs');
-const cronPanelTodo = document.getElementById('cron-panel-todo');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
 const sendBtn = document.getElementById('send-btn');
@@ -550,7 +546,8 @@ const sectionLoaders = {
   coding: () => { loadGithub(); loadSystemStats(); },
   skills: () => loadSkills(),
   calendar: () => loadContext(),
-  cron: () => { showCronPanel('jobs'); loadCronList(); },
+  cron: () => loadCronList(),
+  todo: () => renderCronTodos(),
   network: () => loadNetworkJobs(),
   chat: () => loadSessions(),
 };
@@ -1339,17 +1336,6 @@ function _cronScheduleLabel(expr='') {
   if (expr === '0 8 * * *') return 'Daily @ 08:00';
   if (expr === '0 0 * * 0') return 'Weekly (Sun)';
   return expr;
-}
-
-function showCronPanel(panel = 'jobs') {
-  const isTodo = panel === 'todo';
-  cronPanelJobs?.classList.toggle('hidden', isTodo);
-  cronPanelTodo?.classList.toggle('hidden', !isTodo);
-  cronTabJobs?.classList.toggle('bg-gray-100', !isTodo);
-  cronTabJobs?.classList.toggle('dark:bg-accent-dark/40', !isTodo);
-  cronTabTodo?.classList.toggle('bg-gray-100', isTodo);
-  cronTabTodo?.classList.toggle('dark:bg-accent-dark/40', isTodo);
-  if (isTodo) renderCronTodos();
 }
 
 function getCronTodos() {
