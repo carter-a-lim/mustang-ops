@@ -77,6 +77,9 @@
       <a id="nav-skills" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('skills')"><span class="material-icons text-xl group-hover:text-primary transition-colors">military_tech</span><span class="font-medium text-sm">Skills</span></a>
       <a id="nav-cron" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('cron')"><span class="material-icons text-xl group-hover:text-primary transition-colors">schedule</span><span class="font-medium text-sm">Cron</span></a>
       <div class="pt-4 px-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">Our Tools</div>
+      <button onclick="createSession()" class="mx-2 mb-2 w-[calc(100%-1rem)] flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-accent-dark text-sm font-medium">
+        <span class="material-icons text-primary text-lg">add</span> New Session
+      </button>
       <div id="chat-sessions" class="space-y-1 px-1 pb-2"></div>
     </nav>
 
@@ -172,34 +175,23 @@
           </div>
         </div>
 
-        <div id="section-chat" class="section-content hidden max-w-7xl mx-auto space-y-4 h-[calc(100vh-9rem)]">
-          <div class="grid grid-cols-1 gap-4 h-full">
-            <div class="rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0 overflow-hidden">
-              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-surface-light dark:bg-surface-dark">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white"><span class="material-icons text-sm">smart_toy</span></div>
-                  <div>
-                    <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
-                    <div class="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Chat • Online</div>
-                  </div>
-                </div>
-                <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
-              </div>
+        <div id="section-chat" class="section-content hidden max-w-6xl mx-auto h-[calc(100vh-9rem)] flex flex-col">
+          <div class="px-1 py-2 flex items-center justify-between">
+            <div>
+              <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
+              <div class="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Chat • Online</div>
+            </div>
+            <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
+          </div>
 
-              <div id="chat-history" class="flex-1 overflow-y-auto px-4 md:px-8 lg:px-14 py-6 space-y-6"></div>
+          <div id="chat-history" class="flex-1 overflow-y-auto px-1 md:px-4 lg:px-8 py-3 space-y-6"></div>
 
-              <div class="border-t border-border-light dark:border-border-dark p-3 md:p-4 bg-white/90 dark:bg-background-dark/90 backdrop-blur">
-                <div class="flex gap-2 mb-2 overflow-x-auto">
-                  <button onclick="msgInput.value='Debug this and suggest fixes';sendChat()" class="px-3 py-1 rounded-full text-[11px] panel-soft whitespace-nowrap">Debug this</button>
-                  <button onclick="msgInput.value='Optimize this implementation';sendChat()" class="px-3 py-1 rounded-full text-[11px] panel-soft whitespace-nowrap">Optimize</button>
-                </div>
-                <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
-                  <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3 pl-4 pr-14"/>
-                  <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
-                    <span class="material-icons text-base">send</span>
-                  </button>
-                </div>
-              </div>
+          <div class="pt-2 pb-2">
+            <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
+              <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3 pl-4 pr-14"/>
+              <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
+                <span class="material-icons text-base">send</span>
+              </button>
             </div>
           </div>
         </div>
@@ -434,9 +426,9 @@ function renderSessionList(sessions) {
     return;
   }
   chatSessionsEl.innerHTML = sessions.map(s => `
-    <button onclick="openSession('${s.id}')" class="w-full text-left p-2 rounded border text-xs ${activeSessionId===s.id ? 'border-primary bg-primary/10' : 'border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-[#0f111a]'}">
-      <div class="font-semibold truncate">${s.title || 'Untitled'}</div>
-      <div class="text-[10px] text-gray-500">${s.message_count || 0} msgs</div>
+    <button onclick="openSession('${s.id}')" class="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${activeSessionId===s.id ? 'bg-gray-100 dark:bg-primary/10 text-primary dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-accent-dark'}">
+      <div class="font-medium truncate">${s.title || 'Untitled'}</div>
+      <div class="text-[10px] text-gray-500 mt-0.5">${s.message_count || 0} msgs</div>
     </button>
   `).join('');
 }
