@@ -1,737 +1,263 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Mustang Ops | Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#2b6cee",
-                        "background-light": "#f6f6f8",
-                        "background-dark": "#101622",
-                        "surface-dark": "#1a202c",
-                        "border-dark": "#2d3748",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"],
-                    },
-                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
-                },
-            },
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DX Optimized Engineering Panel</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1d4ed8',
+            accent: '#0ea5e9',
+            success: '#10b981',
+            'background-light': '#f3f4f6',
+            'background-dark': '#0f111a',
+            'surface-light': '#ffffff',
+            'surface-dark': '#161b22',
+            'border-dark': '#30363d',
+            'border-light': '#e5e7eb',
+          },
+          fontFamily: {
+            display: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            glow: '0 0 10px rgba(14, 165, 233, 0.2)',
+            'glow-success': '0 0 8px rgba(16, 185, 129, 0.3)',
+          }
         }
-    </script>
-    <style>
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #101622; }
-        ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4a5568; }
-        .message-stream { scroll-behavior: smooth; }
-    </style>
+      }
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4,0,0.6,1) infinite; }
+  </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display overflow-hidden h-screen flex">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-background-light dark:bg-[#111318] border-r border-slate-200 dark:border-border-dark flex flex-col justify-between shrink-0 h-full">
-        <div class="p-4 flex flex-col gap-6">
-            <div class="flex gap-3 items-center">
-                <div class="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 shadow-lg shadow-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBnIugPrZCgHxprIYJobQ98c4ggSY7gGYlDaAdbDy_Dgh-ioLtgTIyoRY0ZRc7HhmIVcrbD41-dNSDxsD-yKVAEJJoLySdQzK1hxD7DedV19sAVjfpUXtCBwKhvgZqbjBJPwiF5RIaGeCX0oCBGB6OBhkJdr8Ccz2TUUVVvXVQqnDUEmAlWkcv6g8czrNtoIqwMASDo3FAdHYVv6oezdoxKzvOLPgnrRvFEAY6vg8QJL3I3XxFZTj4zzz5YgZQnfPOcfuKF3fMh0zNr");'></div>
-                <div class="flex flex-col">
-                    <h1 class="text-slate-900 dark:text-white text-base font-bold leading-normal tracking-wide">Mustang Ops</h1>
-                    <p class="text-slate-500 dark:text-slate-400 text-xs font-mono">v2.4.0 <span id="system-status" class="text-emerald-500">• Online</span></p>
-                </div>
-            </div>
-            <nav id="sidebar-nav" class="flex flex-col gap-2">
-                <a id="nav-chat" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all hover:bg-primary/20" href="#" onclick="showSection('chat')">
-                    <span class="material-symbols-outlined text-xl">chat</span>
-                    <span class="text-sm font-semibold">Chat</span>
-                </a>
-                <a id="nav-calendar" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('calendar')">
-                    <span class="material-symbols-outlined text-xl">calendar_month</span>
-                    <span class="text-sm font-medium">Calendar</span>
-                </a>
-                <a id="nav-network" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('network')">
-                    <span class="material-symbols-outlined text-xl">hub</span>
-                    <span class="text-sm font-medium">Network</span>
-                </a>
-                <a id="nav-coding" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('coding')">
-                    <span class="material-symbols-outlined text-xl">code</span>
-                    <span class="text-sm font-medium">Coding</span>
-                </a>
-                <a id="nav-skills" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('skills')">
-                    <span class="material-symbols-outlined text-xl">workspace_premium</span>
-                    <span class="text-sm font-medium">Skills</span>
-                </a>
-                <a id="nav-cron" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="showSection('cron')">
-                    <span class="material-symbols-outlined text-xl">schedule</span>
-                    <span class="text-sm font-medium">Cron</span>
-                </a>
-            </nav>
-            <div class="pt-4 border-t border-slate-200 dark:border-border-dark flex flex-col gap-2">
-                <p class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">System</p>
-                <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" href="#" onclick="runJob('token_sync')">
-                    <span class="material-symbols-outlined text-lg">sync</span>
-                    <span class="text-sm font-medium">Token Sync</span>
-                </a>
-            </div>
+<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex dark">
+  <aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] relative z-20">
+    <div class="p-6 flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-glow relative overflow-hidden">
+        <div class="absolute inset-0 bg-white opacity-10 blur-sm"></div>
+        <span class="material-icons text-white text-xl">hub</span>
+      </div>
+      <div>
+        <h1 class="font-bold text-gray-900 dark:text-white tracking-tight">Mustang Ops</h1>
+        <div class="flex items-center space-x-2 text-xs font-mono text-gray-500 dark:text-gray-400">
+          <span>v2.4.0</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-success shadow-glow-success animate-pulse-slow"></span>
+          <span class="text-success">Online</span>
         </div>
-        <div class="p-4 border-t border-slate-200 dark:border-border-dark space-y-3">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Usage Metering</p>
+      </div>
+    </div>
 
-            <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-3 border border-slate-200 dark:border-border-dark">
-                <p class="text-[10px] text-slate-500">5 hour usage limit</p>
-                <p id="usage-5h-label" class="text-sm font-bold text-slate-900 dark:text-white">100% remaining</p>
-                <div class="mt-2 h-2 w-full rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden">
-                    <div id="usage-5h-bar" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
-                </div>
-                <p id="usage-5h" class="mt-1 text-[10px] font-mono text-slate-500">0 / 0 tok</p>
-            </div>
+    <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+      <a id="nav-chat" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('chat')"><span class="material-icons text-xl group-hover:text-primary transition-colors">chat_bubble_outline</span><span class="font-medium text-sm">Chat</span></a>
+      <a id="nav-calendar" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('calendar')"><span class="material-icons text-xl group-hover:text-primary transition-colors">calendar_today</span><span class="font-medium text-sm">Calendar</span></a>
+      <a id="nav-network" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('network')"><span class="material-icons text-xl group-hover:text-primary transition-colors">hub</span><span class="font-medium text-sm">Network</span></a>
+      <a id="nav-coding" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-primary/10 text-primary dark:text-blue-400 border border-transparent dark:border-primary/20 shadow-sm" href="#" onclick="showSection('coding')"><span class="material-icons text-xl">code</span><span class="font-medium text-sm">Coding</span></a>
+      <a id="nav-skills" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('skills')"><span class="material-icons text-xl group-hover:text-primary transition-colors">military_tech</span><span class="font-medium text-sm">Skills</span></a>
+      <a id="nav-cron" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('cron')"><span class="material-icons text-xl group-hover:text-primary transition-colors">schedule</span><span class="font-medium text-sm">Cron</span></a>
+    </nav>
 
-            <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-3 border border-slate-200 dark:border-border-dark">
-                <p class="text-[10px] text-slate-500">Weekly usage limit</p>
-                <p id="usage-7d-label" class="text-sm font-bold text-slate-900 dark:text-white">100% remaining</p>
-                <div class="mt-2 h-2 w-full rounded-full bg-slate-300 dark:bg-slate-700 overflow-hidden">
-                    <div id="usage-7d-bar" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
-                </div>
-                <p id="usage-7d" class="mt-1 text-[10px] font-mono text-slate-500">0 / 0 tok</p>
-            </div>
-
-            <p id="usage-cost" class="text-[10px] text-slate-500 font-mono">Cost est: --</p>
+    <div class="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-black/20">
+      <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Usage Metering</h3>
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between items-end mb-1"><span class="text-xs text-gray-500">5hr Limit</span><span class="text-sm font-bold text-gray-800 dark:text-white">100%</span></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full w-full shadow-glow"></div></div>
+          <p id="usage-5h" class="text-[10px] text-gray-400 mt-1 font-mono">0 tok used</p>
         </div>
+        <div>
+          <div class="flex justify-between items-end mb-1"><span class="text-xs text-gray-500">Weekly Limit</span><span class="text-sm font-bold text-gray-800 dark:text-white">100%</span></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden"><div class="bg-accent h-full rounded-full w-full shadow-glow"></div></div>
+          <p id="usage-7d" class="text-[10px] text-gray-400 mt-1 font-mono">0 tok used</p>
+        </div>
+      </div>
+      <div class="mt-4 pt-4 border-t border-border-light dark:border-border-dark/50"><p id="usage-cost" class="text-[10px] text-gray-500 font-mono leading-tight opacity-70">Est: MUSTANG cost vars</p></div>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex min-w-0 overflow-hidden relative">
+    <section class="flex-1 flex flex-col overflow-hidden">
+      <header class="flex-shrink-0 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] h-16 flex items-center justify-between px-6 z-10">
+        <div class="flex items-center space-x-4"><span class="material-icons text-primary text-2xl">dashboard</span><h2 class="text-lg font-semibold text-gray-900 dark:text-white">Command Center</h2></div>
+        <div id="job-status-pill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark"><span class="w-2 h-2 rounded-full bg-success animate-pulse"></span><span id="current-job" class="text-xs font-medium">Running…</span></div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6">
+        <div id="section-coding" class="section-content max-w-7xl mx-auto space-y-6">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Build & Ship</h1>
+            <button onclick="runJob('sync_github')" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Sync GitHub</button>
+          </div>
+          <div class="space-y-4">
+            <div class="flex justify-between items-end mb-2">
+              <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">GitHub Snapshot</h3>
+              <button onclick="loadGithub()" class="text-xs text-primary hover:text-accent transition-colors">Refresh</button>
+            </div>
+            <div id="github-list" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <div id="section-chat" class="section-content hidden max-w-5xl mx-auto space-y-4">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Chat</h1>
+          <div id="chat-history" class="space-y-3"></div>
+          <div class="flex gap-2"><input id="msg" class="flex-1 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark"/><button onclick="sendChat()" class="px-4 rounded-lg bg-primary text-white">Send</button></div>
+        </div>
+
+        <div id="section-calendar" class="section-content hidden max-w-5xl mx-auto space-y-4"><h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1><pre id="context" class="text-xs"></pre></div>
+        <div id="section-network" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Network</h1></div>
+        <div id="section-skills" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Skills</h1><div id="skills-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div></div>
+        <div id="section-cron" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Cron</h1><div class="mt-3"><button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-md border">Run Canvas Sync</button></div></div>
+      </div>
+    </section>
+
+    <aside class="w-80 flex-shrink-0 border-l border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] overflow-y-auto hidden xl:block">
+      <div class="p-6"><h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Neural Activity</h3><div class="bg-background-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4"><div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-gray-500">LATENCY HEARTBEAT</span><span class="text-xs text-blue-400 font-mono">12ms</span></div><div class="h-2 rounded bg-blue-500/20"><div class="h-2 w-1/2 bg-blue-500 rounded"></div></div></div></div>
     </aside>
+  </main>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark relative">
-        <header class="h-16 shrink-0 border-b border-slate-200 dark:border-border-dark flex items-center justify-between px-6 bg-background-light dark:bg-background-dark z-20">
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 text-slate-900 dark:text-white">
-                    <span class="material-symbols-outlined text-primary">grid_view</span>
-                    <h2 class="text-lg font-bold leading-tight">Command Center</h2>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="hidden lg:flex items-center gap-2 bg-slate-100 dark:bg-[#1c1f27] rounded-lg p-1 pr-3">
-                    <div class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-500 text-xs font-bold border border-emerald-500/20">LIVE</div>
-                    <span class="text-xs font-mono text-slate-500 dark:text-slate-400">Node: v20.x</span>
-                </div>
-            </div>
-        </header>
+<script>
+const githubList = document.getElementById('github-list');
+const skillsGrid = document.getElementById('skills-grid');
+const usage5h = document.getElementById('usage-5h');
+const usage7d = document.getElementById('usage-7d');
+const usageCost = document.getElementById('usage-cost');
+const contextDisplay = document.getElementById('context');
+const chatHistory = document.getElementById('chat-history');
+const msgInput = document.getElementById('msg');
+const jobStatusPill = document.getElementById('job-status-pill');
+const currentJobTitle = document.getElementById('current-job');
 
-        <div class="h-12 shrink-0 border-b border-slate-200 dark:border-border-dark flex items-center px-6 overflow-x-auto gap-3 bg-slate-50 dark:bg-[#161b26]">
-            <div class="flex items-center gap-2 px-3 py-1 rounded bg-slate-200 dark:bg-[#282e39] border border-slate-300 dark:border-slate-700/50 shrink-0">
-                <span class="material-symbols-outlined text-emerald-400 text-sm">circle</span>
-                <span class="text-xs font-mono text-slate-700 dark:text-slate-300">OpenClaw: Active</span>
-            </div>
-            <div id="job-status-pill" class="hidden items-center gap-2 px-3 py-1 rounded bg-slate-200 dark:bg-[#282e39] border border-primary/50 shrink-0">
-                <span class="material-symbols-outlined text-primary text-sm animate-spin">sync</span>
-                <span class="text-xs font-mono text-slate-700 dark:text-slate-300" id="current-job">Running Job...</span>
-            </div>
-        </div>
+function showSection(sectionId) {
+  document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+  document.getElementById(`section-${sectionId}`)?.classList.remove('hidden');
+  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('bg-blue-50','dark:bg-primary/10','text-primary','dark:text-blue-400','border','dark:border-primary/20'));
+  const active = document.getElementById(`nav-${sectionId}`);
+  if (active) active.classList.add('bg-blue-50','dark:bg-primary/10','text-primary','dark:text-blue-400','border','dark:border-primary/20');
+}
 
-        <div class="flex-1 flex overflow-hidden">
-            <!-- Sections Content -->
-            <div id="content-sections" class="flex-1 flex flex-col relative bg-background-light dark:bg-background-dark overflow-hidden">
-                <!-- Chat Interface -->
-                <div id="section-chat" class="section-content flex-1 flex flex-col overflow-hidden">
-                    <div id="chat-history" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 message-stream">
-                        <!-- AI Message -->
-                        <div class="flex gap-4 max-w-3xl">
-                            <div class="size-8 rounded-full bg-gradient-to-br from-primary to-purple-600 shrink-0 flex items-center justify-center shadow-lg shadow-primary/20">
-                                <span class="material-symbols-outlined text-white text-sm">smart_toy</span>
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-bold text-slate-900 dark:text-white">Mustang AI</span>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">System</span>
-                                </div>
-                                <div class="p-4 rounded-xl rounded-tl-none bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark shadow-sm text-slate-700 dark:text-slate-200 text-sm leading-relaxed">
-                                    <p>Welcome to Mustang Ops. I'm connected to OpenClaw and ready for your commands.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+function appendMessage(role, text) {
+  if (!chatHistory) return;
+  const d = document.createElement('div');
+  d.className = 'p-3 rounded-lg bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm';
+  d.innerHTML = `<b>${role === 'user' ? 'You' : 'Mustang AI'}:</b> ${String(text || '').replace(/\n/g,'<br>')}`;
+  chatHistory.appendChild(d);
+}
 
-                    <!-- Input Area -->
-                    <div class="p-4 pb-6 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-border-dark">
-                        <div class="max-w-4xl mx-auto flex flex-col gap-2">
-                            <div class="flex justify-between items-center px-1">
-                                <div class="flex gap-3">
-                                    <span class="text-[10px] font-bold text-primary uppercase tracking-tighter">Model: Gemini 1.5 Pro</span>
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter" id="token-display">Tokens: 0</span>
-                                </div>
-                            </div>
-                            <div class="relative rounded-2xl bg-white dark:bg-[#1c1f27] shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus-within:ring-2 focus-within:ring-primary">
-                                <textarea id="msg" class="block w-full resize-none border-0 bg-transparent py-3 px-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6" placeholder="Send a command to Mustang..." rows="3"></textarea>
-                                <div class="flex justify-between items-center py-2 px-3 pl-4">
-                                    <div class="flex gap-2 text-slate-400">
-                                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">attach_file</span></button>
-                                        <button class="hover:text-primary transition-colors" onclick="showSection('calendar')"><span class="material-symbols-outlined text-[20px]">inventory_2</span></button>
-                                    </div>
-                                    <button onclick="sendChat()" class="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 flex items-center gap-2">
-                                        Execute <span class="material-symbols-outlined text-sm">send</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+async function sendChat() {
+  const message = (msgInput?.value || '').trim();
+  if (!message) return;
+  appendMessage('user', message);
+  msgInput.value = '';
+  try {
+    const res = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message})});
+    const data = await res.json();
+    appendMessage('ai', data.reply || 'No response.');
+  } catch {
+    appendMessage('ai', 'Chat failed.');
+  }
+}
 
-                <!-- Calendar (Visual + JSON Brain) -->
-                <div id="section-calendar" class="section-content hidden flex-1 flex flex-col overflow-hidden">
-                    <header class="p-6 border-b border-slate-200 dark:border-border-dark flex justify-between items-center bg-white dark:bg-[#1c1f27]">
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Mustang Intelligence</h3>
-                            <p class="text-xs text-slate-500">Events, deadlines, and neural brain state.</p>
-                        </div>
-                        <div class="flex bg-slate-100 dark:bg-[#111318] p-1 rounded-lg">
-                            <button id="tab-visual" onclick="switchCalendarMode('visual')" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-800 shadow-sm text-slate-900 dark:text-white">Visual View</button>
-                            <button id="tab-brain" onclick="switchCalendarMode('brain')" class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Brain Mode</button>
-                        </div>
-                    </header>
+async function loadContext() {
+  try {
+    const res = await fetch('/api/context');
+    const data = await res.json();
+    if (contextDisplay) contextDisplay.textContent = JSON.stringify(data, null, 2);
+  } catch {
+    if (contextDisplay) contextDisplay.textContent = 'Failed to load context';
+  }
+}
 
-                    <div id="calendar-visual-view" class="flex-1 overflow-y-auto p-6">
-                        <div class="max-w-6xl mx-auto">
-                            <!-- Calendar Navigation -->
-                            <div class="flex justify-between items-center mb-6">
-                                <h4 id="current-month-display" class="text-lg font-bold">March 2026</h4>
-                                <div class="flex gap-2">
-                                    <button class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
-                                    <button class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-bold">Today</button>
-                                    <button class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
-                                </div>
-                            </div>
+async function loadSkills() {
+  if (!skillsGrid) return;
+  skillsGrid.innerHTML = 'Loading...';
+  try {
+    const res = await fetch('/api/skills');
+    const data = await res.json();
+    const skills = data.skills || [];
+    skillsGrid.innerHTML = skills.map(s => `<div class="p-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><div class="font-semibold">${s.name}</div><div class="text-xs text-gray-500">${s.status}</div></div>`).join('');
+  } catch {
+    skillsGrid.innerHTML = 'Failed to load skills';
+  }
+}
 
-                            <!-- Calendar Grid -->
-                            <div class="bg-white dark:bg-[#1c1f27] rounded-2xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
-                                <div class="grid grid-cols-7 border-b border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318]">
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sun</div>
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mon</div>
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tue</div>
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wed</div>
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thu</div>
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fri</div>
-                                    <div class="py-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sat</div>
-                                </div>
-                                <div id="calendar-grid" class="grid grid-cols-7 auto-rows-[120px]">
-                                    <!-- Days will be injected here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+async function loadGithub() {
+  if (!githubList) return;
+  githubList.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch('/api/github');
+    const data = await res.json();
+    const repos = data.repos || [];
+    if (!repos.length) {
+      githubList.innerHTML = '<div class="text-xs text-gray-500">No snapshot yet. Run sync_github.</div>';
+      return;
+    }
+    githubList.innerHTML = repos.map((r, idx) => {
+      const issues = r.issues || [];
+      const issueHtml = issues.length
+        ? issues.map(it => {
+            const assigned = (it.assignees && it.assignees.length) ? `Assigned: ${it.assignees.join(', ')}` : 'Assigned: nobody';
+            return `<div class="bg-background-light dark:bg-[#0f111a] rounded-lg p-3 border border-border-light dark:border-border-dark/50"><a href="${it.html_url || '#'}" target="_blank" class="text-sm text-gray-700 dark:text-gray-200 hover:text-primary">#${it.number} ${it.title || ''}</a><div class="text-[10px] text-gray-500 mt-1">${assigned}</div></div>`;
+          }).join('')
+        : '<div class="text-[11px] text-gray-500">No open issues.</div>';
 
-                    <div id="calendar-brain-view" class="hidden flex-1 overflow-y-auto p-6 bg-slate-900">
-                        <div class="max-w-5xl mx-auto">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="text-xs font-mono text-emerald-500">mustang_context.json</span>
-                                <button onclick="loadContext()" class="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] uppercase font-bold tracking-tighter">
-                                    <span class="material-symbols-outlined text-xs">refresh</span> Sync Raw
-                                </button>
-                            </div>
-                            <textarea id="context-editor" class="w-full h-[600px] bg-transparent text-emerald-400 font-mono text-xs p-0 outline-none resize-none" spellcheck="false"></textarea>
-                            <div class="mt-4 flex justify-end">
-                                <button class="px-6 py-2 rounded-lg bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-blue-600">Update Brain</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      return `<details class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden" ${idx===0?'open':''}><summary class="p-4 list-none cursor-pointer flex justify-between items-center"><div class="flex items-center space-x-3"><span class="material-icons text-gray-400 text-xl">folder</span><div><h4 class="text-base font-semibold text-gray-900 dark:text-white">${r.repo}</h4><p class="text-xs text-gray-500 mt-0.5">Updated ${r.updated_at || 'n/a'}</p></div></div><div class="flex items-center space-x-2"><span class="px-2 py-1 rounded-md bg-purple-500/10 text-purple-400 text-xs border border-purple-500/20 font-mono">PRs: ${r.open_prs}</span><span class="px-2 py-1 rounded-md bg-orange-500/10 text-orange-400 text-xs border border-orange-500/20 font-mono">Issues: ${r.open_issues}</span><span class="material-icons text-gray-500">expand_more</span></div></summary><div class="px-4 pb-4 space-y-2">${issueHtml}</div></details>`;
+    }).join('');
+  } catch {
+    githubList.innerHTML = '<div class="text-xs text-red-500">Failed to load github snapshot.</div>';
+  }
+}
 
-                <!-- Network (Outreach) -->
-                <div id="section-network" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
-                    <div class="max-w-5xl mx-auto w-full">
-                        <h3 class="text-2xl font-bold mb-6">Intelligence & Outreach</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="md:col-span-2 space-y-6">
-                                <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Outreach Queue</h4>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase">4 Active</span>
-                                    </div>
-                                    <div class="space-y-3">
-                                        <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-[#111318] border border-slate-200 dark:border-slate-700/50">
-                                            <div class="flex items-center gap-4">
-                                                <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700"></div>
-                                                <div>
-                                                    <p class="text-sm font-bold">Sarah Jenkins</p>
-                                                    <p class="text-xs text-slate-500 italic line-clamp-1">"Looking for AI specialized growth..."</p>
-                                                </div>
-                                            </div>
-                                            <button class="text-[10px] font-bold text-primary px-3 py-1.5 rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors">Draft</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="space-y-6">
-                                <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
-                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Hiring Signals</h4>
-                                    <div class="space-y-4">
-                                        <div class="flex items-start gap-3">
-                                            <span class="material-symbols-outlined text-green-400 text-lg">trending_up</span>
-                                            <div>
-                                                <p class="text-xs font-bold">Series A: TechCorp</p>
-                                                <p class="text-[10px] text-slate-500">2h ago • 84% Match</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+function formatTokens(n = 0) { return `${Number(n || 0).toLocaleString()} tok`; }
+function formatUsd(n = 0) { return `$${Number(n || 0).toFixed(4)}`; }
+async function loadUsageSummary() {
+  try {
+    const res = await fetch('/api/usage/summary');
+    const data = await res.json();
+    const w5h = data?.windows?.last_5h || {};
+    const w7d = data?.windows?.last_7d || {};
+    usage5h.textContent = formatTokens(w5h.total_tokens || 0);
+    usage7d.textContent = formatTokens(w7d.total_tokens || 0);
+    usageCost.textContent = data?.pricing?.cost_estimation_enabled ? `Cost est: ${formatUsd(w5h.estimated_cost_usd || 0)} (5h) · ${formatUsd(w7d.estimated_cost_usd || 0)} (7d)` : 'Cost est: set MUSTANG_COST_INPUT_PER_1M / MUSTANG_COST_OUTPUT_PER_1M';
+  } catch {
+    usageCost.textContent = 'Cost est: failed to load usage summary';
+  }
+}
 
-                <!-- Coding (Build & Ship) -->
-                <div id="section-coding" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
-                    <div class="max-w-5xl mx-auto w-full">
-                        <h3 class="text-2xl font-bold mb-6">Build & Ship</h3>
-                        <div class="grid grid-cols-1 gap-6">
-                            <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">GitHub Snapshot</h4>
-                                    <button onclick="loadGithub()" class="text-[10px] font-bold text-primary hover:underline">REFRESH</button>
-                                </div>
-                                <div id="github-list" class="space-y-3 text-xs text-slate-600 dark:text-slate-300"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+async function runJob(name) {
+  jobStatusPill.classList.remove('hidden');
+  jobStatusPill.classList.add('flex');
+  currentJobTitle.textContent = `Running ${name}...`;
+  try {
+    const res = await fetch('/api/run/' + name, {method:'POST'});
+    const data = await res.json();
+    appendMessage('ai', `Job ${name} completed with exit code ${data.exit_code}.`);
+    if (name === 'sync_github') loadGithub();
+    if (name === 'sync_canvas') loadContext();
+  } catch {
+    appendMessage('ai', `Job ${name} failed.`);
+  } finally {
+    setTimeout(() => { jobStatusPill.classList.add('hidden'); jobStatusPill.classList.remove('flex'); }, 1800);
+  }
+}
 
-                <!-- Skills -->
-                <div id="section-skills" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
-                    <div class="max-w-5xl mx-auto w-full">
-                        <h3 class="text-2xl font-bold mb-6">Skill Inventory</h3>
-                        <div id="skills-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
-                    </div>
-                </div>
-
-                <!-- Cron -->
-                <div id="section-cron" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
-                    <div class="max-w-5xl mx-auto w-full">
-                        <div class="flex justify-between items-end mb-6">
-                            <div>
-                                <h3 class="text-2xl font-bold text-slate-900 dark:text-white leading-tight">Heartbeat & Cron</h3>
-                                <p class="text-sm text-slate-500">Automated synchronization and scout frequency.</p>
-                            </div>
-                        </div>
-                        <div class="bg-white dark:bg-[#1c1f27] rounded-2xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-slate-50 dark:bg-[#111318] border-b border-slate-200 dark:border-border-dark text-slate-500">
-                                    <tr>
-                                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Job Identifier</th>
-                                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Frequency</th>
-                                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Health</th>
-                                        <th class="px-6 py-4"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200 dark:divide-border-dark">
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td class="px-6 py-4 font-mono text-xs">sync_canvas</td>
-                                        <td class="px-6 py-4 text-xs font-medium">6 Hours</td>
-                                        <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
-                                        <td class="px-6 py-4 text-right"><button onclick="runJob('sync_canvas')" class="text-[10px] font-bold text-primary hover:underline">RE-SYNC</button></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td class="px-6 py-4 font-mono text-xs">sync_github</td>
-                                        <td class="px-6 py-4 text-xs font-medium">Every 30 min</td>
-                                        <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
-                                        <td class="px-6 py-4 text-right"><button onclick="runJob('sync_github')" class="text-[10px] font-bold text-primary hover:underline">SYNC NOW</button></td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td class="px-6 py-4 font-mono text-xs">morning_brief</td>
-                                        <td class="px-6 py-4 text-xs font-medium">Daily @ 8am</td>
-                                        <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">HEALTHY</span></td>
-                                        <td class="px-6 py-4 text-right"><button onclick="runJob('morning_brief')" class="text-[10px] font-bold text-primary hover:underline">RUN NOW</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Global Side Panel (Signals) -->
-            <aside id="side-panel" class="w-80 border-l border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-[#111318] shrink-0 hidden xl:flex flex-col overflow-y-auto p-6 gap-8">
-                <div>
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Neural Activity</h3>
-                    <div class="space-y-4">
-                        <div class="p-4 bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark rounded-xl shadow-sm">
-                            <p class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Latency Heartbeat</p>
-                            <div class="flex items-center gap-3">
-                                <div class="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div class="h-full bg-primary w-[12%] animate-pulse"></div>
-                                </div>
-                                <span class="text-[10px] font-mono font-bold text-primary">12ms</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Recent Findings</h3>
-                    <div id="mini-signals" class="space-y-3">
-                        <div class="p-3 bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark rounded-xl shadow-sm group cursor-pointer hover:border-primary transition-colors">
-                            <p class="text-[10px] font-bold text-slate-900 dark:text-white mb-1">Canvas Sync</p>
-                            <p class="text-[10px] text-slate-500 line-clamp-1">Detected priority shift in Q1 goals.</p>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </main>
-
-    <script>
-        const chatHistory = document.getElementById('chat-history');
-        const contextDisplay = document.getElementById('context');
-        const contextEditor = document.getElementById('context-editor');
-        const msgInput = document.getElementById('msg');
-        const jobStatusPill = document.getElementById('job-status-pill');
-        const currentJobTitle = document.getElementById('current-job');
-        const skillsGrid = document.getElementById('skills-grid');
-        const githubList = document.getElementById('github-list');
-        const usage5h = document.getElementById('usage-5h');
-        const usage7d = document.getElementById('usage-7d');
-        const usage5hBar = document.getElementById('usage-5h-bar');
-        const usage7dBar = document.getElementById('usage-7d-bar');
-        const usage5hLabel = document.getElementById('usage-5h-label');
-        const usage7dLabel = document.getElementById('usage-7d-label');
-        const usageCost = document.getElementById('usage-cost');
-
-        function showSection(sectionId) {
-            // Update Active Link State
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
-                link.classList.add('text-slate-600', 'dark:text-slate-400');
-            });
-            const activeLink = document.getElementById(`nav-${sectionId}`);
-            if (activeLink) {
-                activeLink.classList.remove('text-slate-600', 'dark:text-slate-400');
-                activeLink.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
-            }
-
-            // Show Section Content
-            document.querySelectorAll('.section-content').forEach(section => section.classList.add('hidden'));
-            const activeSection = document.getElementById(`section-${sectionId}`);
-            if (activeSection) {
-                activeSection.classList.remove('hidden');
-            }
-        }
-
-        function switchCalendarMode(mode) {
-            const visualTab = document.getElementById('tab-visual');
-            const brainTab = document.getElementById('tab-brain');
-            const visualView = document.getElementById('calendar-visual-view');
-            const brainView = document.getElementById('calendar-brain-view');
-
-            if (mode === 'visual') {
-                visualTab.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
-                visualTab.classList.remove('text-slate-500');
-                brainTab.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
-                brainTab.classList.add('text-slate-500');
-                visualView.classList.remove('hidden');
-                brainView.classList.add('hidden');
-            } else {
-                brainTab.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
-                brainTab.classList.remove('text-slate-500');
-                visualTab.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-slate-900', 'dark:text-white');
-                visualTab.classList.add('text-slate-500');
-                brainView.classList.remove('hidden');
-                visualView.classList.add('hidden');
-            }
-        }
-
-        function courseColor(courseName = '') {
-            const palette = [
-                { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-500' },
-                { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-500' },
-                { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-500' },
-                { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-500' },
-                { bg: 'bg-rose-500/10', border: 'border-rose-500/20', text: 'text-rose-500' },
-                { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-500' },
-            ];
-            const s = (courseName || 'general').toLowerCase();
-            let hash = 0;
-            for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
-            return palette[hash % palette.length];
-        }
-
-        function renderCalendar(context) {
-            const grid = document.getElementById('calendar-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-
-            const date = new Date(2026, 2, 1); // March 2026
-            const firstDay = date.getDay();
-            const daysInMonth = new Date(2026, 3, 0).getDate();
-
-            // Padding for previous month
-            for (let i = 0; i < firstDay; i++) {
-                const day = document.createElement('div');
-                day.className = 'border-r border-b border-slate-200 dark:border-border-dark bg-slate-50/50 dark:bg-[#111318]/50';
-                grid.appendChild(day);
-            }
-
-            // Current month days
-            for (let i = 1; i <= daysInMonth; i++) {
-                const isToday = i === 2; // Assuming March 2nd
-                const day = document.createElement('div');
-                day.className = `border-r border-b border-slate-200 dark:border-border-dark p-2 flex flex-col gap-1 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors ${isToday ? 'bg-primary/5' : ''}`;
-                
-                day.innerHTML = `
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-xs font-bold ${isToday ? 'text-primary' : 'text-slate-500'}">${i}</span>
-                        ${isToday ? '<span class="size-1.5 rounded-full bg-primary animate-ping"></span>' : ''}
-                    </div>
-                `;
-
-                // Add events/deadlines from context
-                const dateStr = `2026-03-${i < 10 ? '0' + i : i}`;
-                
-                if (context && context.deadlines) {
-                    context.deadlines.forEach(dl => {
-                        if (dl.date === dateStr) {
-                            const c = courseColor(dl.course || dl.title || 'deadline');
-                            const pill = document.createElement('div');
-                            pill.className = `px-1.5 py-0.5 rounded border text-[9px] font-bold truncate ${c.bg} ${c.border} ${c.text}`;
-                            pill.textContent = dl.task;
-                            pill.title = `${dl.task}\nCourse: ${dl.course || 'Unknown'}\nDue: ${dl.due_at || dl.date}\nSource: ${dl.source || 'n/a'}`;
-                            day.appendChild(pill);
-                        }
-                    });
-                }
-
-                if (context && context.events) {
-                    context.events.forEach(ev => {
-                        if (ev.date === dateStr) {
-                            const c = courseColor(ev.course || ev.title || 'event');
-                            const pill = document.createElement('div');
-                            pill.className = `px-1.5 py-0.5 rounded border text-[9px] font-bold truncate ${c.bg} ${c.border} ${c.text}`;
-                            pill.textContent = ev.title;
-                            pill.title = `${ev.title}\nCourse: ${ev.course || 'General'}\nDate: ${ev.start_at || ev.date}\nSource: ${ev.source || 'n/a'}`;
-                            day.appendChild(pill);
-                        }
-                    });
-                }
-
-                grid.appendChild(day);
-            }
-        }
-
-        function appendMessage(role, text) {
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex gap-4 max-w-3xl ${role === 'user' ? 'self-end flex-row-reverse' : ''}`;
-            
-            const icon = role === 'user' 
-                ? `<div class="bg-slate-500 rounded-full size-8 shrink-0 flex items-center justify-center text-white"><span class="material-symbols-outlined text-sm">person</span></div>`
-                : `<div class="size-8 rounded-full bg-gradient-to-br from-primary to-purple-600 shrink-0 flex items-center justify-center shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-white text-sm">smart_toy</span></div>`;
-
-            const contentClass = role === 'user'
-                ? `p-4 rounded-xl rounded-tr-none bg-primary/10 border border-primary/20 text-slate-900 dark:text-slate-100 text-sm leading-relaxed shadow-sm`
-                : `p-4 rounded-xl rounded-tl-none bg-white dark:bg-[#1c1f27] border border-slate-200 dark:border-border-dark shadow-sm text-slate-700 dark:text-slate-200 text-sm leading-relaxed`;
-
-            wrapper.innerHTML = `
-                ${icon}
-                <div class="flex flex-col gap-2 ${role === 'user' ? 'items-end' : ''}">
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm font-bold text-slate-900 dark:text-white">${role === 'user' ? 'Admin' : 'Mustang AI'}</span>
-                        <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    <div class="${contentClass}">
-                        <p>${text.replace(/\n/g, '<br>')}</p>
-                    </div>
-                </div>
-            `;
-            chatHistory.appendChild(wrapper);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-
-        async function loadContext() {
-            if (contextDisplay) contextDisplay.textContent = 'Fetching context...';
-            if (contextEditor) contextEditor.value = 'Fetching context...';
-            try {
-                const res = await fetch('/api/context');
-                const data = await res.json();
-                const jsonStr = JSON.stringify(data, null, 2);
-                if (contextDisplay) contextDisplay.textContent = jsonStr;
-                if (contextEditor) contextEditor.value = jsonStr;
-                renderCalendar(data);
-            } catch (e) {
-                if (contextDisplay) contextDisplay.textContent = 'Error loading context.';
-            }
-        }
-
-        async function loadSkills() {
-            if (!skillsGrid) return;
-            skillsGrid.innerHTML = '<p class="text-sm text-slate-500">Loading skills...</p>';
-            try {
-                const res = await fetch('/api/skills');
-                const data = await res.json();
-                skillsGrid.innerHTML = '';
-                const skills = data.skills || [];
-                if (!skills.length) {
-                    skillsGrid.innerHTML = '<p class="text-sm text-slate-500">No skills found.</p>';
-                    return;
-                }
-                skills.forEach((s) => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-white dark:bg-[#1c1f27] p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col items-center text-center group hover:border-primary transition-all shadow-sm';
-                    card.innerHTML = `
-                        <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined text-2xl">extension</span>
-                        </div>
-                        <h4 class="text-sm font-bold mb-1">${s.name}</h4>
-                        <p class="text-[10px] text-slate-500">${s.status}</p>
-                    `;
-                    skillsGrid.appendChild(card);
-                });
-            } catch (e) {
-                skillsGrid.innerHTML = '<p class="text-sm text-red-500">Failed to load skills.</p>';
-            }
-        }
-
-        async function loadGithub() {
-            if (!githubList) return;
-            githubList.innerHTML = '<p class="text-slate-500">Loading...</p>';
-            try {
-                const res = await fetch('/api/github');
-                const data = await res.json();
-                const repos = data.repos || [];
-                if (!repos.length) {
-                    githubList.innerHTML = '<p class="text-slate-500">No snapshot yet. Run sync_github.</p>';
-                    return;
-                }
-                githubList.innerHTML = repos.map((r, idx) => {
-                    const issues = r.issues || [];
-                    const issueHtml = issues.length
-                        ? issues.map(it => {
-                            const assigned = (it.assignees && it.assignees.length)
-                                ? `Assigned: ${it.assignees.join(', ')}`
-                                : 'Assigned: nobody';
-                            return `
-                                <div class="p-2 rounded border border-slate-200 dark:border-border-dark bg-white/60 dark:bg-slate-900/30">
-                                    <a href="${it.html_url || '#'}" target="_blank" class="text-[11px] font-medium text-slate-800 dark:text-slate-100 hover:underline">#${it.number} ${it.title || ''}</a>
-                                    <div class="text-[10px] text-slate-500 mt-1">${assigned}</div>
-                                </div>
-                            `;
-                        }).join('')
-                        : '<p class="text-[10px] text-slate-500">No open issues.</p>';
-
-                    return `
-                        <details class="rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-slate-800/40 group" ${idx === 0 ? 'open' : ''}>
-                            <summary class="list-none cursor-pointer p-3 flex items-center justify-between">
-                                <div>
-                                    <div class="font-mono text-[11px] font-bold text-slate-900 dark:text-white">${r.repo}</div>
-                                    <div class="mt-1 text-[10px] text-slate-500">PRs: <b>${r.open_prs}</b> · Issues: <b>${r.open_issues}</b></div>
-                                </div>
-                                <span class="text-[10px] text-slate-500 group-open:rotate-180 transition-transform">▼</span>
-                            </summary>
-                            <div class="px-3 pb-3 space-y-2">${issueHtml}</div>
-                        </details>
-                    `;
-                }).join('');
-            } catch (e) {
-                githubList.innerHTML = '<p class="text-red-500">Failed to load github snapshot.</p>';
-            }
-        }
-
-        function formatTokens(n = 0) {
-            return `${Number(n || 0).toLocaleString()} tok`;
-        }
-
-        function formatUsd(n = 0) {
-            return `$${Number(n || 0).toFixed(4)}`;
-        }
-
-        async function loadUsageSummary() {
-            if (!usage5h || !usage7d || !usageCost) return;
-            try {
-                const res = await fetch('/api/usage/summary');
-                const data = await res.json();
-                const w5h = data?.windows?.last_5h || {};
-                const w7d = data?.windows?.last_7d || {};
-                const l5h = data?.limits?.last_5h_tokens || 1;
-                const l7d = data?.limits?.last_7d_tokens || 1;
-
-                const used5 = Number(w5h.percent_used || 0);
-                const used7 = Number(w7d.percent_used || 0);
-                const rem5 = Math.max(0, 100 - used5);
-                const rem7 = Math.max(0, 100 - used7);
-
-                usage5hLabel.textContent = `${rem5.toFixed(1)}% remaining`;
-                usage7dLabel.textContent = `${rem7.toFixed(1)}% remaining`;
-                usage5hBar.style.width = `${Math.min(100, used5)}%`;
-                usage7dBar.style.width = `${Math.min(100, used7)}%`;
-
-                usage5h.textContent = `${Number(w5h.total_tokens || 0).toLocaleString()} / ${Number(l5h).toLocaleString()} tok`;
-                usage7d.textContent = `${Number(w7d.total_tokens || 0).toLocaleString()} / ${Number(l7d).toLocaleString()} tok`;
-
-                const costEnabled = data?.pricing?.cost_estimation_enabled;
-                if (costEnabled) {
-                    usageCost.textContent = `Cost est: ${formatUsd(w5h.estimated_cost_usd || 0)} (5h) · ${formatUsd(w7d.estimated_cost_usd || 0)} (7d)`;
-                } else {
-                    usageCost.textContent = 'Cost est: set MUSTANG_COST_INPUT_PER_1M / MUSTANG_COST_OUTPUT_PER_1M';
-                }
-            } catch (e) {
-                usageCost.textContent = 'Cost est: failed to load usage summary';
-            }
-        }
-
-        async function sendChat() {
-            const message = msgInput.value.trim();
-            if (!message) return;
-            
-            appendMessage('user', message);
-            msgInput.value = '';
-            
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
-                });
-                const data = await res.json();
-                appendMessage('ai', data.reply || "No response received.");
-                loadUsageSummary();
-            } catch (e) {
-                appendMessage('ai', "Error connecting to OpenClaw.");
-            }
-        }
-
-        async function runJob(name) {
-            jobStatusPill.classList.remove('hidden');
-            jobStatusPill.classList.add('flex');
-            currentJobTitle.textContent = `Running ${name}...`;
-            
-            try {
-                const res = await fetch('/api/run/' + name, { method: 'POST' });
-                const data = await res.json();
-                appendMessage('ai', `Job **${name}** completed with exit code ${data.exit_code}.`);
-                if (name === 'sync_canvas') loadContext();
-                if (name === 'sync_github') loadGithub();
-            } catch (e) {
-                appendMessage('ai', `Failed to run job **${name}**.`);
-            } finally {
-                setTimeout(() => {
-                    jobStatusPill.classList.remove('flex');
-                    jobStatusPill.classList.add('hidden');
-                }, 2000);
-            }
-        }
-
-        msgInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendChat();
-            }
-        });
-
-        // Initialize state
-        showSection('chat');
-        loadContext();
-        loadSkills();
-        loadGithub();
-        loadUsageSummary();
-    </script>
+msgInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+showSection('coding');
+loadGithub();
+loadSkills();
+loadContext();
+loadUsageSummary();
+</script>
 </body>
 </html>
