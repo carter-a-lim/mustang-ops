@@ -55,6 +55,7 @@ app.mount("/web", StaticFiles(directory=str(ROOT / "web")), name="web")
 class ChatBody(BaseModel):
     message: str
     session_id: str | None = None
+    task_title: str | None = None
 
 
 class CreateSessionBody(BaseModel):
@@ -667,7 +668,9 @@ def chat(body: ChatBody):
         session.setdefault("messages", []).append({"role": "user", "content": body.message, "ts": now})
         session.setdefault("messages", []).append({"role": "assistant", "content": reply, "ts": now})
         session["updated_at"] = now
-        if session.get("title", "New Chat") in ("", "New Chat"):
+        if body.task_title:
+            session["title"] = body.task_title[:80]
+        elif session.get("title", "New Chat") in ("", "New Chat"):
             session["title"] = body.message[:48]
         _save_chat_store(store)
 

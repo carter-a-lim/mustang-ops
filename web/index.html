@@ -606,7 +606,7 @@ async function sendChat() {
     });
     if (activeSessionTitle) activeSessionTitle.textContent = taskTitle;
 
-    const res = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message, session_id: activeSessionId})});
+    const res = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message, session_id: activeSessionId, task_title: taskTitle})});
     const data = await res.json();
     removeLoadingMessage();
     appendMessage('assistant', data.reply || 'No response.');
@@ -955,12 +955,18 @@ async function loadAgentInbox() {
         ? '<span class="inline-block w-2 h-2 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>'
         : (done ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>' : '<span class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>');
       return `
-        <button onclick="openSession('${s.id}')" class="w-full text-left p-2 rounded-md ${active ? 'bg-gray-100 dark:bg-primary/10' : 'hover:bg-gray-100 dark:hover:bg-accent-dark'}">
-          <div class="flex items-center justify-between gap-2">
-            <div class="text-xs font-medium truncate ${active ? 'text-primary dark:text-blue-300' : ''}">${escapeHtml(s.title || 'Untitled')}</div>
-            ${indicator}
+        <div class="group relative">
+          <button onclick="openSession('${s.id}')" class="w-full text-left p-2 pr-8 rounded-md ${active ? 'bg-gray-100 dark:bg-primary/10' : 'hover:bg-gray-100 dark:hover:bg-accent-dark'}">
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-xs font-medium truncate ${active ? 'text-primary dark:text-blue-300' : ''}">${escapeHtml(s.title || 'Untitled')}</div>
+              ${indicator}
+            </div>
+          </button>
+          <button onclick="toggleSessionMenu(event, '${s.id}')" class="absolute z-30 right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-accent-dark transition">⋯</button>
+          <div onclick="event.stopPropagation()" id="session-menu-${s.id}" class="hidden absolute right-1 top-8 z-40 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-md shadow-lg min-w-[120px]">
+            <button onclick="deleteSession('${s.id}')" class="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-gray-100 dark:hover:bg-accent-dark rounded-md">Delete chat</button>
           </div>
-        </button>
+        </div>
       `;
     }).join('') : '<div class="text-xs text-gray-500">No chats yet.</div>';
 
