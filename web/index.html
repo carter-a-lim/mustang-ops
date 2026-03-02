@@ -50,6 +50,14 @@
     .badge-ok { color: #10b981; border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.08); }
     .badge-warn { color: #f59e0b; border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
     .badge-idle { color: #9ca3af; border-color: rgba(156,163,175,.35); background: rgba(156,163,175,.08); }
+    .pipeline-grid { display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr 40px 1fr 40px 1fr 40px 1fr; gap: 8px; align-items: center; }
+    .pipeline-node { border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; padding: 10px; min-height: 74px; display: flex; flex-direction: column; justify-content: center; }
+    .dark .pipeline-node { border-color: #30363d; background: #0d1117; }
+    .pipeline-title { font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: 700; letter-spacing: .04em; }
+    .pipeline-count { font-size: 24px; font-weight: 700; line-height: 1.1; }
+    .pipeline-link { height: 8px; border-radius: 99px; background: linear-gradient(90deg, rgba(14,165,233,.2), rgba(14,165,233,.6), rgba(14,165,233,.2)); position: relative; overflow: hidden; }
+    .pipeline-dot { position: absolute; top: 1px; left: -10px; width: 6px; height: 6px; border-radius: 999px; background: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,.8); animation: pipelineMove 1.6s linear infinite; }
+    @keyframes pipelineMove { from { left: -10px; } to { left: calc(100% + 10px); } }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex">
@@ -955,40 +963,61 @@ async function loadSystemStats() {
   }
 }
 
-let mermaidApi = null;
+let countUpCtor = null;
 
-async function ensureMermaid() {
-  if (mermaidApi) return mermaidApi;
-  const mod = await import('/node_modules/mermaid/dist/mermaid.esm.min.mjs');
-  mermaidApi = mod.default;
-  mermaidApi.initialize({ startOnLoad: false, theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default' });
-  return mermaidApi;
+async function ensureCountUp() {
+  if (countUpCtor) return countUpCtor;
+  const mod = await import('/node_modules/countup.js/dist/countUp.min.js');
+  countUpCtor = mod.CountUp;
+  return countUpCtor;
 }
 
 async function renderPipelineFlowchart(stats = {}) {
   if (!pipelineFlowchart) return;
-  try {
-    const m = await ensureMermaid();
-    const source = stats.sourceCount ?? '--';
-    const merged = stats.totalRoles ?? '--';
-    const queue = stats.queueCount ?? '--';
-    const memory = stats.answerCount ?? '--';
-    const definition = `flowchart LR
-      A["Simplify Scrape\\n${source} roles"] --> B["Network Merge\\n${merged} total roles"]
-      R["Resume from Docs"] --> C["Resume Fit Scoring"]
-      B --> C
-      C --> D["Assisted Queue\\n${queue} roles"]
-      M["Answer Memory\\n${memory} entries"] --> E["Draft Answers in Your Voice"]
-      D --> E
-      E --> F["Manual Review + Submit"]`;
 
-    const id = `pipeline-${Date.now()}`;
-    const { svg } = await m.render(id, definition);
-    pipelineFlowchart.innerHTML = svg;
-    if (pipelineFlowMeta) pipelineFlowMeta.textContent = `roles:${merged} queue:${queue}`;
-  } catch {
-    pipelineFlowchart.innerHTML = '<div class="text-xs text-red-500">Flowchart failed to render (restart server if node_modules route is missing).</div>';
-  }
+  const source = stats.sourceCount ?? 0;
+  const merged = stats.totalRoles ?? 0;
+  const scored = stats.scoredCount ?? merged;
+  const queue = stats.queueCount ?? 0;
+  const drafted = stats.draftedCount ?? queue;
+  const submitted = stats.submittedCount ?? 0;
+  const memory = stats.answerCount ?? 0;
+
+  pipelineFlowchart.innerHTML = `
+    <div class="pipeline-grid">
+      <div class="pipeline-node"><div class="pipeline-title">Simplify Scrape</div><div id="p-source" class="pipeline-count">0</div></div>
+      <div class="pipeline-link"><span class="pipeline-dot"></span></div>
+      <div class="pipeline-node"><div class="pipeline-title">Network Merge</div><div id="p-merged" class="pipeline-count">0</div></div>
+      <div class="pipeline-link"><span class="pipeline-dot"></span></div>
+      <div class="pipeline-node"><div class="pipeline-title">Resume Fit Scoring</div><div id="p-scored" class="pipeline-count">0</div></div>
+      <div class="pipeline-link"><span class="pipeline-dot"></span></div>
+      <div class="pipeline-node"><div class="pipeline-title">Assisted Queue</div><div id="p-queue" class="pipeline-count">0</div></div>
+      <div class="pipeline-link"><span class="pipeline-dot"></span></div>
+      <div class="pipeline-node"><div class="pipeline-title">Drafted Answers</div><div id="p-drafted" class="pipeline-count">0</div></div>
+      <div class="pipeline-link"><span class="pipeline-dot"></span></div>
+      <div class="pipeline-node"><div class="pipeline-title">Submitted</div><div id="p-submitted" class="pipeline-count">0</div></div>
+    </div>
+    <div class="text-[10px] text-gray-500 mt-2">Answer memory entries: <span id="p-memory">0</span></div>
+  `;
+
+  if (pipelineFlowMeta) pipelineFlowMeta.textContent = `src:${source} merge:${merged} queue:${queue} submit:${submitted}`;
+
+  try {
+    const CountUp = await ensureCountUp();
+    const values = {
+      'p-source': source,
+      'p-merged': merged,
+      'p-scored': scored,
+      'p-queue': queue,
+      'p-drafted': drafted,
+      'p-submitted': submitted,
+      'p-memory': memory,
+    };
+    Object.entries(values).forEach(([id, value]) => {
+      const anim = new CountUp(id, Number(value || 0), { duration: 0.9, separator: ',' });
+      if (!anim.error) anim.start();
+    });
+  } catch {}
 }
 
 async function loadNetworkJobs() {
@@ -1052,10 +1081,15 @@ async function loadNetworkJobs() {
       answerCount = (a.entries || []).length;
     } catch {}
 
+    const submittedCount = apps.filter(a => /submitted|applied/i.test(a.stage || '')).length;
+    const draftedCount = Math.min(queueCount, Math.max(0, queueCount - submittedCount));
     renderPipelineFlowchart({
       sourceCount: data?.sources?.simplify?.count || 0,
       totalRoles: roles.length,
+      scoredCount: roles.length,
       queueCount,
+      draftedCount,
+      submittedCount,
       answerCount,
     });
   } catch {

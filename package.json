@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/carter-a-lim/mustang-ops#readme",
   "dependencies": {
+    "countup.js": "^2.9.0",
     "mermaid": "^11.12.3"
   }
 }
