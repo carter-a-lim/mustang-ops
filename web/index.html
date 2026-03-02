@@ -107,7 +107,7 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
+            <div class="panel-card p-4 flex items-center space-x-4 relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="relative w-14 h-14 flex items-center justify-center">
                 <svg class="transform -rotate-90 w-14 h-14">
@@ -123,7 +123,7 @@
               </div>
             </div>
 
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
+            <div class="panel-card p-4 flex items-center space-x-4 relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="relative w-14 h-14 flex items-center justify-center">
                 <svg class="transform -rotate-90 w-14 h-14">
@@ -139,7 +139,7 @@
               </div>
             </div>
 
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
+            <div class="panel-card p-4 flex items-center space-x-4 relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div class="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 text-green-500">
                 <span id="node-value" class="font-bold text-sm">--</span>
@@ -194,29 +194,29 @@
             <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh Job Hub</button>
           </div>
 
-          <div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4">
+          <div class="panel-card p-4">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">Jobs / Applications / Internships</h3>
               <span id="jobhub-updated" class="text-[10px] text-gray-500 font-mono">Updated: --</span>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Open Roles</p><p id="jobhub-open-roles" class="text-2xl font-bold">0</p></div>
-              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
-              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Interviewing</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
-              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Warm Targets</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Open Roles</p><p id="jobhub-open-roles" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Interviewing</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Warm Targets</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+            <div class="md:col-span-1 p-4 panel-card">
               <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Role Pipeline</h3>
               <div id="jobhub-roles" class="space-y-2"></div>
             </div>
-            <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+            <div class="md:col-span-1 p-4 panel-card">
               <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Application Tracker</h3>
               <div id="jobhub-apps" class="space-y-2"></div>
             </div>
-            <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+            <div class="md:col-span-1 p-4 panel-card">
               <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Warm Intro Targets</h3>
               <div id="jobhub-outreach" class="space-y-2"></div>
             </div>
@@ -229,12 +229,12 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Installed</p><p id="skills-total" class="text-2xl font-bold">0</p></div>
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Ready</p><p id="skills-ready" class="text-2xl font-bold">0</p></div>
-            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Needs Config</p><p id="skills-needs" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Installed</p><p id="skills-total" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Ready</p><p id="skills-ready" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Needs Config</p><p id="skills-needs" class="text-2xl font-bold">0</p></div>
           </div>
 
-          <div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4">
+          <div class="panel-card p-4">
             <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Recommendations</h3>
             <div id="skills-recs" class="space-y-2"></div>
           </div>
@@ -425,7 +425,7 @@ async function loadSkills() {
 
     if (skillsRecs) {
       skillsRecs.innerHTML = recs.length ? recs.map(r => `
-        <div class="p-2 rounded border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]">
+        <div class="p-2 panel-soft bg-background-light dark:bg-[#0f111a]">
           <div class="text-sm font-semibold">${r.name}</div>
           <div class="text-[11px] text-gray-500">${r.why}</div>
           <div class="text-[10px] text-primary font-mono mt-1">${r.install}</div>
@@ -441,13 +441,13 @@ async function loadSkills() {
     skillsGrid.innerHTML = skills.map(s => {
       const ready = s.readiness === 'ready';
       const readinessCls = ready
-        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-        : 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+        ? 'badge-ok'
+        : 'badge-warn';
       const missing = (s.missing_env || []).length
         ? `<div class="text-[10px] text-orange-400 mt-1">Missing: ${(s.missing_env || []).join(', ')}</div>`
         : '<div class="text-[10px] text-gray-500 mt-1">Config: complete</div>';
 
-      return `<div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+      return `<div class="p-4 panel-card">
         <div class="flex items-start justify-between gap-3">
           <div>
             <div class="text-sm font-semibold text-gray-900 dark:text-white">${s.name}</div>
@@ -458,9 +458,9 @@ async function loadSkills() {
         ${missing}
         <div class="text-[10px] text-gray-500 mt-2">Usage: no telemetry yet (next: wire runs_24h / success_rate)</div>
         <div class="mt-3 flex flex-wrap gap-2">
-          <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.test}')">Run test</button>
-          <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark text-[10px]" onclick="window.open('${s.actions.docs}','_blank')">Docs</button>
-          <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.update}')">Update</button>
+          <button class="px-2 py-1 panel-soft text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.test}')">Run test</button>
+          <button class="px-2 py-1 panel-soft text-[10px]" onclick="window.open('${s.actions.docs}','_blank')">Docs</button>
+          <button class="px-2 py-1 panel-soft text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.update}')">Update</button>
         </div>
       </div>`;
     }).join('');
@@ -532,7 +532,7 @@ async function loadNetworkJobs() {
     if (jobhubTargets) jobhubTargets.textContent = targets.length;
 
     if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0, 8).map(r => `
-      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+      <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${r.company} — ${r.title}</div>
         <div class="text-[10px] text-gray-500">${r.location || ''}</div>
         <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'sourcing'}</div>
@@ -540,7 +540,7 @@ async function loadNetworkJobs() {
     `).join('') : '<div class="text-xs text-gray-500">No roles tracked yet.</div>';
 
     if (jobhubApps) jobhubApps.innerHTML = apps.length ? apps.slice(0, 8).map(a => `
-      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+      <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${a.company} — ${a.title}</div>
         <div class="text-[10px] text-gray-500">Stage: ${a.stage || 'n/a'}</div>
         <div class="text-[10px] text-primary mt-1">Next: ${a.next_step || 'n/a'} ${a.deadline ? `· due ${a.deadline}` : ''}</div>
@@ -548,7 +548,7 @@ async function loadNetworkJobs() {
     `).join('') : '<div class="text-xs text-gray-500">No applications yet.</div>';
 
     if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0, 8).map(t => `
-      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+      <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${t.name}</div>
         <div class="text-[10px] text-gray-500">Mutuals: ${t.mutual_count || 0} · ${t.status || 'queued'}</div>
         <div class="text-[10px] text-primary mt-1">${t.reason || ''}</div>
@@ -575,15 +575,15 @@ async function loadGithub() {
       const issues = r.issues || [];
       const prsBadge = Number(r.open_prs || 0) > 0
         ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-        : 'bg-gray-700/40 text-gray-400 border-gray-600/30';
+        : 'badge-idle';
       const issuesBadge = Number(r.open_issues || 0) > 0
-        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-        : 'bg-gray-700/40 text-gray-400 border-gray-600/30';
+        ? 'badge-warn'
+        : 'badge-idle';
 
       const issueHtml = issues.length
         ? issues.slice(0, 6).map(it => {
             const assigned = (it.assignees && it.assignees.length) ? `Assigned: ${it.assignees.join(', ')}` : 'Assigned: nobody';
-            return `<div class="bg-background-light dark:bg-[#0f111a] rounded-lg p-3 border border-border-light dark:border-border-dark/50">
+            return `<div class="panel-soft p-3">
               <div class="flex items-start space-x-2">
                 <span class="material-icons text-[14px] text-orange-400 mt-0.5">bug_report</span>
                 <div class="flex-1 min-w-0">
@@ -595,7 +595,7 @@ async function loadGithub() {
           }).join('')
         : '<div class="text-[11px] text-gray-500">No open issues.</div>';
 
-      return `<details class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200" ${idx===0?'open':''}>
+      return `<details class="panel-card overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200" ${idx===0?'open':''}>
         <summary class="p-5 list-none cursor-pointer flex justify-between items-center">
           <div class="flex items-center space-x-3 min-w-0">
             <span class="material-icons text-gray-400 text-xl">folder</span>
