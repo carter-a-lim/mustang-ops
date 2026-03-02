@@ -20,6 +20,7 @@ DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 USAGE_EVENTS_PATH = DATA_DIR / "usage_events.jsonl"
 CHAT_SESSIONS_PATH = DATA_DIR / "chat_sessions.json"
+JOB_PIPELINE_PATH = DATA_DIR / "job_pipeline.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -40,6 +41,7 @@ LIMIT_7D_TOKENS = int(os.getenv("MUSTANG_LIMIT_7D_TOKENS", "2000000"))
 JOBS = {
     "sync_canvas": ROOT / "jobs" / "sync_canvas.py",
     "sync_github": ROOT / "jobs" / "sync_github.py",
+    "sync_network": ROOT / "jobs" / "sync_network.py",
     "morning_brief": ROOT / "jobs" / "morning_brief.py",
     "linkedin_scout": ROOT / "jobs" / "linkedin_scout.py",
     "token_sync": ROOT / "jobs" / "token_sync.py",
@@ -216,6 +218,36 @@ def get_github_snapshot():
     p = ROOT / "data" / "github_snapshot.json"
     if not p.exists():
         return {"updated_at": None, "repos": []}
+    return json.loads(p.read_text())
+
+
+@app.get("/api/network/jobs")
+def get_network_jobs():
+    if not JOB_PIPELINE_PATH.exists():
+        return {
+            "updated_at": None,
+            "roles": [],
+            "applications": [],
+            "outreach_targets": [],
+        }
+    try:
+        return json.loads(JOB_PIPELINE_PATH.read_text())
+    except Exception:
+        raise HTTPException(status_code=500, detail="Invalid job pipeline data")
+
+
+@app.get("/api/network")
+def get_network():
+    p = ROOT / "data" / "network_context.json"
+    if not p.exists():
+        return {
+            "updated_at": None,
+            "contacts": [],
+            "interactions": [],
+            "opportunities": [],
+            "introductions": [],
+            "summary": {"pending_followups": 0, "warm_leads": 0, "intros_available": 0, "reply_rate": 0},
+        }
     return json.loads(p.read_text())
 
 

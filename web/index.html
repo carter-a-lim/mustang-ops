@@ -7,30 +7,28 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            primary: '#3B82F6',
-            'primary-dark': '#2563EB',
-            'background-light': '#F3F4F6',
-            'background-dark': '#0B1120',
-            'surface-light': '#FFFFFF',
-            'surface-dark': '#151e32',
-            'border-light': '#E5E7EB',
-            'border-dark': '#1F2937',
-            'accent-dark': '#1E293B',
+            primary: '#1d4ed8',
+            accent: '#0ea5e9',
             success: '#10b981',
+            'background-light': '#f3f4f6',
+            'background-dark': '#0f111a',
+            'surface-light': '#ffffff',
+            'surface-dark': '#161b22',
+            'border-dark': '#30363d',
+            'border-light': '#e5e7eb',
           },
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            display: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
           boxShadow: {
-            glow: '0 0 10px rgba(59, 130, 246, 0.2)',
+            glow: '0 0 10px rgba(14, 165, 233, 0.2)',
             'glow-success': '0 0 8px rgba(16, 185, 129, 0.3)',
           }
         }
@@ -46,7 +44,7 @@
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex">
-  <aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark relative z-20">
+  <aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] relative z-20">
     <div class="p-6 flex items-center space-x-3">
       <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-glow relative overflow-hidden">
         <div class="absolute inset-0 bg-white opacity-10 blur-sm"></div>
@@ -91,40 +89,32 @@
 
   <main class="flex-1 flex min-w-0 overflow-hidden relative">
     <section class="flex-1 flex flex-col overflow-hidden">
-      <header class="flex-shrink-0 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark h-16 flex items-center justify-between px-6 z-10">
+      <header class="flex-shrink-0 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] h-16 flex items-center justify-between px-6 z-10">
         <div class="flex items-center space-x-4"><span class="material-icons text-primary text-2xl">dashboard</span><h2 class="text-lg font-semibold text-gray-900 dark:text-white">Command Center</h2></div>
-        <div class="flex items-center gap-4">
-          <div class="hidden md:flex items-center px-3 py-1 bg-gray-100 dark:bg-surface-dark rounded-full border border-border-light dark:border-border-dark">
-            <span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono mr-2 uppercase">v2.4.0 • Online</span>
-            <div id="job-status-pill" class="hidden items-center space-x-2"><span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span><span id="current-job" class="text-[10px] font-mono text-success">Running…</span></div>
-          </div>
+        <div class="flex items-center gap-3">
           <button onclick="toggleTheme()" class="p-2 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-surface-dark rounded-md transition-colors" title="Toggle light/dark">
             <span id="theme-icon" class="material-icons">dark_mode</span>
           </button>
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-bold text-xs cursor-pointer shadow-lg shadow-primary/20">
-            JD
-          </div>
+          <div id="job-status-pill" class="hidden items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark"><span class="w-2 h-2 rounded-full bg-success animate-pulse"></span><span id="current-job" class="text-xs font-medium">Running…</span></div>
         </div>
       </header>
 
-      <div class="flex-1 min-h-0 bg-background-light dark:bg-background-dark relative">
-        <div id="section-coding" class="section-content max-w-7xl mx-auto space-y-6 p-6 h-full overflow-y-auto">
+      <div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6">
+        <div id="section-coding" class="section-content max-w-7xl mx-auto space-y-6">
           <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Build & Ship</h1>
-            <div class="flex space-x-2">
-              <button onclick="runJob('sync_github')" class="p-2 text-gray-400 hover:text-white transition-colors"><span class="material-icons">refresh</span></button>
-            </div>
+            <button onclick="runJob('sync_github')" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Sync GitHub</button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
             <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div class="relative w-16 h-16 flex items-center justify-center">
-                <svg class="transform -rotate-90 w-16 h-16">
-                  <circle class="text-gray-200 dark:text-gray-700" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="4"></circle>
-                  <circle id="cpu-ring" class="text-blue-500" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="175.9" stroke-width="4"></circle>
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <svg class="transform -rotate-90 w-14 h-14">
+                  <circle class="text-gray-200 dark:text-gray-700" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-width="4"></circle>
+                  <circle id="cpu-ring" class="text-blue-500" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-width="4"></circle>
                 </svg>
-                <span id="cpu-pct" class="absolute text-sm font-bold text-gray-900 dark:text-white">--</span>
+                <span id="cpu-pct" class="absolute text-xs font-bold text-gray-900 dark:text-white">--</span>
               </div>
               <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">CPU Load</p>
@@ -135,12 +125,12 @@
 
             <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div class="relative w-16 h-16 flex items-center justify-center">
-                <svg class="transform -rotate-90 w-16 h-16">
-                  <circle class="text-gray-200 dark:text-gray-700" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="4"></circle>
-                  <circle id="mem-ring" class="text-purple-500" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="175.9" stroke-width="4"></circle>
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <svg class="transform -rotate-90 w-14 h-14">
+                  <circle class="text-gray-200 dark:text-gray-700" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-width="4"></circle>
+                  <circle id="mem-ring" class="text-purple-500" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-width="4"></circle>
                 </svg>
-                <span id="mem-pct" class="absolute text-sm font-bold text-gray-900 dark:text-white">--</span>
+                <span id="mem-pct" class="absolute text-xs font-bold text-gray-900 dark:text-white">--</span>
               </div>
               <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Memory</p>
@@ -151,8 +141,8 @@
 
             <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 flex items-center space-x-4 relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div class="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 text-green-500">
-                <span id="node-value" class="font-bold text-xl">--</span>
+              <div class="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 text-green-500">
+                <span id="node-value" class="font-bold text-sm">--</span>
               </div>
               <div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Active Node.js</p>
@@ -160,292 +150,85 @@
                 <div class="flex space-x-2 mt-1"><span class="w-2 h-2 rounded-full bg-green-500 shadow-glow-success animate-pulse"></span><span id="node-status" class="text-xs text-gray-500">Ecosystem Healthy</span></div>
               </div>
             </div>
-          </div>
+          </div></div>
 
           <div class="space-y-4">
             <div class="flex justify-between items-end mb-2">
               <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">GitHub Snapshot</h3>
-              <div class="flex items-center gap-3">
-                <a class="text-xs text-primary hover:text-accent transition-colors" href="#">View All Repos</a>
-                <button onclick="loadGithub()" class="text-gray-500 hover:text-white transition-colors"><span class="material-icons text-sm">refresh</span></button>
-              </div>
+              <button onclick="loadGithub()" class="text-xs text-primary hover:text-accent transition-colors">Refresh</button>
             </div>
             <div id="github-list" class="space-y-3"></div>
           </div>
         </div>
 
-        <div id="section-chat" class="section-content hidden flex-1 flex flex-col relative h-full bg-white dark:bg-background-dark overflow-hidden">
-          <!-- Chat Interface (OpenClaw Pro) -->
-          <div class="flex-1 overflow-y-auto px-4 py-8 md:px-12 lg:px-24 xl:px-32 space-y-10 scrollbar-hide" id="chat-history">
-            <!-- Messages injected here -->
-          </div>
-
-          <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-background-dark/80 backdrop-blur-md pt-2 pb-6 px-4 md:px-12 lg:px-24 xl:px-32 border-t border-transparent dark:border-border-dark/50 z-10">
-            <div class="relative max-w-4xl mx-auto">
-              <div class="flex gap-2 mb-3 overflow-x-auto scrollbar-hide">
-                <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-full text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors whitespace-nowrap shadow-sm">
-                  <span class="material-icons text-[14px]">bug_report</span>
-                  Debug this
-                </button>
-                <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-full text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors whitespace-nowrap shadow-sm">
-                  <span class="material-icons text-[14px]">bolt</span>
-                  Optimize
-                </button>
+        <div id="section-chat" class="section-content hidden max-w-7xl mx-auto space-y-4 h-[calc(100vh-9rem)]">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
+            <div class="md:col-span-1 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0f1623] p-3 flex flex-col min-h-0">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-bold uppercase text-gray-500 mb-2">Sessions</h3>
+                <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
               </div>
-              <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
-                <textarea id="msg" class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-4 pl-4 pr-12 resize-none max-h-48 scrollbar-hide" placeholder="Message current session..." rows="1" style="min-height: 56px;"></textarea>
-                <div class="absolute right-2 bottom-2 flex items-center gap-1">
-                  <button class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg transition-colors" title="Attach file">
-                    <span class="material-icons">attach_file</span>
-                  </button>
-                  <button onclick="sendChat()" class="p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors shadow-md">
-                    <span class="material-icons text-xl">send</span>
+              <div id="chat-sessions" class="space-y-2 overflow-y-auto"></div>
+            </div>
+            <div class="md:col-span-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0">
+              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
+              </div>
+              <div id="chat-history" class="flex-1 overflow-y-auto px-4 py-6 space-y-5"></div>
+              <div class="border-t border-border-light dark:border-border-dark p-3 bg-white/80 dark:bg-background-dark/80 backdrop-blur">
+                <div class="relative bg-white dark:bg-surface-dark border border-gray-300 dark:border-gray-600 rounded-xl focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all duration-200">
+                  <input id="msg" placeholder="Message current session..." class="w-full bg-transparent border-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 py-3 pl-4 pr-14"/>
+                  <button onclick="sendChat()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
+                    <span class="material-icons text-base">send</span>
                   </button>
                 </div>
               </div>
-              <div class="text-center mt-2">
-                <p class="text-[10px] text-gray-400 dark:text-gray-500">Mustang AI can make mistakes. Verify important information.</p>
-              </div>
             </div>
           </div>
         </div>
 
-        <!-- Calendar (Visual + JSON Brain) -->
-        <div id="section-calendar" class="section-content hidden flex-1 flex flex-col overflow-hidden">
-          <header class="p-6 border-b border-slate-200 dark:border-border-dark flex items-center justify-between shrink-0">
-            <div class="flex items-center space-x-4">
-              <h1 id="cal-month-year" class="text-xl font-bold text-gray-900 dark:text-white">March 2026</h1>
-              <div class="flex bg-gray-100 dark:bg-background-dark rounded-lg p-1">
-                <button id="btn-visual" onclick="switchCalendarMode('visual')" class="px-4 py-1.5 text-xs font-semibold rounded-md transition-all text-primary border-b-2 border-primary">Visual View</button>
-                <button id="btn-brain" onclick="switchCalendarMode('brain')" class="px-4 py-1.5 text-xs font-semibold rounded-md transition-all text-gray-500 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300">Brain Mode</button>
-              </div>
-            </div>
-          </header>
-
-          <div id="tab-visual" class="flex-1 overflow-y-auto p-6 animate-in fade-in duration-500">
-            <div class="grid grid-cols-7 gap-px bg-border-light dark:bg-border-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden shadow-2xl">
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sun</div>
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mon</div>
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tue</div>
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Wed</div>
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Thu</div>
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fri</div>
-              <div class="bg-gray-50 dark:bg-[#161b22] p-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sat</div>
-          <div id="calendar-grid" class="contents p-6"></div>
-            </div>
-          </div>
-
-          <div id="tab-brain" class="hidden flex-1 flex flex-col p-6 animate-in fade-in duration-500 min-h-0">
-            <div class="flex-1 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] overflow-hidden flex flex-col">
-              <div class="px-4 py-2 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-black/20 flex justify-between items-center">
-                <span class="text-[10px] font-mono text-gray-500 uppercase">mustang_context.json</span>
-                <button onclick="saveContext()" class="text-xs text-primary hover:text-blue-400 font-bold">SAVE CHANGES</button>
-              </div>
-              <textarea id="context-editor" class="flex-1 w-full bg-transparent p-4 font-mono text-sm text-gray-700 dark:text-gray-300 resize-none focus:ring-0 border-none scrollbar-hide" spellcheck="false"></textarea>
-            </div>
-          </div>
-        </div>
-        <!-- Network (Intelligence & Outreach) -->
-        <div id="section-network" class="section-content hidden max-w-7xl mx-auto space-y-6 p-6 h-full overflow-y-auto">
+        <div id="section-calendar" class="section-content hidden max-w-5xl mx-auto space-y-4"><h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1><pre id="context" class="text-xs"></pre></div>
+        <div id="section-network" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Outreach IQ</h1>
-            <div class="flex space-x-2">
-              <button onclick="runJob('linkedin_scout')" class="px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors">Start Scout</button>
-            </div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Network Engine</h1>
+            <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh Job Hub</button>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-5 space-y-4">
-              <div class="flex items-center space-x-3 mb-2">
-                <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500"><span class="material-icons">trending_up</span></div>
-                <h3 class="font-bold">Hiring Signals</h3>
-              </div>
-              <div class="space-y-3">
-                <div class="p-3 rounded-lg bg-background-light dark:bg-background-dark/50 border border-border-light dark:border-border-dark">
-                  <p class="text-xs font-semibold text-primary mb-1">FRONTEND ENG @ ACME</p>
-                  <p class="text-xs text-gray-500">Detected hiring trigger in recent news cycle. drafting pitch...</p>
-                </div>
-                <div class="p-3 rounded-lg bg-background-light dark:bg-background-dark/50 border border-border-light dark:border-border-dark">
-                  <p class="text-xs font-semibold text-primary mb-1">CTO @ STARTUP X</p>
-                  <p class="text-xs text-gray-500">Sentiment shift detected: High openness to infrastructure audit.</p>
-                </div>
-              </div>
-            </div>
-            <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-5">
-              <div class="flex items-center space-x-3 mb-4">
-                <div class="p-2 rounded-lg bg-purple-500/10 text-purple-500"><span class="material-icons">auto_awesome</span></div>
-                <h3 class="font-bold">Drafting Queue</h3>
-              </div>
-              <p class="text-xs text-gray-500 mb-4">3 drafts pending review in Context Brain.</p>
-              <button class="w-full py-2 rounded-lg border border-border-light dark:border-border-dark text-xs hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors">Open Sidebar Drafts</button>
-            </div>
-          </div>
-        </div>
 
-        <!-- Skills (Inventory) -->
-        <div id="section-skills" class="section-content hidden max-w-7xl mx-auto space-y-6 p-6 h-full overflow-y-auto">
-          <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Skill Inventory</h1>
-            <span class="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Live Sync • 24 Installed</span>
+          <div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">Jobs / Applications / Internships</h3>
+              <span id="jobhub-updated" class="text-[10px] text-gray-500 font-mono">Updated: --</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Open Roles</p><p id="jobhub-open-roles" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Interviewing</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]"><p class="text-[10px] uppercase text-gray-500">Warm Targets</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
+            </div>
           </div>
-          <div id="skills-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Skills injected by loadSkills() -->
-          </div>
-        </div>
 
-        <!-- Cron (Heartbeat Layer) -->
-        <div id="section-cron" class="section-content hidden max-w-7xl mx-auto space-y-6 p-6 h-full overflow-y-auto">
-          <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Heartbeat Layer</h1>
-            <div id="cron-status" class="flex items-center space-x-2">
-              <span class="w-2 h-2 rounded-full bg-success shadow-glow-success animate-pulse"></span>
-              <span class="text-xs text-gray-500">Scheduler Active</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Role Pipeline</h3>
+              <div id="jobhub-roles" class="space-y-2"></div>
             </div>
-          </div>
-          <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden shadow-xl">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left">
-                <thead class="bg-gray-50 dark:bg-black/20 text-[10px] text-gray-500 uppercase tracking-widest border-b border-border-light dark:border-border-dark">
-                  <tr>
-                    <th class="px-6 py-4 font-bold">Task Name</th>
-                    <th class="px-6 py-4 font-bold">Frequency</th>
-                    <th class="px-6 py-4 font-bold">Last Run</th>
-                    <th class="px-6 py-4 font-bold">Next Run</th>
-                    <th class="px-6 py-4 font-bold text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-border-light dark:divide-border-dark">
-                  <tr class="hover:bg-gray-50 dark:hover:bg-accent-dark/10 transition-colors">
-                    <td class="px-6 py-4 text-sm font-semibold">sync_canvas</td>
-                    <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] border border-blue-500/20">Every 6h</span></td>
-                    <td class="px-6 py-4 text-xs font-mono text-gray-500">2h ago</td>
-                    <td class="px-6 py-4 text-xs font-mono text-gray-500">4h</td>
-                    <td class="px-6 py-4 text-right"><button onclick="runJob('sync_canvas')" class="material-icons text-gray-400 hover:text-primary transition-colors text-lg">play_arrow</button></td>
-                  </tr>
-                  <tr class="hover:bg-gray-50 dark:hover:bg-accent-dark/10 transition-colors">
-                    <td class="px-6 py-4 text-sm font-semibold">morning_brief</td>
-                    <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] border border-blue-500/20">Daily @ 8am</span></td>
-                    <td class="px-6 py-4 text-xs font-mono text-gray-500">Yesterday</td>
-                    <td class="px-6 py-4 text-xs font-mono text-gray-500">3h</td>
-                    <td class="px-6 py-4 text-right"><button onclick="runJob('morning_brief')" class="material-icons text-gray-400 hover:text-primary transition-colors text-lg">play_arrow</button></td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Application Tracker</h3>
+              <div id="jobhub-apps" class="space-y-2"></div>
+            </div>
+            <div class="md:col-span-1 p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Warm Intro Targets</h3>
+              <div id="jobhub-outreach" class="space-y-2"></div>
             </div>
           </div>
         </div>
+        <div id="section-skills" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Skills</h1><div id="skills-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div></div>
+        <div id="section-cron" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Cron</h1><div class="mt-3"><button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-md border">Run Canvas Sync</button></div></div>
       </div>
     </section>
 
-    <aside id="dynamic-sidebar" class="w-80 flex-shrink-0 border-l border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark overflow-y-auto hidden xl:block">
-      <!-- Content switch via showSection -->
-      <div id="sidebar-content-default" class="p-6 space-y-8">
-        <div>
-          <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Neural Activity</h3>
-          <div class="bg-background-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4">
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-semibold text-gray-500">LATENCY HEARTBEAT</span>
-              <span class="text-xs text-blue-400 font-mono">12ms</span>
-            </div>
-            <div class="flex items-end space-x-1 h-8">
-              <div class="w-1/12 bg-blue-500/20 h-full rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/30 h-3/4 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/40 h-1/2 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/50 h-2/3 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/60 h-full rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/70 h-4/5 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/80 h-3/5 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500 h-1/3 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500 h-full rounded-sm shadow-glow"></div>
-              <div class="w-1/12 bg-blue-500/80 h-4/5 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/60 h-2/5 rounded-sm"></div>
-              <div class="w-1/12 bg-blue-500/40 h-1/5 rounded-sm"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Self-Improvement</h3>
-            <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-          </div>
-          <div class="space-y-3">
-            <div class="bg-background-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 relative overflow-hidden">
-              <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500"></div>
-              <div class="flex items-start space-x-3">
-                <div class="mt-0.5 p-1 rounded bg-green-500/10 text-green-500">
-                  <span class="material-icons text-sm">auto_fix_high</span>
-                </div>
-                <div>
-                  <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Auto-Fixed Import</h4>
-                  <p class="text-xs text-gray-500 mt-1">Relative path adjusted in <span class="font-mono text-gray-400">auth.service.ts</span></p>
-                  <p class="text-[10px] text-gray-600 mt-2 text-right">Just now</p>
-                </div>
-              </div>
-            </div>
-            <div class="bg-background-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 relative overflow-hidden">
-              <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500"></div>
-              <div class="flex items-start space-x-3">
-                <div class="mt-0.5 p-1 rounded bg-orange-500/10 text-orange-500">
-                  <span class="material-icons text-sm">history_edu</span>
-                </div>
-                <div>
-                  <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Repeated Mistake Log</h4>
-                  <p class="text-xs text-gray-500 mt-1">Forgotten <code class="bg-black/20 px-1 rounded">await</code> detected 3x in last hour.</p>
-                  <a class="text-[10px] text-blue-400 hover:text-blue-300 mt-2 block underline" href="#">Review Async Patterns</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Recent Findings</h3>
-          <div class="bg-background-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 group hover:border-blue-500/50 transition-colors">
-            <div class="flex items-center space-x-2 mb-2">
-              <span class="material-icons text-primary text-sm">lightbulb</span>
-              <h4 class="text-sm font-bold text-gray-200">Canvas Sync</h4>
-            </div>
-            <p class="text-xs text-gray-500 leading-relaxed">Detected priority shift in Q1 goals. Reallocating compute resources to rendering tasks.</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="sidebar-content-chat" class="hidden p-4 space-y-6">
-        <div class="flex items-center justify-between border-b border-border-light dark:border-border-dark pb-4">
-          <div class="flex items-center gap-2">
-            <span class="material-icons text-primary">psychology</span>
-            <h2 class="font-semibold text-sm text-gray-800 dark:text-gray-200">Context Brain</h2>
-          </div>
-          <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-            <span class="material-icons text-lg">tune</span>
-          </button>
-        </div>
-        <div>
-          <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-            Active Skills
-            <span class="bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] px-1.5 py-0.5 rounded border border-green-500/20">3 ON</span>
-          </h3>
-          <div class="space-y-2">
-            <div class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark shadow-sm">
-              <div class="w-8 h-8 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center">
-                <span class="material-icons text-lg">javascript</span>
-              </div>
-              <div class="flex-1">
-                <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Node.js Expert</div>
-                <div class="text-[10px] text-gray-500">v18.x Runtime</div>
-              </div>
-              <div class="w-2 h-2 rounded-full bg-green-500"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex justify-between items-center">
-            Mustang Context JSON
-            <span class="text-[10px] text-primary cursor-pointer hover:underline" onclick="showSection('calendar')">Edit</span>
-          </h3>
-          <div class="bg-gray-100 dark:bg-background-dark rounded-lg border border-border-light dark:border-border-dark p-3 overflow-hidden">
-            <pre id="sidebar-context-preview" class="font-mono text-[10px] leading-4 text-gray-600 dark:text-gray-400 line-clamp-10 overflow-x-auto">Loading context...</pre>
-          </div>
-        </div>
-      </div>
+    <aside class="w-80 flex-shrink-0 border-l border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] overflow-y-auto hidden xl:block">
+      <div class="p-6"><h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Neural Activity</h3><div class="bg-background-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4"><div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-gray-500">LATENCY HEARTBEAT</span><span class="text-xs text-blue-400 font-mono">12ms</span></div><div class="h-2 rounded bg-blue-500/20"><div class="h-2 w-1/2 bg-blue-500 rounded"></div></div></div></div>
     </aside>
   </main>
 
@@ -473,6 +256,14 @@ const nodeDetail = document.getElementById('node-detail');
 const cpuStatus = document.getElementById('cpu-status');
 const memStatus = document.getElementById('mem-status');
 const nodeStatus = document.getElementById('node-status');
+const jobhubUpdated = document.getElementById('jobhub-updated');
+const jobhubOpenRoles = document.getElementById('jobhub-open-roles');
+const jobhubApplied = document.getElementById('jobhub-applied');
+const jobhubInterviewing = document.getElementById('jobhub-interviewing');
+const jobhubTargets = document.getElementById('jobhub-targets');
+const jobhubRoles = document.getElementById('jobhub-roles');
+const jobhubApps = document.getElementById('jobhub-apps');
+const jobhubOutreach = document.getElementById('jobhub-outreach');
 let activeSessionId = null;
 
 function applyTheme(mode) {
@@ -496,134 +287,31 @@ function showSection(sectionId) {
   document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('bg-blue-50','dark:bg-primary/10','text-primary','dark:text-blue-400','border','dark:border-primary/20'));
   const active = document.getElementById(`nav-${sectionId}`);
   if (active) active.classList.add('bg-blue-50','dark:bg-primary/10','text-primary','dark:text-blue-400','border','dark:border-primary/20');
-
-  // Dynamic Right Sidebar Toggle
-  const sidebarDefault = document.getElementById('sidebar-content-default');
-  const sidebarChat = document.getElementById('sidebar-content-chat');
-  if (sectionId === 'chat') {
-    sidebarDefault?.classList.add('hidden');
-    sidebarChat?.classList.remove('hidden');
-  } else {
-    sidebarChat?.classList.add('hidden');
-    sidebarDefault?.classList.remove('hidden');
-  }
 }
 
 function appendMessage(role, text) {
-  const history = document.getElementById('chat-history');
-  if (!history) return;
-  const div = document.createElement('div');
-  const isAI = role === 'assistant' || role === 'ai';
-  div.className = `flex gap-4 md:gap-6 ${isAI ? '' : 'flex-row-reverse'} group animate-in fade-in slide-in-from-bottom-2 duration-300`;
-  const avatarClass = isAI
-    ? 'w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-md shadow-primary/20'
-    : 'w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0 text-xs font-bold text-gray-600 dark:text-gray-300';
-  const bubbleClass = isAI
-    ? 'prose dark:prose-invert text-gray-800 dark:text-gray-200 text-sm md:text-base leading-relaxed'
-    : 'bg-gray-100 dark:bg-surface-dark px-5 py-3.5 rounded-2xl rounded-tr-sm text-gray-800 dark:text-gray-200 text-sm md:text-base leading-relaxed shadow-sm border border-border-light dark:border-border-dark';
-  
-  div.innerHTML = `
+  if (!chatHistory) return;
+  const isUser = role === 'user';
+  const row = document.createElement('div');
+  row.className = `flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+  const avatarClass = isUser
+    ? 'w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-[10px] font-bold shrink-0'
+    : 'w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0';
+  const bubbleClass = isUser
+    ? 'px-4 py-2.5 rounded-2xl rounded-tr-sm bg-gray-100 dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed'
+    : 'px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark text-sm leading-relaxed';
+  row.innerHTML = `
     <div class="${avatarClass}">
-      ${isAI ? '<span class="material-icons text-white text-sm md:text-base">smart_toy</span>' : 'YOU'}
+      ${isUser ? 'YOU' : '<span class="material-icons text-sm">smart_toy</span>'}
     </div>
-    <div class="flex flex-col ${isAI ? 'items-start max-w-[90%] md:max-w-[85%]' : 'items-end max-w-[85%] md:max-w-[75%]'}">
+    <div class="max-w-[85%] ${isUser ? 'items-end' : 'items-start'} flex flex-col">
       <div class="${bubbleClass}">
-        ${isAI ? marked.parse(text) : `<p>${text}</p>`}
+        ${String(text || '').replace(/\n/g,'<br>')}
       </div>
-      <span class="text-[10px] text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
     </div>
   `;
-  history.appendChild(div);
-  history.scrollTop = history.scrollHeight;
-}
-
-function renderNeuralActivity() {
-  const container = document.querySelector('#sidebar-content-default .flex.items-end.space-x-1');
-  if (!container) return;
-  const bars = container.querySelectorAll('div');
-  bars.forEach(bar => {
-    const h = Math.floor(Math.random() * 80) + 20;
-    bar.style.height = `${h}%`;
-    bar.style.opacity = (h/100).toString();
-  });
-}
-setInterval(renderNeuralActivity, 3000);
-
-function switchCalendarMode(mode) {
-  const visualTab = document.getElementById('tab-visual');
-  const brainTab = document.getElementById('tab-brain');
-  const visualBtn = document.getElementById('btn-visual');
-  const brainBtn = document.getElementById('btn-brain');
-
-  if (mode === 'visual') {
-    visualTab?.classList.remove('hidden');
-    brainTab?.classList.add('hidden');
-    visualBtn?.classList.add('text-primary','border-primary');
-    visualBtn?.classList.remove('text-gray-500','border-transparent');
-    brainBtn?.classList.add('text-gray-500','border-transparent');
-    brainBtn?.classList.remove('text-primary','border-primary');
-    renderCalendar();
-  } else {
-    visualTab?.classList.add('hidden');
-    brainTab?.classList.remove('hidden');
-    brainBtn?.classList.add('text-primary','border-primary');
-    brainBtn?.classList.remove('text-gray-500','border-transparent');
-    visualBtn?.classList.add('text-gray-500','border-transparent');
-    visualBtn?.classList.remove('text-primary','border-primary');
-  }
-}
-
-function renderCalendar() {
-  const grid = document.getElementById('calendar-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const title = document.getElementById('cal-month-year');
-  if (title) title.textContent = `${monthNames[month]} ${year}`;
-  for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'aspect-square border-b border-r border-border-light dark:border-border-dark opacity-20';
-    grid.appendChild(empty);
-  }
-  let context = {};
-  try { context = JSON.parse(document.getElementById('context-editor')?.value || '{}'); } catch(e) {}
-  const deadlines = context.deadlines || {};
-  const events = context.events || {};
-  for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = d === now.getDate();
-    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayEl = document.createElement('div');
-    dayEl.className = 'aspect-square border-b border-r border-border-light dark:border-border-dark p-2 relative group hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors';
-    let indicators = '';
-    if (deadlines[dateStr]) indicators += `<div class="w-1.5 h-1.5 rounded-full bg-red-500 mb-1"></div>`;
-    if (events[dateStr]) indicators += `<div class="w-1.5 h-1.5 rounded-full bg-blue-500 mb-1"></div>`;
-    dayEl.innerHTML = `
-      <span class="text-xs font-medium ${isToday ? 'bg-primary text-white w-6 h-6 flex items-center justify-center rounded-full shadow-glow-primary' : 'text-gray-500'}">${d}</span>
-      <div class="mt-2 flex flex-col items-center">${indicators}</div>
-    `;
-    grid.appendChild(dayEl);
-  }
-}
-
-async function saveContext() {
-  const content = document.getElementById('context-editor')?.value;
-  if (!content) return;
-  try {
-    const res = await fetch('/api/context', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: content
-    });
-    if (res.ok) {
-      alert('Context saved dashboard updated.');
-      loadContext();
-    }
-  } catch(e) { alert('Save failed'); }
+  chatHistory.appendChild(row);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
 function renderSessionList(sessions) {
@@ -694,11 +382,6 @@ async function loadContext() {
     const res = await fetch('/api/context');
     const data = await res.json();
     if (contextDisplay) contextDisplay.textContent = JSON.stringify(data, null, 2);
-    const editor = document.getElementById('context-editor');
-    if (editor) editor.value = JSON.stringify(data, null, 2);
-    const preview = document.getElementById('sidebar-context-preview');
-    if (preview) preview.textContent = JSON.stringify(data, null, 2);
-    renderCalendar();
   } catch {
     if (contextDisplay) contextDisplay.textContent = 'Failed to load context';
   }
@@ -706,34 +389,21 @@ async function loadContext() {
 
 async function loadSkills() {
   if (!skillsGrid) return;
+  skillsGrid.innerHTML = 'Loading...';
   try {
     const res = await fetch('/api/skills');
     const data = await res.json();
     const skills = data.skills || [];
-    skillsGrid.innerHTML = skills.map(s => {
-      const isActive = s.status?.toLowerCase() === 'active' || s.status?.toLowerCase() === 'on';
-      return `
-        <div class="flex items-center gap-4 p-4 rounded-xl bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark shadow-sm group hover:border-primary/50 transition-all cursor-default">
-          <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-            <span class="material-icons text-xl">extension</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-bold text-gray-900 dark:text-white truncate">${s.name}</div>
-            <div class="text-[10px] text-gray-500 uppercase tracking-tight">${s.runtime || 'Universal Runtime'}</div>
-          </div>
-          <div class="w-2 h-2 rounded-full ${isActive ? 'bg-success shadow-glow-success' : 'bg-gray-400'}"></div>
-        </div>
-      `;
-    }).join('');
+    skillsGrid.innerHTML = skills.map(s => `<div class="p-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><div class="font-semibold">${s.name}</div><div class="text-xs text-gray-500">${s.status}</div></div>`).join('');
   } catch {
-    skillsGrid.innerHTML = '<div class="text-xs text-red-500 p-4">Failed to load inventory.</div>';
+    skillsGrid.innerHTML = 'Failed to load skills';
   }
 }
 
 function setRing(el, pct) {
   if (!el) return;
   const clamped = Math.max(0, Math.min(100, Number(pct || 0)));
-  const circumference = 175.9; // Circumference of r=28
+  const circumference = 150.8;
   const offset = circumference - (clamped / 100) * circumference;
   el.style.strokeDashoffset = `${offset}`;
 }
@@ -776,6 +446,50 @@ async function loadSystemStats() {
   }
 }
 
+async function loadNetworkJobs() {
+  try {
+    const res = await fetch('/api/network/jobs');
+    const data = await res.json();
+
+    const roles = data.roles || [];
+    const apps = data.applications || [];
+    const targets = data.outreach_targets || [];
+
+    if (jobhubUpdated) jobhubUpdated.textContent = `Updated: ${data.updated_at || 'n/a'}`;
+    if (jobhubOpenRoles) jobhubOpenRoles.textContent = roles.length;
+    if (jobhubApplied) jobhubApplied.textContent = apps.filter(a => (a.stage || '').toLowerCase().includes('applied')).length;
+    if (jobhubInterviewing) jobhubInterviewing.textContent = apps.filter(a => (a.stage || '').toLowerCase().includes('interview')).length;
+    if (jobhubTargets) jobhubTargets.textContent = targets.length;
+
+    if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0, 8).map(r => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+        <div class="text-sm font-semibold truncate">${r.company} — ${r.title}</div>
+        <div class="text-[10px] text-gray-500">${r.location || ''}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'sourcing'}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No roles tracked yet.</div>';
+
+    if (jobhubApps) jobhubApps.innerHTML = apps.length ? apps.slice(0, 8).map(a => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+        <div class="text-sm font-semibold truncate">${a.company} — ${a.title}</div>
+        <div class="text-[10px] text-gray-500">Stage: ${a.stage || 'n/a'}</div>
+        <div class="text-[10px] text-primary mt-1">Next: ${a.next_step || 'n/a'} ${a.deadline ? `· due ${a.deadline}` : ''}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No applications yet.</div>';
+
+    if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0, 8).map(t => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark">
+        <div class="text-sm font-semibold truncate">${t.name}</div>
+        <div class="text-[10px] text-gray-500">Mutuals: ${t.mutual_count || 0} · ${t.status || 'queued'}</div>
+        <div class="text-[10px] text-primary mt-1">${t.reason || ''}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No warm targets yet.</div>';
+  } catch {
+    if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load job hub.</div>';
+  }
+}
+
+
 async function loadGithub() {
   if (!githubList) return;
   githubList.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
@@ -787,32 +501,48 @@ async function loadGithub() {
       githubList.innerHTML = '<div class="text-xs text-gray-500">No snapshot yet. Run sync_github.</div>';
       return;
     }
-    githubList.innerHTML = repos.map((r, idx) => `
-      <div class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-5 hover:border-primary/50 transition-all duration-300 group cursor-pointer">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-3">
-            <div class="p-2 rounded-lg bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-all">
-              <span class="material-icons text-xl">folder</span>
+    githubList.innerHTML = repos.map((r, idx) => {
+      const issues = r.issues || [];
+      const prsBadge = Number(r.open_prs || 0) > 0
+        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+        : 'bg-gray-700/40 text-gray-400 border-gray-600/30';
+      const issuesBadge = Number(r.open_issues || 0) > 0
+        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+        : 'bg-gray-700/40 text-gray-400 border-gray-600/30';
+
+      const issueHtml = issues.length
+        ? issues.slice(0, 6).map(it => {
+            const assigned = (it.assignees && it.assignees.length) ? `Assigned: ${it.assignees.join(', ')}` : 'Assigned: nobody';
+            return `<div class="bg-background-light dark:bg-[#0f111a] rounded-lg p-3 border border-border-light dark:border-border-dark/50">
+              <div class="flex items-start space-x-2">
+                <span class="material-icons text-[14px] text-orange-400 mt-0.5">bug_report</span>
+                <div class="flex-1 min-w-0">
+                  <a href="${it.html_url || '#'}" target="_blank" class="text-sm text-gray-700 dark:text-gray-200 hover:text-primary block truncate">#${it.number} ${it.title || ''}</a>
+                  <div class="text-[10px] text-gray-500 mt-1 font-mono">${assigned}</div>
+                </div>
+              </div>
+            </div>`;
+          }).join('')
+        : '<div class="text-[11px] text-gray-500">No open issues.</div>';
+
+      return `<details class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200" ${idx===0?'open':''}>
+        <summary class="p-5 list-none cursor-pointer flex justify-between items-center">
+          <div class="flex items-center space-x-3 min-w-0">
+            <span class="material-icons text-gray-400 text-xl">folder</span>
+            <div class="min-w-0">
+              <h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">${r.repo}</h4>
+              <p class="text-xs text-gray-500 mt-0.5">Updated ${r.updated_at || 'n/a'}</p>
             </div>
-            <div>
-              <h4 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">${r.repo}</h4>
-              <p class="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Main Branch • ${r.updated_at || 'just now'}</p>
-            </div>
           </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20 font-bold uppercase tracking-wider">Active</span>
-        </div>
-        <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-          <div class="flex items-center space-x-4">
-            <span class="flex items-center"><span class="material-icons text-[14px] mr-1.5 opacity-60">star</span> ${r.stars || 0}</span>
-            <span class="flex items-center"><span class="material-icons text-[14px] mr-1.5 opacity-60">error_outline</span> ${r.open_issues} issues</span>
+          <div class="flex items-center space-x-2 shrink-0">
+            <span class="px-2 py-1 rounded-md text-xs border font-mono ${prsBadge}">PRs: ${r.open_prs}</span>
+            <span class="px-2 py-1 rounded-md text-xs border font-mono ${issuesBadge}">Issues: ${r.open_issues}</span>
+            <span class="material-icons text-gray-500">expand_more</span>
           </div>
-          <div class="flex items-center text-primary font-mono font-bold">
-            <span class="material-icons text-[14px] mr-1.5">commit</span>
-            <span>PRs: ${r.open_prs}</span>
-          </div>
-        </div>
-      </div>
-    `).join('');
+        </summary>
+        <div class="px-5 pb-5 space-y-2">${issueHtml}</div>
+      </details>`;
+    }).join('');
   } catch {
     githubList.innerHTML = '<div class="text-xs text-red-500">Failed to load github snapshot.</div>';
   }
@@ -858,6 +588,7 @@ loadGithub();
 loadSkills();
 loadContext();
 loadUsageSummary();
+loadNetworkJobs();
 loadSystemStats();
 setInterval(loadSystemStats, 30000);
 loadSessions();

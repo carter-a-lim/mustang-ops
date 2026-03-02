@@ -1,0 +1,49 @@
+{
+  "updated_at": "2026-03-02T13:53:00Z",
+  "roles": [
+    {
+      "company": "OpenAI",
+      "title": "Forward Deployed Engineer Intern",
+      "status": "sourcing",
+      "location": "Remote / SF",
+      "link": ""
+    },
+    {
+      "company": "Stripe",
+      "title": "Software Engineer Intern",
+      "status": "applied",
+      "location": "Remote / SF",
+      "link": ""
+    }
+  ],
+  "applications": [
+    {
+      "company": "Stripe",
+      "title": "Software Engineer Intern",
+      "stage": "Applied",
+      "next_step": "Find warm intro",
+      "deadline": "2026-03-08"
+    },
+    {
+      "company": "Campus startup target",
+      "title": "Product/Growth Intern",
+      "stage": "Drafting",
+      "next_step": "Finalize tailored resume",
+      "deadline": "2026-03-06"
+    }
+  ],
+  "outreach_targets": [
+    {
+      "name": "Alumni SWE @ FAANG",
+      "mutual_count": 3,
+      "reason": "Potential referral + interview prep",
+      "status": "to-message"
+    },
+    {
+      "name": "Startup founder in marketplace space",
+      "mutual_count": 2,
+      "reason": "High-leverage growth mentorship",
+      "status": "queued"
+    }
+  ]
+}
