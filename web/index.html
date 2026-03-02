@@ -15,6 +15,8 @@
           colors: {
             primary: '#1d4ed8',
             accent: '#0ea5e9',
+            'primary-dark': '#1e40af',
+            'accent-dark': '#0284c7',
             success: '#10b981',
             'background-light': '#f3f4f6',
             'background-dark': '#0f111a',
@@ -41,6 +43,13 @@
     ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
     .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4,0,0.6,1) infinite; }
+    .panel-card { border: 1px solid #e5e7eb; border-radius: 0.75rem; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .dark .panel-card { border-color: #30363d; background: #161b22; }
+    .panel-soft { border: 1px solid #e5e7eb; border-radius: 0.625rem; background: #f9fafb; }
+    .dark .panel-soft { border-color: #30363d; background: #0d1117; }
+    .badge-ok { color: #10b981; border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.08); }
+    .badge-warn { color: #f59e0b; border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+    .badge-idle { color: #9ca3af; border-color: rgba(156,163,175,.35); background: rgba(156,163,175,.08); }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex">
@@ -75,13 +84,13 @@
       <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Usage Metering</h3>
       <div class="space-y-4">
         <div>
-          <div class="flex justify-between items-end mb-1"><span class="text-xs text-gray-500">5hr Limit</span><span class="text-sm font-bold text-gray-800 dark:text-white">100%</span></div>
-          <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full w-full shadow-glow"></div></div>
+          <div class="flex justify-between items-end mb-1"><span class="text-xs text-gray-500">5hr Limit</span><span id="usage-5h-pct" class="text-sm font-bold text-gray-800 dark:text-white">0%</span></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden"><div id="usage-5h-bar" class="bg-primary h-full rounded-full shadow-glow" style="width: 0%"></div></div>
           <p id="usage-5h" class="text-[10px] text-gray-400 mt-1 font-mono">0 tok used</p>
         </div>
         <div>
-          <div class="flex justify-between items-end mb-1"><span class="text-xs text-gray-500">Weekly Limit</span><span class="text-sm font-bold text-gray-800 dark:text-white">100%</span></div>
-          <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden"><div class="bg-accent h-full rounded-full w-full shadow-glow"></div></div>
+          <div class="flex justify-between items-end mb-1"><span class="text-xs text-gray-500">Weekly Limit</span><span id="usage-7d-pct" class="text-sm font-bold text-gray-800 dark:text-white">0%</span></div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden"><div id="usage-7d-bar" class="bg-accent h-full rounded-full shadow-glow" style="width: 0%"></div></div>
           <p id="usage-7d" class="text-[10px] text-gray-400 mt-1 font-mono">0 tok used</p>
         </div>
       </div>
@@ -287,6 +296,10 @@ const skillsRecs = document.getElementById('skills-recs');
 const usage5h = document.getElementById('usage-5h');
 const usage7d = document.getElementById('usage-7d');
 const usageCost = document.getElementById('usage-cost');
+const usage5hBar = document.getElementById('usage-5h-bar');
+const usage7dBar = document.getElementById('usage-7d-bar');
+const usage5hPct = document.getElementById('usage-5h-pct');
+const usage7dPct = document.getElementById('usage-7d-pct');
 const contextDisplay = document.getElementById('context');
 const calendarItems = document.getElementById('calendar-items');
 const cronList = document.getElementById('cron-list');
@@ -333,12 +346,29 @@ function toggleTheme() {
   applyTheme(next);
 }
 
+const sectionLoaders = {
+  coding: () => { loadGithub(); loadSystemStats(); },
+  skills: () => loadSkills(),
+  calendar: () => loadContext(),
+  cron: () => loadCronList(),
+  network: () => loadNetworkJobs(),
+  chat: () => loadSessions(),
+};
+
 function showSection(sectionId) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   document.getElementById(`section-${sectionId}`)?.classList.remove('hidden');
   document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('bg-blue-50','dark:bg-primary/10','text-primary','dark:text-blue-400','border','dark:border-primary/20'));
   const active = document.getElementById(`nav-${sectionId}`);
   if (active) active.classList.add('bg-blue-50','dark:bg-primary/10','text-primary','dark:text-blue-400','border','dark:border-primary/20');
+  localStorage.setItem('mustang_active_section', sectionId);
+  if (window.location.hash !== `#${sectionId}`) window.location.hash = sectionId;
+  const loader = sectionLoaders[sectionId];
+  if (loader) loader();
+}
+
+function escapeHtml(input) {
+  return String(input || '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
 function appendMessage(role, text) {
@@ -358,7 +388,7 @@ function appendMessage(role, text) {
     </div>
     <div class="max-w-[85%] ${isUser ? 'items-end' : 'items-start'} flex flex-col">
       <div class="${bubbleClass}">
-        ${String(text || '').replace(/\n/g,'<br>')}
+        ${escapeHtml(text).replace(/\n/g,'<br>')}
       </div>
     </div>
   `;
@@ -726,6 +756,12 @@ async function loadUsageSummary() {
     const w7d = data?.windows?.last_7d || {};
     usage5h.textContent = formatTokens(w5h.total_tokens || 0);
     usage7d.textContent = formatTokens(w7d.total_tokens || 0);
+    const pct5h = Math.max(0, Math.min(100, Number(w5h.percent_used || 0)));
+    const pct7d = Math.max(0, Math.min(100, Number(w7d.percent_used || 0)));
+    if (usage5hBar) usage5hBar.style.width = `${pct5h}%`;
+    if (usage7dBar) usage7dBar.style.width = `${pct7d}%`;
+    if (usage5hPct) usage5hPct.textContent = `${pct5h.toFixed(1)}%`;
+    if (usage7dPct) usage7dPct.textContent = `${pct7d.toFixed(1)}%`;
     usageCost.textContent = data?.pricing?.cost_estimation_enabled ? `Cost est: ${formatUsd(w5h.estimated_cost_usd || 0)} (5h) · ${formatUsd(w7d.estimated_cost_usd || 0)} (7d)` : 'Cost est: set MUSTANG_COST_INPUT_PER_1M / MUSTANG_COST_OUTPUT_PER_1M';
   } catch {
     usageCost.textContent = 'Cost est: failed to load usage summary';
@@ -742,7 +778,7 @@ async function runJob(name) {
     appendMessage('ai', `Job ${name} completed with exit code ${data.exit_code}.`);
     if (name === 'sync_github') loadGithub();
     if (name === 'sync_canvas') loadContext();
-    if (name === 'sync_network') { loadNetwork(); loadNetworkJobs(); }
+    if (name === 'sync_network') loadNetworkJobs();
   } catch {
     appendMessage('ai', `Job ${name} failed.`);
   } finally {
@@ -752,18 +788,16 @@ async function runJob(name) {
 
 msgInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
 applyTheme(localStorage.getItem('mustang_theme') || 'dark');
-showSection('coding');
-loadGithub();
-loadSkills();
-loadContext();
+const initialSection = (window.location.hash || '').replace('#', '') || localStorage.getItem('mustang_active_section') || 'coding';
+showSection(initialSection);
 loadUsageSummary();
-loadCronList();
-loadNetworkJobs();
-loadSystemStats();
 loadAgentInbox();
-setInterval(loadSystemStats, 30000);
-setInterval(loadAgentInbox, 15000);
-loadSessions();
+setInterval(() => {
+  const section = (window.location.hash || '').replace('#', '') || localStorage.getItem('mustang_active_section') || 'coding';
+  if (section === 'coding') loadSystemStats();
+  if (section === 'chat') loadSessions();
+  loadAgentInbox();
+}, 30000);
 </script>
 </body>
 </html>
