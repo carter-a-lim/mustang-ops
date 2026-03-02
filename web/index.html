@@ -278,21 +278,13 @@
                 <div id="section-coding" class="section-content hidden flex-1 flex flex-col overflow-y-auto p-8 gap-6">
                     <div class="max-w-5xl mx-auto w-full">
                         <h3 class="text-2xl font-bold mb-6">Build & Ship</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 gap-6">
                             <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
                                 <div class="flex items-center justify-between mb-4">
                                     <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest">GitHub Snapshot</h4>
                                     <button onclick="loadGithub()" class="text-[10px] font-bold text-primary hover:underline">REFRESH</button>
                                 </div>
                                 <div id="github-list" class="space-y-3 text-xs text-slate-600 dark:text-slate-300"></div>
-                            </div>
-                            <div class="bg-white dark:bg-[#1c1f27] rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
-                                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Mistake Tracker</h4>
-                                <div class="p-4 rounded-lg bg-orange-400/5 border border-orange-400/10 space-y-3">
-                                    <p class="text-[10px] text-orange-400 font-bold uppercase">Repeated Issues</p>
-                                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">• Forgetting `await` on context writer calls.</p>
-                                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">• Sidebar width clipping on viewport < 1024px.</p>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -596,12 +588,35 @@
                     githubList.innerHTML = '<p class="text-slate-500">No snapshot yet. Run sync_github.</p>';
                     return;
                 }
-                githubList.innerHTML = repos.map(r => `
-                    <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-border-dark">
-                        <div class="font-mono text-[11px] font-bold text-slate-900 dark:text-white">${r.repo}</div>
-                        <div class="mt-1 text-[10px] text-slate-500">PRs: <b>${r.open_prs}</b> · Issues: <b>${r.open_issues}</b></div>
-                    </div>
-                `).join('');
+                githubList.innerHTML = repos.map((r, idx) => {
+                    const issues = r.issues || [];
+                    const issueHtml = issues.length
+                        ? issues.map(it => {
+                            const assigned = (it.assignees && it.assignees.length)
+                                ? `Assigned: ${it.assignees.join(', ')}`
+                                : 'Assigned: nobody';
+                            return `
+                                <div class="p-2 rounded border border-slate-200 dark:border-border-dark bg-white/60 dark:bg-slate-900/30">
+                                    <a href="${it.html_url || '#'}" target="_blank" class="text-[11px] font-medium text-slate-800 dark:text-slate-100 hover:underline">#${it.number} ${it.title || ''}</a>
+                                    <div class="text-[10px] text-slate-500 mt-1">${assigned}</div>
+                                </div>
+                            `;
+                        }).join('')
+                        : '<p class="text-[10px] text-slate-500">No open issues.</p>';
+
+                    return `
+                        <details class="rounded-lg border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-slate-800/40 group" ${idx === 0 ? 'open' : ''}>
+                            <summary class="list-none cursor-pointer p-3 flex items-center justify-between">
+                                <div>
+                                    <div class="font-mono text-[11px] font-bold text-slate-900 dark:text-white">${r.repo}</div>
+                                    <div class="mt-1 text-[10px] text-slate-500">PRs: <b>${r.open_prs}</b> · Issues: <b>${r.open_issues}</b></div>
+                                </div>
+                                <span class="text-[10px] text-slate-500 group-open:rotate-180 transition-transform">▼</span>
+                            </summary>
+                            <div class="px-3 pb-3 space-y-2">${issueHtml}</div>
+                        </details>
+                    `;
+                }).join('');
             } catch (e) {
                 githubList.innerHTML = '<p class="text-red-500">Failed to load github snapshot.</p>';
             }

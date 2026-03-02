@@ -71,6 +71,18 @@ def main():
         if is_owned and issue_count == 0 and pr_count == 0:
             continue
 
+        issue_items = []
+        for i in issues:
+            if 'pull_request' in i:
+                continue
+            assignees = [a.get('login') for a in (i.get('assignees') or []) if a.get('login')]
+            issue_items.append({
+                'number': i.get('number'),
+                'title': i.get('title'),
+                'html_url': i.get('html_url'),
+                'assignees': assignees,
+            })
+
         snapshots.append({
             'repo': full,
             'open_prs': pr_count,
@@ -78,6 +90,7 @@ def main():
             'updated_at': r.get('updated_at'),
             'html_url': r.get('html_url'),
             'owned': is_owned,
+            'issues': issue_items[:12],
         })
 
     snapshots.sort(key=lambda x: x.get('updated_at') or '', reverse=True)
