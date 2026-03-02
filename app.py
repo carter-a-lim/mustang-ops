@@ -242,6 +242,7 @@ def get_context():
 @app.get("/api/skills")
 def get_skills():
     workspace_skills_dir = ROOT.parent / "skills"
+    user_skills_dir = Path.home() / ".agents" / "skills"
     core_skills_dir = Path.home() / ".npm-global" / "lib" / "node_modules" / "openclaw" / "skills"
 
     cfg = _load_openclaw_config()
@@ -249,7 +250,7 @@ def get_skills():
 
     discovered: dict[str, dict] = {}
 
-    for skills_dir, source in ((workspace_skills_dir, "workspace"), (core_skills_dir, "core")):
+    for skills_dir, source in ((workspace_skills_dir, "workspace"), (user_skills_dir, "user"), (core_skills_dir, "core")):
         if not skills_dir.exists():
             continue
         for d in sorted(skills_dir.iterdir()):
@@ -364,6 +365,24 @@ def get_network():
 @app.get("/api/system/stats")
 def system_stats():
     return _system_stats()
+
+
+@app.get("/api/cron/list")
+def cron_list():
+    cron_path = ROOT / "config" / "crontab.txt"
+    jobs = []
+    if cron_path.exists():
+        for line in cron_path.read_text().splitlines():
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            parts = s.split(maxsplit=5)
+            if len(parts) < 6:
+                continue
+            schedule = " ".join(parts[:5])
+            command = parts[5]
+            jobs.append({"schedule": schedule, "command": command})
+    return {"jobs": jobs}
 
 
 @app.get("/api/usage/summary")

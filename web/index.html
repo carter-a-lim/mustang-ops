@@ -67,6 +67,8 @@
       <a id="nav-coding" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-primary/10 text-primary dark:text-blue-400 border border-transparent dark:border-primary/20 shadow-sm" href="#" onclick="showSection('coding')"><span class="material-icons text-xl">code</span><span class="font-medium text-sm">Coding</span></a>
       <a id="nav-skills" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('skills')"><span class="material-icons text-xl group-hover:text-primary transition-colors">military_tech</span><span class="font-medium text-sm">Skills</span></a>
       <a id="nav-cron" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#" onclick="showSection('cron')"><span class="material-icons text-xl group-hover:text-primary transition-colors">schedule</span><span class="font-medium text-sm">Cron</span></a>
+      <div class="pt-4 px-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">Our Tools</div>
+      <div id="chat-sessions" class="space-y-1 px-1 pb-2"></div>
     </nav>
 
     <div class="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-black/20">
@@ -162,17 +164,11 @@
         </div>
 
         <div id="section-chat" class="section-content hidden max-w-7xl mx-auto space-y-4 h-[calc(100vh-9rem)]">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
-            <div class="md:col-span-1 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0f1623] p-3 flex flex-col min-h-0">
-              <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xs font-bold uppercase text-gray-500 mb-2">Sessions</h3>
-                <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
-              </div>
-              <div id="chat-sessions" class="space-y-2 overflow-y-auto"></div>
-            </div>
-            <div class="md:col-span-3 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0">
-              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+          <div class="grid grid-cols-1 gap-4 h-full">
+            <div class="rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-background-dark flex flex-col min-h-0">
+              <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex items-center justify-between">
                 <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
+                <button onclick="createSession()" class="px-2 py-1 text-[10px] rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ New</button>
               </div>
               <div id="chat-history" class="flex-1 overflow-y-auto px-4 py-6 space-y-5"></div>
               <div class="border-t border-border-light dark:border-border-dark p-3 bg-white/80 dark:bg-background-dark/80 backdrop-blur">
@@ -187,7 +183,17 @@
           </div>
         </div>
 
-        <div id="section-calendar" class="section-content hidden max-w-5xl mx-auto space-y-4"><h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1><pre id="context" class="text-xs"></pre></div>
+        <div id="section-calendar" class="section-content hidden max-w-7xl mx-auto space-y-4">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
+            <button onclick="loadContext()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+          </div>
+          <div id="calendar-items" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          <details class="panel-card p-3">
+            <summary class="cursor-pointer text-xs font-bold uppercase text-gray-500">Context JSON</summary>
+            <pre id="context" class="text-xs mt-3 overflow-x-auto"></pre>
+          </details>
+        </div>
         <div id="section-network" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Network Engine</h1>
@@ -241,7 +247,22 @@
 
           <div id="skills-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
         </div>
-        <div id="section-cron" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Cron</h1><div class="mt-3"><button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-md border">Run Canvas Sync</button></div></div>
+        <div id="section-cron" class="section-content hidden max-w-7xl mx-auto space-y-4">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Cron</h1>
+            <button onclick="loadCronList()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+          </div>
+          <div class="panel-card p-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+              <button onclick="runJob('sync_canvas')" class="px-2 py-1 text-xs rounded border">sync_canvas</button>
+              <button onclick="runJob('sync_github')" class="px-2 py-1 text-xs rounded border">sync_github</button>
+              <button onclick="runJob('sync_network')" class="px-2 py-1 text-xs rounded border">sync_network</button>
+              <button onclick="runJob('morning_brief')" class="px-2 py-1 text-xs rounded border">morning_brief</button>
+              <button onclick="runJob('token_sync')" class="px-2 py-1 text-xs rounded border">token_sync</button>
+            </div>
+            <div id="cron-list" class="space-y-2"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -261,6 +282,8 @@ const usage5h = document.getElementById('usage-5h');
 const usage7d = document.getElementById('usage-7d');
 const usageCost = document.getElementById('usage-cost');
 const contextDisplay = document.getElementById('context');
+const calendarItems = document.getElementById('calendar-items');
+const cronList = document.getElementById('cron-list');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
 const chatSessionsEl = document.getElementById('chat-sessions');
@@ -404,6 +427,23 @@ async function loadContext() {
     const res = await fetch('/api/context');
     const data = await res.json();
     if (contextDisplay) contextDisplay.textContent = JSON.stringify(data, null, 2);
+
+    const rows = [];
+    (data.deadlines || []).forEach(d => rows.push({date: d.date || d.due_at, title: d.task || d.title, course: d.course, type: 'deadline'}));
+    (data.events || []).forEach(e => rows.push({date: e.date || e.start_at, title: e.title, course: e.course, type: 'event'}));
+    rows.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+
+    if (calendarItems) {
+      calendarItems.innerHTML = rows.length ? rows.slice(0,40).map(r => `
+        <div class="panel-card p-3">
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-semibold truncate">${r.title || 'Untitled'}</div>
+            <span class="text-[10px] px-1.5 py-0.5 rounded border ${r.type==='deadline' ? 'text-orange-500 border-orange-500/30' : 'text-blue-500 border-blue-500/30'}">${r.type}</span>
+          </div>
+          <div class="text-[11px] text-gray-500 mt-1">${r.course || 'General'} • ${r.date || 'n/a'}</div>
+        </div>
+      `).join('') : '<div class="text-xs text-gray-500">No calendar items found.</div>';
+    }
   } catch {
     if (contextDisplay) contextDisplay.textContent = 'Failed to load context';
   }
@@ -618,6 +658,24 @@ async function loadGithub() {
   }
 }
 
+async function loadCronList() {
+  if (!cronList) return;
+  cronList.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch('/api/cron/list');
+    const data = await res.json();
+    const jobs = data.jobs || [];
+    cronList.innerHTML = jobs.length ? jobs.map(j => `
+      <div class="p-2 rounded border border-border-light dark:border-border-dark text-xs">
+        <div class="font-mono text-primary">${j.schedule}</div>
+        <div class="mt-1 text-gray-500 break-all">${j.command}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No cron entries found.</div>';
+  } catch {
+    cronList.innerHTML = '<div class="text-xs text-red-500">Failed to load cron list.</div>';
+  }
+}
+
 function formatTokens(n = 0) { return `${Number(n || 0).toLocaleString()} tok`; }
 function formatUsd(n = 0) { return `$${Number(n || 0).toFixed(4)}`; }
 async function loadUsageSummary() {
@@ -644,6 +702,7 @@ async function runJob(name) {
     appendMessage('ai', `Job ${name} completed with exit code ${data.exit_code}.`);
     if (name === 'sync_github') loadGithub();
     if (name === 'sync_canvas') loadContext();
+    if (name === 'sync_network') { loadNetwork(); loadNetworkJobs(); }
   } catch {
     appendMessage('ai', `Job ${name} failed.`);
   } finally {
@@ -658,6 +717,7 @@ loadGithub();
 loadSkills();
 loadContext();
 loadUsageSummary();
+loadCronList();
 loadNetworkJobs();
 loadSystemStats();
 setInterval(loadSystemStats, 30000);
