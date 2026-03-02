@@ -27,7 +27,7 @@ def gh_get(url, token):
         'Accept': 'application/vnd.github+json',
         'User-Agent': 'mustang-ops'
     })
-    with urlopen(req, timeout=30) as r:
+    with urlopen(req, timeout=12) as r:
         return json.loads(r.read().decode('utf-8'))
 
 
@@ -48,28 +48,44 @@ def main():
         print('sync_github: missing token')
         return
 
-    repos = gh_get(f'https://api.github.com/users/{owner}/repos?sort=updated&per_page=12', token)
+    # include repos you own + repos you collaborate on / belong to
+    repos = gh_get('https://api.github.com/user/repos?sort=updated&affiliation=owner,collaborator,organization_member&per_page=40', token)
 
     snapshots = []
-    for r in repos[:8]:
+    for r in repos[:25]:
         full = r.get('full_name')
         if not full:
             continue
-        prs = gh_get(f'https://api.github.com/repos/{full}/pulls?state=open&per_page=20', token)
-        issues = gh_get(f'https://api.github.com/repos/{full}/issues?state=open&per_page=30', token)
+        try:
+            prs = gh_get(f'https://api.github.com/repos/{full}/pulls?state=open&per_page=20', token)
+            issues = gh_get(f'https://api.github.com/repos/{full}/issues?state=open&per_page=30', token)
+        except Exception:
+            continue
         issue_count = len([i for i in issues if 'pull_request' not in i])
+        pr_count = len(prs)
+
+        owner_login = (r.get('owner') or {}).get('login', '').lower()
+        is_owned = owner_login == (owner or '').lower()
+
+        # hide personal repos with no active work
+        if is_owned and issue_count == 0 and pr_count == 0:
+            continue
+
         snapshots.append({
             'repo': full,
-            'open_prs': len(prs),
+            'open_prs': pr_count,
             'open_issues': issue_count,
             'updated_at': r.get('updated_at'),
-            'html_url': r.get('html_url')
+            'html_url': r.get('html_url'),
+            'owned': is_owned,
         })
+
+    snapshots.sort(key=lambda x: x.get('updated_at') or '', reverse=True)
 
     out = {
         'updated_at': iso_now(),
         'owner': owner,
-        'repos': snapshots
+        'repos': snapshots[:20]
     }
     out_path.write_text(json.dumps(out, indent=2) + '\n')
     print(f'sync_github done: {len(snapshots)} repos')
