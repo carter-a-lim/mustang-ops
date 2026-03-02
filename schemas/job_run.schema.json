@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JobRun",
+  "type": "object",
+  "required": ["job", "started_at", "ended_at", "status"],
+  "properties": {
+    "job": {"type": "string"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": "string", "format": "date-time"},
+    "status": {"type": "string", "enum": ["ok", "error"]},
+    "error": {"type": ["string", "null"]},
+    "output_path": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}
