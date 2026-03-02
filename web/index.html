@@ -245,6 +245,14 @@
             <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
           </div>
 
+          <div class="panel-card p-4 overflow-x-auto">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs uppercase text-gray-500 font-bold">Pipeline Flow</h3>
+              <span id="pipeline-flow-meta" class="text-[10px] text-gray-500 font-mono">live</span>
+            </div>
+            <div id="pipeline-flowchart" class="min-w-[740px]"></div>
+          </div>
+
           <div class="panel-card p-4">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">Jobs / Applications / Internships</h3>
@@ -448,6 +456,8 @@ const jobhubApps = document.getElementById('jobhub-apps');
 const jobhubOutreach = document.getElementById('jobhub-outreach');
 const jobhubPeople = document.getElementById('jobhub-people');
 const jobhubEvents = document.getElementById('jobhub-events');
+const pipelineFlowchart = document.getElementById('pipeline-flowchart');
+const pipelineFlowMeta = document.getElementById('pipeline-flow-meta');
 const applyInclude = document.getElementById('apply-include');
 const applyExclude = document.getElementById('apply-exclude');
 const applyQueue = document.getElementById('apply-queue');
@@ -945,6 +955,42 @@ async function loadSystemStats() {
   }
 }
 
+let mermaidApi = null;
+
+async function ensureMermaid() {
+  if (mermaidApi) return mermaidApi;
+  const mod = await import('/node_modules/mermaid/dist/mermaid.esm.min.mjs');
+  mermaidApi = mod.default;
+  mermaidApi.initialize({ startOnLoad: false, theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default' });
+  return mermaidApi;
+}
+
+async function renderPipelineFlowchart(stats = {}) {
+  if (!pipelineFlowchart) return;
+  try {
+    const m = await ensureMermaid();
+    const source = stats.sourceCount ?? '--';
+    const merged = stats.totalRoles ?? '--';
+    const queue = stats.queueCount ?? '--';
+    const memory = stats.answerCount ?? '--';
+    const definition = `flowchart LR
+      A["Simplify Scrape\\n${source} roles"] --> B["Network Merge\\n${merged} total roles"]
+      R["Resume from Docs"] --> C["Resume Fit Scoring"]
+      B --> C
+      C --> D["Assisted Queue\\n${queue} roles"]
+      M["Answer Memory\\n${memory} entries"] --> E["Draft Answers in Your Voice"]
+      D --> E
+      E --> F["Manual Review + Submit"]`;
+
+    const id = `pipeline-${Date.now()}`;
+    const { svg } = await m.render(id, definition);
+    pipelineFlowchart.innerHTML = svg;
+    if (pipelineFlowMeta) pipelineFlowMeta.textContent = `roles:${merged} queue:${queue}`;
+  } catch {
+    pipelineFlowchart.innerHTML = '<div class="text-xs text-red-500">Flowchart failed to render (restart server if node_modules route is missing).</div>';
+  }
+}
+
 async function loadNetworkJobs() {
   try {
     const [jobsRes, ctxRes] = await Promise.all([fetch('/api/network/jobs'), fetch('/api/context')]);
@@ -992,6 +1038,26 @@ async function loadNetworkJobs() {
 
     loadApplyQueue();
     loadAnswerMemory();
+
+    let queueCount = 0;
+    let answerCount = 0;
+    try {
+      const [queueRes, answerRes] = await Promise.all([
+        fetch('/api/network/apply/queue'),
+        fetch('/api/network/answer-memory'),
+      ]);
+      const q = await queueRes.json();
+      const a = await answerRes.json();
+      queueCount = (q.queue || []).length;
+      answerCount = (a.entries || []).length;
+    } catch {}
+
+    renderPipelineFlowchart({
+      sourceCount: data?.sources?.simplify?.count || 0,
+      totalRoles: roles.length,
+      queueCount,
+      answerCount,
+    });
   } catch {
     if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load network engine.</div>';
   }

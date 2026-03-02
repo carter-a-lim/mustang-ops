@@ -18,6 +18,7 @@ cd mustang-ops
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+npm install
 cp .env.example .env
 ```
 

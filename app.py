@@ -56,6 +56,8 @@ JOBS = {
 
 app = FastAPI(title="Mustang Ops")
 app.mount("/web", StaticFiles(directory=str(ROOT / "web")), name="web")
+if (ROOT / "node_modules").exists():
+    app.mount("/node_modules", StaticFiles(directory=str(ROOT / "node_modules")), name="node_modules")
 
 
 class ChatBody(BaseModel):
