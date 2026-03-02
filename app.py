@@ -46,6 +46,7 @@ JOBS = {
     "morning_brief": ROOT / "jobs" / "morning_brief.py",
     "linkedin_scout": ROOT / "jobs" / "linkedin_scout.py",
     "token_sync": ROOT / "jobs" / "token_sync.py",
+    "scrape_simplify_jobs": ROOT / "jobs" / "scrape_simplify_jobs.py",
 }
 
 app = FastAPI(title="Mustang Ops")
@@ -385,7 +386,7 @@ def get_skills():
                     "common_failure": None,
                 },
                 "actions": {
-                    "docs": f"https://skills.sh/search?q={name}",
+                    "docs": f"https://github.com/openclaw/openclaw/tree/main/skills/{name}" if meta["source"] == "core" else "https://docs.openclaw.ai",
                     "test": f"Test {name}",
                     "update": f"Update {name}",
                 },

@@ -43,4 +43,4 @@ Open: `http://localhost:8080`
 - `POST /api/chat` -> sends prompt to OpenClaw `/v1/chat/completions`
 - `POST /api/run/{job_name}` -> runs one job script
 
-Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`
+Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`, `scrape_simplify_jobs`
