@@ -197,6 +197,19 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
             <button onclick="loadContext()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
           </div>
+
+          <div class="panel-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <button onclick="shiftCalendarMonth(-1)" class="px-2 py-1 text-xs rounded border border-border-light dark:border-border-dark">Prev</button>
+              <h3 id="calendar-month-label" class="text-sm font-bold text-gray-900 dark:text-white">Month</h3>
+              <button onclick="shiftCalendarMonth(1)" class="px-2 py-1 text-xs rounded border border-border-light dark:border-border-dark">Next</button>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-[10px] uppercase text-gray-500 mb-1">
+              <div class="text-center">Sun</div><div class="text-center">Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          </div>
+
           <div id="calendar-items" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           <details class="panel-card p-3">
             <summary class="cursor-pointer text-xs font-bold uppercase text-gray-500">Context JSON</summary>
@@ -302,6 +315,8 @@ const usage5hPct = document.getElementById('usage-5h-pct');
 const usage7dPct = document.getElementById('usage-7d-pct');
 const contextDisplay = document.getElementById('context');
 const calendarItems = document.getElementById('calendar-items');
+const calendarGrid = document.getElementById('calendar-grid');
+const calendarMonthLabel = document.getElementById('calendar-month-label');
 const cronList = document.getElementById('cron-list');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
@@ -459,6 +474,66 @@ async function sendChat() {
   }
 }
 
+let calendarRows = [];
+let calendarViewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function toIsoDate(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function renderCalendarGrid() {
+  if (!calendarGrid) return;
+
+  const y = calendarViewMonth.getFullYear();
+  const m = calendarViewMonth.getMonth();
+  const first = new Date(y, m, 1);
+  const startWeekday = first.getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const monthLabel = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  if (calendarMonthLabel) calendarMonthLabel.textContent = monthLabel;
+
+  const byDate = {};
+  for (const r of calendarRows) {
+    const iso = toIsoDate(r.date);
+    if (!iso) continue;
+    byDate[iso] = byDate[iso] || { deadline: 0, event: 0 };
+    byDate[iso][r.type === 'deadline' ? 'deadline' : 'event'] += 1;
+  }
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) {
+    cells.push('<div class="panel-soft min-h-[86px] opacity-40"></div>');
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = new Date(y, m, d).toISOString().slice(0, 10);
+    const counts = byDate[iso] || { deadline: 0, event: 0 };
+    const isToday = iso === todayIso;
+    const total = counts.deadline + counts.event;
+    cells.push(`
+      <div class="panel-soft min-h-[86px] p-2 ${isToday ? 'ring-1 ring-primary' : ''}">
+        <div class="text-xs font-semibold ${isToday ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}">${d}</div>
+        <div class="mt-2 space-y-1">
+          ${counts.deadline ? `<div class="text-[10px] px-1 py-0.5 rounded badge-warn">${counts.deadline} deadline</div>` : ''}
+          ${counts.event ? `<div class="text-[10px] px-1 py-0.5 rounded border border-blue-500/20 text-blue-400">${counts.event} event</div>` : ''}
+          ${!total ? '<div class="text-[10px] text-gray-500">—</div>' : ''}
+        </div>
+      </div>
+    `);
+  }
+
+  calendarGrid.innerHTML = cells.join('');
+}
+
+function shiftCalendarMonth(delta) {
+  calendarViewMonth = new Date(calendarViewMonth.getFullYear(), calendarViewMonth.getMonth() + delta, 1);
+  renderCalendarGrid();
+}
+
 async function loadContext() {
   try {
     const res = await fetch('/api/context');
@@ -469,6 +544,8 @@ async function loadContext() {
     (data.deadlines || []).forEach(d => rows.push({date: d.date || d.due_at, title: d.task || d.title, course: d.course, type: 'deadline'}));
     (data.events || []).forEach(e => rows.push({date: e.date || e.start_at, title: e.title, course: e.course, type: 'event'}));
     rows.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+    calendarRows = rows;
+    renderCalendarGrid();
 
     if (calendarItems) {
       calendarItems.innerHTML = rows.length ? rows.slice(0,40).map(r => `
