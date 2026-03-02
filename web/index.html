@@ -381,6 +381,15 @@
             </div>
           </div>
 
+          <div class="panel-card p-4">
+            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Cron Todo</h3>
+            <div class="flex gap-2 mb-3">
+              <input id="cron-todo-input" placeholder="Add a todo for cron ops..." class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
+              <button onclick="addCronTodo()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Add</button>
+            </div>
+            <div id="cron-todo-list" class="space-y-2"></div>
+          </div>
+
           <div class="panel-card overflow-hidden">
             <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark text-[10px] uppercase text-gray-500 font-semibold tracking-wider">
               <div class="col-span-3">Job</div>
@@ -435,6 +444,8 @@ const cronList = document.getElementById('cron-list');
 const cronTotal = document.getElementById('cron-total');
 const cronHighfreq = document.getElementById('cron-highfreq');
 const cronDaily = document.getElementById('cron-daily');
+const cronTodoInput = document.getElementById('cron-todo-input');
+const cronTodoList = document.getElementById('cron-todo-list');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
 const sendBtn = document.getElementById('send-btn');
@@ -1317,6 +1328,58 @@ function _cronScheduleLabel(expr='') {
   return expr;
 }
 
+function getCronTodos() {
+  try {
+    return JSON.parse(localStorage.getItem('mustang_cron_todos') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveCronTodos(items) {
+  localStorage.setItem('mustang_cron_todos', JSON.stringify(items));
+}
+
+function renderCronTodos() {
+  if (!cronTodoList) return;
+  const todos = getCronTodos();
+  cronTodoList.innerHTML = todos.length ? todos.map((t, i) => `
+    <div class="p-2 panel-soft flex items-start justify-between gap-2">
+      <div class="text-xs ${t.done ? 'line-through text-gray-500' : ''}">${escapeHtml(t.text || '')}</div>
+      <div class="flex gap-1 shrink-0">
+        <button onclick="toggleCronTodo(${i})" class="px-2 py-0.5 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">${t.done ? 'Undo' : 'Done'}</button>
+        <button onclick="deleteCronTodo(${i})" class="px-2 py-0.5 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Del</button>
+      </div>
+    </div>
+  `).join('') : '<div class="text-xs text-gray-500">No todo items yet.</div>';
+}
+
+function addCronTodo() {
+  const text = (cronTodoInput?.value || '').trim();
+  if (!text) return;
+  const todos = getCronTodos();
+  todos.unshift({ text, done: false, created_at: new Date().toISOString() });
+  saveCronTodos(todos.slice(0, 100));
+  if (cronTodoInput) cronTodoInput.value = '';
+  renderCronTodos();
+}
+
+function toggleCronTodo(index) {
+  const todos = getCronTodos();
+  if (!todos[index]) return;
+  todos[index].done = !todos[index].done;
+  saveCronTodos(todos);
+  renderCronTodos();
+}
+
+function deleteCronTodo(index) {
+  const todos = getCronTodos();
+  if (!todos[index]) return;
+  todos.splice(index, 1);
+  saveCronTodos(todos);
+  renderCronTodos();
+}
+
 async function loadCronList() {
   if (!cronList) return;
   cronList.innerHTML = '<div class="p-4 text-xs text-gray-500">Loading...</div>';
@@ -1347,6 +1410,7 @@ async function loadCronList() {
         </div>
       `;
     }).join('') : '<div class="p-4 text-xs text-gray-500">No cron entries found.</div>';
+    renderCronTodos();
   } catch {
     cronList.innerHTML = '<div class="p-4 text-xs text-red-500">Failed to load cron list.</div>';
   }
