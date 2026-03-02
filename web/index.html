@@ -81,9 +81,18 @@
             </div>
         </div>
         <div class="p-4 border-t border-slate-200 dark:border-border-dark">
-            <button class="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-200 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-                <span class="material-symbols-outlined text-lg">logout</span> Disconnect
-            </button>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Usage Metering</p>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-2 border border-slate-200 dark:border-border-dark">
+                    <p class="text-[10px] text-slate-500">Last 5h</p>
+                    <p id="usage-5h" class="text-xs font-mono font-bold text-slate-900 dark:text-white">0 tok</p>
+                </div>
+                <div class="rounded-lg bg-slate-100 dark:bg-slate-800 p-2 border border-slate-200 dark:border-border-dark">
+                    <p class="text-[10px] text-slate-500">Last 7d</p>
+                    <p id="usage-7d" class="text-xs font-mono font-bold text-slate-900 dark:text-white">0 tok</p>
+                </div>
+            </div>
+            <p id="usage-cost" class="mt-2 text-[10px] text-slate-500 font-mono">Cost est: --</p>
         </div>
     </aside>
 
@@ -380,6 +389,9 @@
         const currentJobTitle = document.getElementById('current-job');
         const skillsGrid = document.getElementById('skills-grid');
         const githubList = document.getElementById('github-list');
+        const usage5h = document.getElementById('usage-5h');
+        const usage7d = document.getElementById('usage-7d');
+        const usageCost = document.getElementById('usage-cost');
 
         function showSection(sectionId) {
             // Update Active Link State
@@ -595,6 +607,35 @@
             }
         }
 
+        function formatTokens(n = 0) {
+            return `${Number(n || 0).toLocaleString()} tok`;
+        }
+
+        function formatUsd(n = 0) {
+            return `$${Number(n || 0).toFixed(4)}`;
+        }
+
+        async function loadUsageSummary() {
+            if (!usage5h || !usage7d || !usageCost) return;
+            try {
+                const res = await fetch('/api/usage/summary');
+                const data = await res.json();
+                const w5h = data?.windows?.last_5h || {};
+                const w7d = data?.windows?.last_7d || {};
+                usage5h.textContent = formatTokens(w5h.total_tokens || 0);
+                usage7d.textContent = formatTokens(w7d.total_tokens || 0);
+
+                const costEnabled = data?.pricing?.cost_estimation_enabled;
+                if (costEnabled) {
+                    usageCost.textContent = `Cost est: ${formatUsd(w5h.estimated_cost_usd || 0)} (5h) · ${formatUsd(w7d.estimated_cost_usd || 0)} (7d)`;
+                } else {
+                    usageCost.textContent = 'Cost est: set MUSTANG_COST_INPUT_PER_1M / MUSTANG_COST_OUTPUT_PER_1M';
+                }
+            } catch (e) {
+                usageCost.textContent = 'Cost est: failed to load usage summary';
+            }
+        }
+
         async function sendChat() {
             const message = msgInput.value.trim();
             if (!message) return;
@@ -610,6 +651,7 @@
                 });
                 const data = await res.json();
                 appendMessage('ai', data.reply || "No response received.");
+                loadUsageSummary();
             } catch (e) {
                 appendMessage('ai', "Error connecting to OpenClaw.");
             }
@@ -648,6 +690,7 @@
         loadContext();
         loadSkills();
         loadGithub();
+        loadUsageSummary();
     </script>
 </body>
 </html>
