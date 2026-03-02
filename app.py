@@ -423,7 +423,7 @@ def get_github_snapshot():
 
 @app.get("/api/network/jobs")
 def get_network_jobs():
-    return _read_json_file(
+    base = _read_json_file(
         JOB_PIPELINE_PATH,
         {
             "updated_at": None,
@@ -432,6 +432,49 @@ def get_network_jobs():
             "outreach_targets": [],
         },
     )
+
+    simplify_path = DATA_DIR / "simplify_software_internships.json"
+    simplify = _read_json_file(
+        simplify_path,
+        {
+            "fetched_at": None,
+            "roles": [],
+            "count": 0,
+        },
+    )
+
+    simplify_roles = [
+        {
+            "company": r.get("company", ""),
+            "title": r.get("role", ""),
+            "location": r.get("location", ""),
+            "status": "new",
+            "age": r.get("age", ""),
+            "apply_url": r.get("apply_url", ""),
+            "source": "simplify",
+        }
+        for r in simplify.get("roles", [])
+        if r.get("company") and r.get("role")
+    ]
+
+    existing_roles = base.get("roles", [])
+    all_roles = simplify_roles + existing_roles
+
+    return {
+        **base,
+        "updated_at": simplify.get("fetched_at") or base.get("updated_at"),
+        "roles": all_roles,
+        "sources": {
+            "simplify": {
+                "count": len(simplify_roles),
+                "fetched_at": simplify.get("fetched_at"),
+            },
+            "manual": {
+                "count": len(existing_roles),
+                "updated_at": base.get("updated_at"),
+            },
+        },
+    }
 
 
 @app.get("/api/agents/inbox")

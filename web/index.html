@@ -245,34 +245,41 @@
             <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
-            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">New</p><p id="jobhub-new" class="text-2xl font-bold">0</p></div>
-            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
-            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">OA/Interview</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
-            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">Closed</p><p id="jobhub-closed" class="text-2xl font-bold">0</p></div>
-            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">People to Ping</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
-            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">Events</p><p id="jobhub-events-count" class="text-2xl font-bold">0</p></div>
-          </div>
-
           <div class="panel-card p-4">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-xs uppercase text-gray-500 font-bold">Alerts</h3>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">Jobs / Applications / Internships</h3>
               <span id="jobhub-updated" class="text-[10px] text-gray-500 font-mono">Updated: --</span>
             </div>
-            <div id="jobhub-alerts" class="space-y-2"></div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Open Roles</p><p id="jobhub-new" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Interviewing</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
+              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Warm Targets</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="p-4 panel-card">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">1) Internship / Job Monitor</h3>
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Role Pipeline</h3>
               <div id="jobhub-roles" class="space-y-2"></div>
             </div>
             <div class="p-4 panel-card">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">2) Interesting People (LinkedIn-ish)</h3>
-              <div id="jobhub-outreach" class="space-y-2"></div>
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Application Tracker</h3>
+              <div id="jobhub-apps" class="space-y-2"></div>
             </div>
             <div class="p-4 panel-card">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">3) Interesting Events</h3>
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Warm Intro Targets</h3>
+              <div id="jobhub-outreach" class="space-y-2"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 panel-card">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Interesting People (Top 2)</h3>
+              <div id="jobhub-people" class="space-y-2"></div>
+            </div>
+            <div class="p-4 panel-card">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Interesting Events (Top 3)</h3>
               <div id="jobhub-events" class="space-y-2"></div>
             </div>
           </div>
@@ -333,6 +340,7 @@
               <button onclick="runJob('sync_network')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_network</button>
               <button onclick="runJob('morning_brief')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">morning_brief</button>
               <button onclick="runJob('token_sync')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">token_sync</button>
+              <button onclick="runJob('scrape_simplify_jobs')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">scrape_simplify_jobs</button>
             </div>
           </div>
 
@@ -414,10 +422,10 @@ const jobhubApplied = document.getElementById('jobhub-applied');
 const jobhubInterviewing = document.getElementById('jobhub-interviewing');
 const jobhubClosed = document.getElementById('jobhub-closed');
 const jobhubTargets = document.getElementById('jobhub-targets');
-const jobhubEventsCount = document.getElementById('jobhub-events-count');
-const jobhubAlerts = document.getElementById('jobhub-alerts');
 const jobhubRoles = document.getElementById('jobhub-roles');
+const jobhubApps = document.getElementById('jobhub-apps');
 const jobhubOutreach = document.getElementById('jobhub-outreach');
+const jobhubPeople = document.getElementById('jobhub-people');
 const jobhubEvents = document.getElementById('jobhub-events');
 const agentInbox = document.getElementById('agent-inbox');
 const agentInboxToggle = document.getElementById('agent-inbox-toggle');
@@ -911,10 +919,7 @@ async function loadSystemStats() {
 
 async function loadNetworkJobs() {
   try {
-    const [jobsRes, ctxRes] = await Promise.all([
-      fetch('/api/network/jobs'),
-      fetch('/api/context')
-    ]);
+    const [jobsRes, ctxRes] = await Promise.all([fetch('/api/network/jobs'), fetch('/api/context')]);
     const data = await jobsRes.json();
     const ctx = await ctxRes.json();
 
@@ -923,60 +928,38 @@ async function loadNetworkJobs() {
     const targets = data.outreach_targets || [];
     const events = data.interesting_events || [];
 
-    const applied = apps.filter(a => (a.stage || '').toLowerCase().includes('applied')).length;
-    const interviewing = apps.filter(a => /oa|interview/i.test(a.stage || '')).length;
-    const closed = apps.filter(a => /closed|reject/i.test(a.stage || '')).length;
-
-    if (jobhubUpdated) jobhubUpdated.textContent = `Updated: ${data.updated_at || 'n/a'}`;
-    if (jobhubNew) jobhubNew.textContent = roles.filter(r => /new|sourcing/i.test(r.status || '')).length || roles.length;
-    if (jobhubApplied) jobhubApplied.textContent = applied;
-    if (jobhubInterviewing) jobhubInterviewing.textContent = interviewing;
-    if (jobhubClosed) jobhubClosed.textContent = closed;
+    const simplifyCount = data?.sources?.simplify?.count || 0;
+    if (jobhubUpdated) jobhubUpdated.textContent = `Updated: ${data.updated_at || 'n/a'} · Simplify: ${simplifyCount}`;
+    if (jobhubNew) jobhubNew.textContent = roles.length;
+    if (jobhubApplied) jobhubApplied.textContent = apps.filter(a => /applied/i.test(a.stage || '')).length;
+    if (jobhubInterviewing) jobhubInterviewing.textContent = apps.filter(a => /oa|interview/i.test(a.stage || '')).length;
     if (jobhubTargets) jobhubTargets.textContent = targets.length;
-    if (jobhubEventsCount) jobhubEventsCount.textContent = events.length;
 
-    const alerts = [];
-    const today = new Date();
-    apps.forEach(a => {
-      if (!a.deadline) return;
-      const d = new Date(a.deadline);
-      const diff = Math.ceil((d - today) / 86400000);
-      if (diff <= 0) alerts.push(`Apply by tonight: ${a.company} — ${a.title}`);
-      else if (diff <= 2) alerts.push(`Deadline in ${diff}d: ${a.company} — ${a.title}`);
-    });
-    targets.forEach(t => {
-      if ((t.status || '').toLowerCase().includes('queued')) alerts.push(`Follow-up window reached: ${t.name}`);
-    });
-    if (jobhubAlerts) jobhubAlerts.innerHTML = alerts.length ? alerts.slice(0,6).map(a => `<div class="p-2 rounded border border-orange-500/30 bg-orange-500/5 text-xs text-orange-400">${a}</div>`).join('') : '<div class="text-xs text-gray-500">No urgent alerts.</div>';
-
-    if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0, 10).map(r => `
+    if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0,12).map(r => `
       <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${r.company} — ${r.title}</div>
         <div class="text-[10px] text-gray-500">${r.location || ''}</div>
-        <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'new'}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'sourcing'}${r.age ? ` · ${r.age}` : ''}${r.source ? ` · ${r.source}` : ''}</div>
+        ${r.apply_url ? `<a class="text-[10px] text-blue-500 hover:underline" href="${r.apply_url}" target="_blank" rel="noopener">Apply link</a>` : ''}
       </div>
     `).join('') : '<div class="text-xs text-gray-500">No roles tracked yet.</div>';
 
-    if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0, 10).map(t => `
-      <div class="p-2 panel-soft">
-        <div class="text-sm font-semibold truncate">${t.name}</div>
-        <div class="text-[10px] text-gray-500">Why: ${t.reason || 'Relevant to your goals'}</div>
-        <div class="text-[10px] text-primary mt-1">Opener: ${t.best_opener || 'Hey! Loved your recent work — could I ask a quick question?'}</div>
-        <div class="text-[10px] text-gray-400 mt-1">Last interaction: ${t.last_interaction || 'n/a'}</div>
-      </div>
-    `).join('') : '<div class="text-xs text-gray-500">No people queued yet.</div>';
+    if (jobhubApps) jobhubApps.innerHTML = apps.length ? apps.slice(0,8).map(a => `
+      <div class="p-2 panel-soft"><div class="text-sm font-semibold truncate">${a.company} — ${a.title}</div><div class="text-[10px] text-gray-500">Stage: ${a.stage || 'n/a'}</div><div class="text-[10px] text-primary mt-1">Next: ${a.next_step || 'n/a'} ${a.deadline ? `· due ${a.deadline}` : ''}</div></div>
+    `).join('') : '<div class="text-xs text-gray-500">No applications yet.</div>';
 
-    const ctxEvents = (ctx.events || []).filter(e => /hack|career|fair|club|campus|workshop|meetup/i.test((e.title||'') + ' ' + (e.course||''))).slice(0,8).map(e => ({
-      title: e.title,
-      date: e.date,
-      source: e.course || 'Campus'
-    }));
-    const mergedEvents = [...events, ...ctxEvents].slice(0, 10);
+    if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0,8).map(t => `
+      <div class="p-2 panel-soft"><div class="text-sm font-semibold truncate">${t.name}</div><div class="text-[10px] text-gray-500">Mutuals: ${t.mutual_count || 0} · ${t.status || 'queued'}</div><div class="text-[10px] text-primary mt-1">${t.reason || ''}</div></div>
+    `).join('') : '<div class="text-xs text-gray-500">No warm targets yet.</div>';
+
+    if (jobhubPeople) jobhubPeople.innerHTML = targets.length ? targets.slice(0,2).map(t => `
+      <div class="p-2 panel-soft"><div class="text-sm font-semibold truncate">${t.name}</div><div class="text-[10px] text-gray-500">${t.reason || 'Good outreach target'}</div><div class="text-[10px] text-primary mt-1">Opener: ${t.best_opener || 'Quick intro + ask for advice'}</div></div>
+    `).join('') : '<div class="text-xs text-gray-500">No interesting people yet.</div>';
+
+    const ctxEvents = (ctx.events || []).filter(e => /hack|career|fair|club|campus|workshop|meetup/i.test((e.title||'') + ' ' + (e.course||''))).map(e => ({title:e.title,date:e.date,source:e.course||'Campus'}));
+    const mergedEvents = [...events, ...ctxEvents].slice(0,3);
     if (jobhubEvents) jobhubEvents.innerHTML = mergedEvents.length ? mergedEvents.map(ev => `
-      <div class="p-2 panel-soft">
-        <div class="text-sm font-semibold truncate">${ev.title || 'Event'}</div>
-        <div class="text-[10px] text-gray-500">${ev.date || 'TBD'} · ${ev.source || 'Campus'}</div>
-      </div>
+      <div class="p-2 panel-soft"><div class="text-sm font-semibold truncate">${ev.title || 'Event'}</div><div class="text-[10px] text-gray-500">${ev.date || 'TBD'} · ${ev.source || 'Campus'}</div></div>
     `).join('') : '<div class="text-xs text-gray-500">No interesting events yet.</div>';
   } catch {
     if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load network engine.</div>';
