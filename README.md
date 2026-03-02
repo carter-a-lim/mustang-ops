@@ -1,17 +1,17 @@
-# Mustang Ops
+# Mustang Ops (Rebuilt)
 
-Personal operator stack for startup + school + coding workflows.
+Local-only dashboard + automation backend for your Mustang OS.
 
-## Modules
+## Architecture
 
-1. **Chat Command Center** (Open WebUI)
-2. **Mustang Context** (`data/mustang_context.json`)
-3. **Intelligence & Outreach** (jobs + queue)
-4. **Build & Ship Panel** (GitHub + infra checks)
-5. **Skill Inventory** (installed skills status)
-6. **Heartbeat/Cron Layer** (scheduled automation)
+- **Host:** Oracle Ubuntu instance
+- **Network:** local bind on `127.0.0.1:8080` (use SSH tunnel)
+- **Brain:** OpenClaw Gateway at `http://127.0.0.1:18789/v1/chat/completions`
+- **Memory:** `/home/ubuntu/mustang-ops/data/mustang_context.json` (fallback to repo `data/`)
+- **Backend:** lightweight FastAPI app
+- **Frontend:** single `web/index.html` with vanilla JS
 
-## Quick Start
+## Setup
 
 ```bash
 cd mustang-ops
@@ -19,38 +19,28 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-python scripts/init_context.py
-python scripts/validate_context.py
 ```
 
-## Jobs
+Set `OPENCLAW_TOKEN` inside `.env`.
 
-Run a job manually:
+## Run
 
 ```bash
-python jobs/sync_canvas.py
-python jobs/morning_brief.py
-python jobs/linkedin_scout.py
-python jobs/token_sync.py
+uvicorn app:app --host 127.0.0.1 --port 8080
 ```
 
-Each job appends run metadata to `logs/job_runs.jsonl`.
-
-## Cron
-
-Install cron entries from `config/crontab.txt`:
+## SSH Tunnel (from your local machine)
 
 ```bash
-crontab config/crontab.txt
+ssh -L 8080:localhost:8080 ubuntu@<oracle-host>
 ```
 
-## Data Contracts
+Open: `http://localhost:8080`
 
-- `schemas/mustang_context.schema.json`
-- `schemas/job_run.schema.json`
+## API Endpoints
 
-## GitHub Repo Expectations
+- `GET /api/context` -> returns context JSON
+- `POST /api/chat` -> sends prompt to OpenClaw `/v1/chat/completions`
+- `POST /api/run/{job_name}` -> runs one job script
 
-- Keep secrets in `.env` only
-- Keep `data/` private and local by default
-- Commit code + schemas, never API keys/tokens
+Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`

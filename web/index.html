@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mustang Ops</title>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; margin: 24px; background:#0b1020; color:#e5e7eb; }
+      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .card { background:#121a31; border:1px solid #233056; border-radius:14px; padding:16px; }
+      button { background:#2563eb; color:white; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; margin-right:8px; }
+      textarea,input { width:100%; background:#0f172a; color:#e5e7eb; border:1px solid #334155; border-radius:8px; padding:8px; }
+      pre { white-space: pre-wrap; word-break: break-word; background:#0f172a; padding:10px; border-radius:8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Mustang Ops Dashboard</h1>
+    <div class="grid">
+      <div class="card">
+        <h3>Mustang Context</h3>
+        <button onclick="loadContext()">Refresh Context</button>
+        <pre id="context">Loading...</pre>
+      </div>
+      <div class="card">
+        <h3>Chat Command Center</h3>
+        <input id="msg" placeholder="Ask OpenClaw..." />
+        <button onclick="sendChat()">Send</button>
+        <pre id="reply"></pre>
+      </div>
+      <div class="card">
+        <h3>Jobs</h3>
+        <button onclick="runJob('sync_canvas')">sync_canvas</button>
+        <button onclick="runJob('morning_brief')">morning_brief</button>
+        <button onclick="runJob('linkedin_scout')">linkedin_scout</button>
+        <button onclick="runJob('token_sync')">token_sync</button>
+        <pre id="jobOut"></pre>
+      </div>
+      <div class="card">
+        <h3>Source of Truth Path</h3>
+        <p>/home/ubuntu/mustang-ops/data/mustang_context.json</p>
+        <p style="opacity:.8">(Falls back to local repo data path if missing)</p>
+      </div>
+    </div>
+
+    <script>
+      async function loadContext() {
+        const res = await fetch('/api/context');
+        const data = await res.json();
+        document.getElementById('context').textContent = JSON.stringify(data, null, 2);
+      }
+      async function sendChat() {
+        const message = document.getElementById('msg').value.trim();
+        if (!message) return;
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        document.getElementById('reply').textContent = data.reply || JSON.stringify(data, null, 2);
+      }
+      async function runJob(name) {
+        const res = await fetch('/api/run/' + name, { method: 'POST' });
+        const data = await res.json();
+        document.getElementById('jobOut').textContent = JSON.stringify(data, null, 2);
+      }
+      loadContext();
+    </script>
+  </body>
+</html>

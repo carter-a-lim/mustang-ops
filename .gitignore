@@ -1,6 +1,5 @@
-.venv/
 .env
-logs/*.log
-logs/job_runs.jsonl
-data/mustang_context.json
+.venv/
 __pycache__/
+*.pyc
+logs/

@@ -1,33 +1,22 @@
-import sys
+import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+context_path = Path(os.getenv("MUSTANG_CONTEXT_PATH", "/home/ubuntu/mustang-ops/data/mustang_context.json"))
+fallback = Path(__file__).resolve().parents[1] / "data" / "mustang_context.json"
+if not context_path.exists() and fallback.exists():
+    context_path = fallback
 
-from scripts.common import CONTEXT_PATH, log_job, read_json, utc_now, write_json
-
-
-def main() -> None:
-    started = utc_now()
-    job = "linkedin_scout"
-    try:
-        context = read_json(CONTEXT_PATH, default={})
-        queue = context.setdefault("outreach_queue", [])
-        # TODO: Replace with real scout logic.
-        queue.append({
-            "name": "Sample Prospect",
-            "segment": "SLO local business owner",
-            "status": "queued",
-            "added_at": utc_now(),
-            "confidence": 0.5
-        })
-        context["updated_at"] = utc_now()
-        write_json(CONTEXT_PATH, context)
-        log_job(job, started_at=started, status="ok", output_path=str(CONTEXT_PATH))
-        print("LinkedIn scout updated queue")
-    except Exception as e:
-        log_job(job, started_at=started, status="error", error=str(e))
-        raise
-
-
-if __name__ == "__main__":
-    main()
+ctx = json.loads(context_path.read_text()) if context_path.exists() else {}
+queue = ctx.setdefault("outreach_queue", [])
+queue.append({
+  "name": "Sample Prospect",
+  "segment": "SLO local business owner",
+  "status": "queued",
+  "added_at": datetime.now(timezone.utc).isoformat()
+})
+ctx["updated_at"] = datetime.now(timezone.utc).isoformat()
+context_path.parent.mkdir(parents=True, exist_ok=True)
+context_path.write_text(json.dumps(ctx, indent=2) + "\n")
+print("linkedin_scout done")

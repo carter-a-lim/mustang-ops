@@ -1,7 +1,0 @@
-# Mustang Ops job schedule
-# Use absolute paths for reliability
-
-0 */6 * * * cd /home/ubuntu/.openclaw/workspace/mustang-ops && /usr/bin/python3 jobs/sync_canvas.py >> logs/cron.log 2>&1
-0 8 * * * cd /home/ubuntu/.openclaw/workspace/mustang-ops && /usr/bin/python3 jobs/morning_brief.py >> logs/cron.log 2>&1
-0 0 * * 0 cd /home/ubuntu/.openclaw/workspace/mustang-ops && /usr/bin/python3 jobs/linkedin_scout.py >> logs/cron.log 2>&1
-*/15 * * * * cd /home/ubuntu/.openclaw/workspace/mustang-ops && /usr/bin/python3 jobs/token_sync.py >> logs/cron.log 2>&1

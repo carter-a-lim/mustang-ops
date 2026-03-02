@@ -1,27 +1,17 @@
-import sys
+import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+context_path = Path(os.getenv("MUSTANG_CONTEXT_PATH", "/home/ubuntu/mustang-ops/data/mustang_context.json"))
+fallback = Path(__file__).resolve().parents[1] / "data" / "mustang_context.json"
+if not context_path.exists() and fallback.exists():
+    context_path = fallback
 
-from scripts.common import CONTEXT_PATH, log_job, read_json, utc_now, write_json
-
-
-def main() -> None:
-    started = utc_now()
-    job = "token_sync"
-    try:
-        context = read_json(CONTEXT_PATH, default={})
-        kpis = context.setdefault("kpis", {})
-        # TODO: Pull real token usage from your provider/status endpoint.
-        kpis["token_gauge_last_sync"] = utc_now()
-        context["updated_at"] = utc_now()
-        write_json(CONTEXT_PATH, context)
-        log_job(job, started_at=started, status="ok", output_path=str(CONTEXT_PATH))
-        print("Token gauge synced")
-    except Exception as e:
-        log_job(job, started_at=started, status="error", error=str(e))
-        raise
-
-
-if __name__ == "__main__":
-    main()
+ctx = json.loads(context_path.read_text()) if context_path.exists() else {}
+kpis = ctx.setdefault("kpis", {})
+kpis["token_gauge_last_sync"] = datetime.now(timezone.utc).isoformat()
+ctx["updated_at"] = datetime.now(timezone.utc).isoformat()
+context_path.parent.mkdir(parents=True, exist_ok=True)
+context_path.write_text(json.dumps(ctx, indent=2) + "\n")
+print("token_sync done")
