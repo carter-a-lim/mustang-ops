@@ -40,6 +40,7 @@ LIMIT_7D_TOKENS = int(os.getenv("MUSTANG_LIMIT_7D_TOKENS", "2000000"))
 JOBS = {
     "sync_canvas": ROOT / "jobs" / "sync_canvas.py",
     "sync_github": ROOT / "jobs" / "sync_github.py",
+    "sync_network": ROOT / "jobs" / "sync_network.py",
     "morning_brief": ROOT / "jobs" / "morning_brief.py",
     "linkedin_scout": ROOT / "jobs" / "linkedin_scout.py",
     "token_sync": ROOT / "jobs" / "token_sync.py",
@@ -216,6 +217,21 @@ def get_github_snapshot():
     p = ROOT / "data" / "github_snapshot.json"
     if not p.exists():
         return {"updated_at": None, "repos": []}
+    return json.loads(p.read_text())
+
+
+@app.get("/api/network")
+def get_network():
+    p = ROOT / "data" / "network_context.json"
+    if not p.exists():
+        return {
+            "updated_at": None,
+            "contacts": [],
+            "interactions": [],
+            "opportunities": [],
+            "introductions": [],
+            "summary": {"pending_followups": 0, "warm_leads": 0, "intros_available": 0, "reply_rate": 0},
+        }
     return json.loads(p.read_text())
 
 
