@@ -254,26 +254,6 @@ def main() -> None:
             except Exception:
                 pass
 
-            # User-confirmed CSC-202 overrides from screenshot
-            if "CSC-202" in cname:
-                y = now.year
-                for item_id, task, due_dt in [
-                    ("csc202-lab-4", "Lab 4", datetime(y, 2, 20, 23, 59, tzinfo=timezone.utc)),
-                    ("csc202-quiz-6", "Quiz 6", datetime(y, 2, 25, 23, 59, tzinfo=timezone.utc)),
-                    ("csc202-assignment-4", "Assignment 4", datetime(y, 2, 27, 23, 59, tzinfo=timezone.utc)),
-                    ("csc202-assignment-5", "Assignment 5", datetime(y, 3, 13, 23, 59, tzinfo=timezone.utc)),
-                ]:
-                    deadlines.append({
-                        "id": item_id,
-                        "title": task,
-                        "task": task,
-                        "course": cname,
-                        "due_at": due_dt.isoformat(),
-                        "date": due_dt.date().isoformat(),
-                        "source": "canvas-syllabus-user-confirmed",
-                        "confidence": 0.95,
-                    })
-
         # Upcoming calendar events feed
         try:
             upcoming = canvas_get(canvas_url, canvas_token, "/api/v1/users/self/upcoming_events", {"per_page": 50})
