@@ -58,6 +58,13 @@
     .pipeline-link { height: 8px; border-radius: 99px; background: linear-gradient(90deg, rgba(14,165,233,.2), rgba(14,165,233,.6), rgba(14,165,233,.2)); position: relative; overflow: hidden; }
     .pipeline-dot { position: absolute; top: 1px; left: -10px; width: 6px; height: 6px; border-radius: 999px; background: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,.8); animation: pipelineMove 1.6s linear infinite; }
     @keyframes pipelineMove { from { left: -10px; } to { left: calc(100% + 10px); } }
+    .todo-shell { background: linear-gradient(180deg, rgba(29,78,216,.08), rgba(14,165,233,.03)); border: 1px solid rgba(29,78,216,.2); border-radius: 14px; }
+    .dark .todo-shell { background: linear-gradient(180deg, rgba(29,78,216,.16), rgba(14,165,233,.06)); border-color: rgba(56,189,248,.25); }
+    .todo-pill { border: 1px solid rgba(99,102,241,.25); border-radius: 999px; font-size: 10px; padding: 3px 8px; color: #4f46e5; background: rgba(99,102,241,.08); }
+    .dark .todo-pill { color: #93c5fd; border-color: rgba(147,197,253,.35); background: rgba(59,130,246,.12); }
+    .todo-row { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; background: #fff; transition: all .18s ease; }
+    .todo-row:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+    .dark .todo-row { border-color: #30363d; background: #0d1117; }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex">
@@ -399,12 +406,15 @@
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo List</h1>
               <p class="text-sm text-gray-500">General task list, separate from cron jobs.</p>
             </div>
+            <div class="flex gap-2">
+              <span id="todo-open-count" class="todo-pill">Open: 0</span>
+              <span id="todo-done-count" class="todo-pill">Done: 0</span>
+            </div>
           </div>
-          <div class="panel-card p-4">
-            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Tasks</h3>
+          <div class="todo-shell p-4">
             <div class="flex gap-2 mb-3">
-              <input id="cron-todo-input" placeholder="Add a todo..." class="flex-1 text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark bg-transparent" />
-              <button onclick="addCronTodo()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Add</button>
+              <input id="cron-todo-input" placeholder="What needs to get done?" class="flex-1 text-sm px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white/80 dark:bg-black/20" />
+              <button onclick="addCronTodo()" class="px-4 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">Add Task</button>
             </div>
             <div id="cron-todo-list" class="space-y-2"></div>
           </div>
@@ -455,6 +465,8 @@ const cronHighfreq = document.getElementById('cron-highfreq');
 const cronDaily = document.getElementById('cron-daily');
 const cronTodoInput = document.getElementById('cron-todo-input');
 const cronTodoList = document.getElementById('cron-todo-list');
+const todoOpenCount = document.getElementById('todo-open-count');
+const todoDoneCount = document.getElementById('todo-done-count');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
 const sendBtn = document.getElementById('send-btn');
@@ -1353,15 +1365,26 @@ function saveCronTodos(items) {
 function renderCronTodos() {
   if (!cronTodoList) return;
   const todos = getCronTodos();
+  const doneCount = todos.filter(t => !!t.done).length;
+  const openCount = Math.max(0, todos.length - doneCount);
+  if (todoOpenCount) todoOpenCount.textContent = `Open: ${openCount}`;
+  if (todoDoneCount) todoDoneCount.textContent = `Done: ${doneCount}`;
+
   cronTodoList.innerHTML = todos.length ? todos.map((t, i) => `
-    <div class="p-2 panel-soft flex items-start justify-between gap-2">
-      <div class="text-xs ${t.done ? 'line-through text-gray-500' : ''}">${escapeHtml(t.text || '')}</div>
+    <div class="todo-row flex items-start justify-between gap-2 ${t.done ? 'opacity-75' : ''}">
+      <div class="flex items-start gap-2 min-w-0">
+        <button onclick="toggleCronTodo(${i})" class="mt-0.5 w-5 h-5 rounded-full border ${t.done ? 'bg-green-500 border-green-500 text-white' : 'border-border-light dark:border-border-dark'} text-[10px]">${t.done ? '✓' : ''}</button>
+        <div class="min-w-0">
+          <div class="text-sm ${t.done ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-100'}">${escapeHtml(t.text || '')}</div>
+          <div class="text-[10px] text-gray-500 mt-1">${t.created_at ? new Date(t.created_at).toLocaleString() : ''}</div>
+        </div>
+      </div>
       <div class="flex gap-1 shrink-0">
-        <button onclick="toggleCronTodo(${i})" class="px-2 py-0.5 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">${t.done ? 'Undo' : 'Done'}</button>
-        <button onclick="deleteCronTodo(${i})" class="px-2 py-0.5 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Del</button>
+        <button onclick="toggleCronTodo(${i})" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">${t.done ? 'Reopen' : 'Done'}</button>
+        <button onclick="deleteCronTodo(${i})" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Delete</button>
       </div>
     </div>
-  `).join('') : '<div class="text-xs text-gray-500">No todo items yet.</div>';
+  `).join('') : '<div class="text-sm text-gray-500 p-3 border border-dashed border-border-light dark:border-border-dark rounded-lg">No tasks yet. Add your first one above.</div>';
 }
 
 function addCronTodo() {
