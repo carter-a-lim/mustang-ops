@@ -197,25 +197,40 @@
           </div>
         </div>
 
-        <div id="section-calendar" class="section-content hidden max-w-7xl mx-auto space-y-4">
+        <div id="section-calendar" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar Intelligence</h1>
+              <p class="text-sm text-gray-500">Deadlines, events, and upcoming pressure windows.</p>
+            </div>
             <button onclick="loadContext()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
           </div>
 
-          <div class="panel-card p-4">
-            <div class="flex items-center justify-between mb-3">
-              <button onclick="shiftCalendarMonth(-1)" class="px-2 py-1 text-xs rounded border border-border-light dark:border-border-dark">Prev</button>
-              <h3 id="calendar-month-label" class="text-sm font-bold text-gray-900 dark:text-white">Month</h3>
-              <button onclick="shiftCalendarMonth(1)" class="px-2 py-1 text-xs rounded border border-border-light dark:border-border-dark">Next</button>
-            </div>
-            <div class="grid grid-cols-7 gap-1 text-[10px] uppercase text-gray-500 mb-1">
-              <div class="text-center">Sun</div><div class="text-center">Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div>
-            </div>
-            <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Upcoming 7d</p><p id="cal-upcoming7" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Deadlines</p><p id="cal-deadlines" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Events</p><p id="cal-events" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Next Due</p><p id="cal-next" class="text-sm font-bold truncate">—</p></div>
           </div>
 
-          <div id="calendar-items" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div class="xl:col-span-2 panel-card p-4">
+              <div class="flex items-center justify-between mb-3">
+                <button onclick="shiftCalendarMonth(-1)" class="px-2 py-1 text-xs rounded border border-border-light dark:border-border-dark">Prev</button>
+                <h3 id="calendar-month-label" class="text-sm font-bold text-gray-900 dark:text-white">Month</h3>
+                <button onclick="shiftCalendarMonth(1)" class="px-2 py-1 text-xs rounded border border-border-light dark:border-border-dark">Next</button>
+              </div>
+              <div class="grid grid-cols-7 gap-1 text-[10px] uppercase text-gray-500 mb-1">
+                <div class="text-center">Sun</div><div class="text-center">Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div>
+              </div>
+              <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+            </div>
+            <div class="panel-card p-4">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Upcoming feed</h3>
+              <div id="calendar-items" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+            </div>
+          </div>
+
           <details class="panel-card p-3">
             <summary class="cursor-pointer text-xs font-bold uppercase text-gray-500">Context JSON</summary>
             <pre id="context" class="text-xs mt-3 overflow-x-auto"></pre>
@@ -223,71 +238,112 @@
         </div>
         <div id="section-network" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Network Engine</h1>
-            <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh Job Hub</button>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Network Engine</h1>
+              <p class="text-sm text-gray-500">Internship monitor, LinkedIn people to ping, and interesting events.</p>
+            </div>
+            <button onclick="loadNetworkJobs()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">New</p><p id="jobhub-new" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">OA/Interview</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">Closed</p><p id="jobhub-closed" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">People to Ping</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-3"><p class="text-[10px] uppercase text-gray-500">Events</p><p id="jobhub-events-count" class="text-2xl font-bold">0</p></div>
           </div>
 
           <div class="panel-card p-4">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">Jobs / Applications / Internships</h3>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs uppercase text-gray-500 font-bold">Alerts</h3>
               <span id="jobhub-updated" class="text-[10px] text-gray-500 font-mono">Updated: --</span>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Open Roles</p><p id="jobhub-open-roles" class="text-2xl font-bold">0</p></div>
-              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Applied</p><p id="jobhub-applied" class="text-2xl font-bold">0</p></div>
-              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Interviewing</p><p id="jobhub-interviewing" class="text-2xl font-bold">0</p></div>
-              <div class="p-3 panel-soft"><p class="text-[10px] uppercase text-gray-500">Warm Targets</p><p id="jobhub-targets" class="text-2xl font-bold">0</p></div>
-            </div>
+            <div id="jobhub-alerts" class="space-y-2"></div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="md:col-span-1 p-4 panel-card">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Role Pipeline</h3>
+            <div class="p-4 panel-card">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">1) Internship / Job Monitor</h3>
               <div id="jobhub-roles" class="space-y-2"></div>
             </div>
-            <div class="md:col-span-1 p-4 panel-card">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Application Tracker</h3>
-              <div id="jobhub-apps" class="space-y-2"></div>
-            </div>
-            <div class="md:col-span-1 p-4 panel-card">
-              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Warm Intro Targets</h3>
+            <div class="p-4 panel-card">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">2) Interesting People (LinkedIn-ish)</h3>
               <div id="jobhub-outreach" class="space-y-2"></div>
+            </div>
+            <div class="p-4 panel-card">
+              <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">3) Interesting Events</h3>
+              <div id="jobhub-events" class="space-y-2"></div>
             </div>
           </div>
         </div>
-        <div id="section-skills" class="section-content hidden max-w-7xl mx-auto space-y-4">
+        <div id="section-skills" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Skills Control</h1>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Skill Operations</h1>
+              <p class="text-sm text-gray-500">Installed capabilities, readiness, and maintenance actions.</p>
+            </div>
             <button onclick="loadSkills()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh Skills</button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Installed</p><p id="skills-total" class="text-2xl font-bold">0</p></div>
             <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Ready</p><p id="skills-ready" class="text-2xl font-bold">0</p></div>
             <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Needs Config</p><p id="skills-needs" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Coverage</p><p id="skills-coverage" class="text-2xl font-bold">0%</p></div>
           </div>
 
           <div class="panel-card p-4">
-            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Recommendations</h3>
+            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Recommended installs</h3>
             <div id="skills-recs" class="space-y-2"></div>
           </div>
 
-          <div id="skills-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          <div class="panel-card overflow-hidden">
+            <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark text-[10px] uppercase text-gray-500 font-semibold tracking-wider">
+              <div class="col-span-4">Skill</div>
+              <div class="col-span-2">Source</div>
+              <div class="col-span-2">Group</div>
+              <div class="col-span-2">Readiness</div>
+              <div class="col-span-2 text-right">Actions</div>
+            </div>
+            <div id="skills-grid" class="divide-y divide-border-light dark:divide-border-dark"></div>
+          </div>
         </div>
-        <div id="section-cron" class="section-content hidden max-w-7xl mx-auto space-y-4">
+        <div id="section-cron" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Cron</h1>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Automation Control</h1>
+              <p class="text-sm text-gray-500">Your scheduled jobs and quick manual triggers.</p>
+            </div>
             <button onclick="loadCronList()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
           </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Total Jobs</p><p id="cron-total" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">High Frequency</p><p id="cron-highfreq" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Daily+</p><p id="cron-daily" class="text-2xl font-bold">0</p></div>
+            <div class="panel-card p-4"><p class="text-[10px] uppercase text-gray-500">Manual Actions</p><p class="text-2xl font-bold">5</p></div>
+          </div>
+
           <div class="panel-card p-4">
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-              <button onclick="runJob('sync_canvas')" class="px-2 py-1 text-xs rounded border">sync_canvas</button>
-              <button onclick="runJob('sync_github')" class="px-2 py-1 text-xs rounded border">sync_github</button>
-              <button onclick="runJob('sync_network')" class="px-2 py-1 text-xs rounded border">sync_network</button>
-              <button onclick="runJob('morning_brief')" class="px-2 py-1 text-xs rounded border">morning_brief</button>
-              <button onclick="runJob('token_sync')" class="px-2 py-1 text-xs rounded border">token_sync</button>
+            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Run now</h3>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_canvas</button>
+              <button onclick="runJob('sync_github')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_github</button>
+              <button onclick="runJob('sync_network')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">sync_network</button>
+              <button onclick="runJob('morning_brief')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">morning_brief</button>
+              <button onclick="runJob('token_sync')" class="px-3 py-1.5 text-xs rounded-full border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">token_sync</button>
             </div>
-            <div id="cron-list" class="space-y-2"></div>
+          </div>
+
+          <div class="panel-card overflow-hidden">
+            <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark text-[10px] uppercase text-gray-500 font-semibold tracking-wider">
+              <div class="col-span-3">Job</div>
+              <div class="col-span-3">Schedule</div>
+              <div class="col-span-4">Command</div>
+              <div class="col-span-2 text-right">Action</div>
+            </div>
+            <div id="cron-list" class="divide-y divide-border-light dark:divide-border-dark"></div>
           </div>
         </div>
       </div>
@@ -313,6 +369,7 @@ const skillsGrid = document.getElementById('skills-grid');
 const skillsTotal = document.getElementById('skills-total');
 const skillsReady = document.getElementById('skills-ready');
 const skillsNeeds = document.getElementById('skills-needs');
+const skillsCoverage = document.getElementById('skills-coverage');
 const skillsRecs = document.getElementById('skills-recs');
 const usage5h = document.getElementById('usage-5h');
 const usage7d = document.getElementById('usage-7d');
@@ -325,7 +382,14 @@ const contextDisplay = document.getElementById('context');
 const calendarItems = document.getElementById('calendar-items');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarMonthLabel = document.getElementById('calendar-month-label');
+const calUpcoming7 = document.getElementById('cal-upcoming7');
+const calDeadlines = document.getElementById('cal-deadlines');
+const calEvents = document.getElementById('cal-events');
+const calNext = document.getElementById('cal-next');
 const cronList = document.getElementById('cron-list');
+const cronTotal = document.getElementById('cron-total');
+const cronHighfreq = document.getElementById('cron-highfreq');
+const cronDaily = document.getElementById('cron-daily');
 const chatHistory = document.getElementById('chat-history');
 const msgInput = document.getElementById('msg');
 const sendBtn = document.getElementById('send-btn');
@@ -345,18 +409,37 @@ const cpuStatus = document.getElementById('cpu-status');
 const memStatus = document.getElementById('mem-status');
 const nodeStatus = document.getElementById('node-status');
 const jobhubUpdated = document.getElementById('jobhub-updated');
-const jobhubOpenRoles = document.getElementById('jobhub-open-roles');
+const jobhubNew = document.getElementById('jobhub-new');
 const jobhubApplied = document.getElementById('jobhub-applied');
 const jobhubInterviewing = document.getElementById('jobhub-interviewing');
+const jobhubClosed = document.getElementById('jobhub-closed');
 const jobhubTargets = document.getElementById('jobhub-targets');
+const jobhubEventsCount = document.getElementById('jobhub-events-count');
+const jobhubAlerts = document.getElementById('jobhub-alerts');
 const jobhubRoles = document.getElementById('jobhub-roles');
-const jobhubApps = document.getElementById('jobhub-apps');
 const jobhubOutreach = document.getElementById('jobhub-outreach');
+const jobhubEvents = document.getElementById('jobhub-events');
 const agentInbox = document.getElementById('agent-inbox');
 const agentInboxToggle = document.getElementById('agent-inbox-toggle');
 let activeSessionId = null;
 const sessionBusy = {};
 const sessionDoneBadge = {};
+
+function updateInboxActiveHighlight() {
+  document.querySelectorAll('[data-inbox-session-id]').forEach(el => {
+    const isActive = el.getAttribute('data-inbox-session-id') === activeSessionId;
+    el.classList.toggle('bg-gray-200', isActive);
+    el.classList.toggle('dark:bg-gray-700', isActive);
+    el.classList.toggle('border-gray-300', isActive);
+    el.classList.toggle('dark:border-gray-600', isActive);
+    el.classList.toggle('border-transparent', !isActive);
+  });
+}
+
+function openChatFromInbox(id) {
+  showSection('chat');
+  openSession(id, false);
+}
 
 function deriveTaskTitle(text='') {
   const clean = String(text).replace(/\s+/g,' ').trim();
@@ -566,6 +649,7 @@ async function createSession() {
 async function openSession(id, reloadList=false) {
   activeSessionId = id;
   sessionDoneBadge[id] = false;
+  updateInboxActiveHighlight();
   try {
     const res = await fetch(`/api/chat/sessions/${id}`);
     const s = await res.json();
@@ -692,14 +776,26 @@ async function loadContext() {
     calendarRows = rows;
     renderCalendarGrid();
 
+    const now = new Date();
+    const in7 = new Date(now); in7.setDate(in7.getDate()+7);
+    const upcoming7 = rows.filter(r => {
+      const d = new Date(String(r.date||'').slice(0,10));
+      return !isNaN(d) && d >= new Date(now.getFullYear(),now.getMonth(),now.getDate()) && d <= in7;
+    });
+    if (calUpcoming7) calUpcoming7.textContent = upcoming7.length;
+    if (calDeadlines) calDeadlines.textContent = (data.deadlines || []).length;
+    if (calEvents) calEvents.textContent = (data.events || []).length;
+    if (calNext) calNext.textContent = rows[0] ? `${rows[0].title || '—'} · ${String(rows[0].date||'').slice(0,10)}` : '—';
+
     if (calendarItems) {
       calendarItems.innerHTML = rows.length ? rows.slice(0,40).map(r => `
-        <div class="panel-card p-3">
-          <div class="flex items-center justify-between">
+        <div class="p-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]">
+          <div class="flex items-center justify-between gap-2">
             <div class="text-sm font-semibold truncate">${r.title || 'Untitled'}</div>
             <span class="text-[10px] px-1.5 py-0.5 rounded border ${r.type==='deadline' ? 'text-orange-500 border-orange-500/30' : 'text-blue-500 border-blue-500/30'}">${r.type}</span>
           </div>
-          <div class="text-[11px] text-gray-500 mt-1">${r.course || 'General'} • ${r.date || 'n/a'}</div>
+          <div class="text-[11px] text-gray-500 mt-1">${r.course || 'General'}</div>
+          <div class="text-[11px] text-gray-400 font-mono mt-0.5">${r.date || 'n/a'}</div>
         </div>
       `).join('') : '<div class="text-xs text-gray-500">No calendar items found.</div>';
     }
@@ -718,9 +814,13 @@ async function loadSkills() {
     const health = data.health || {};
     const recs = data.recommendations || [];
 
-    if (skillsTotal) skillsTotal.textContent = health.total || skills.length;
-    if (skillsReady) skillsReady.textContent = health.ready || 0;
-    if (skillsNeeds) skillsNeeds.textContent = health.needs_config || 0;
+    const total = health.total || skills.length || 0;
+    const readyCount = health.ready || 0;
+    const needsCount = health.needs_config || 0;
+    if (skillsTotal) skillsTotal.textContent = total;
+    if (skillsReady) skillsReady.textContent = readyCount;
+    if (skillsNeeds) skillsNeeds.textContent = needsCount;
+    if (skillsCoverage) skillsCoverage.textContent = total ? `${Math.round((readyCount/total)*100)}%` : '0%';
 
     if (skillsRecs) {
       skillsRecs.innerHTML = recs.length ? recs.map(r => `
@@ -739,29 +839,23 @@ async function loadSkills() {
 
     skillsGrid.innerHTML = skills.map(s => {
       const ready = s.readiness === 'ready';
-      const readinessCls = ready
-        ? 'badge-ok'
-        : 'badge-warn';
-      const missing = (s.missing_env || []).length
-        ? `<div class="text-[10px] text-orange-400 mt-1">Missing: ${(s.missing_env || []).join(', ')}</div>`
-        : '<div class="text-[10px] text-gray-500 mt-1">Config: complete</div>';
-
-      return `<div class="p-4 panel-card">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">${s.name}</div>
-            <div class="text-[10px] text-gray-500">${s.group} · ${s.source}</div>
+      const readinessCls = ready ? 'badge-ok' : 'badge-warn';
+      const missing = (s.missing_env || []).length ? `Missing: ${(s.missing_env || []).join(', ')}` : 'Config complete';
+      return `
+        <div class="grid grid-cols-12 gap-2 px-4 py-3 text-xs items-center hover:bg-gray-50 dark:hover:bg-accent-dark/40 transition-colors">
+          <div class="col-span-4 min-w-0">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">${s.name}</div>
+            <div class="text-[10px] text-gray-500 truncate">${missing}</div>
           </div>
-          <span class="px-2 py-1 rounded-md text-[10px] border font-mono ${readinessCls}">${s.readiness}</span>
+          <div class="col-span-2 text-gray-500">${s.source || '-'}</div>
+          <div class="col-span-2 text-gray-500 truncate">${s.group || '-'}</div>
+          <div class="col-span-2"><span class="px-2 py-1 rounded-md text-[10px] border font-mono ${readinessCls}">${s.readiness}</span></div>
+          <div class="col-span-2 text-right flex justify-end gap-1">
+            <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark text-[11px]" onclick="window.open('${s.actions.docs}','_blank')">Docs</button>
+            <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark text-[11px]" onclick="appendMessage('assistant','Quick action: ${s.actions.update}')">Update</button>
+          </div>
         </div>
-        ${missing}
-        <div class="text-[10px] text-gray-500 mt-2">Usage: no telemetry yet (next: wire runs_24h / success_rate)</div>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <button class="px-2 py-1 panel-soft text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.test}')">Run test</button>
-          <button class="px-2 py-1 panel-soft text-[10px]" onclick="window.open('${s.actions.docs}','_blank')">Docs</button>
-          <button class="px-2 py-1 panel-soft text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.update}')">Update</button>
-        </div>
-      </div>`;
+      `;
     }).join('');
   } catch {
     skillsGrid.innerHTML = '<div class="text-xs text-red-500">Failed to load skills.</div>';
@@ -817,44 +911,75 @@ async function loadSystemStats() {
 
 async function loadNetworkJobs() {
   try {
-    const res = await fetch('/api/network/jobs');
-    const data = await res.json();
+    const [jobsRes, ctxRes] = await Promise.all([
+      fetch('/api/network/jobs'),
+      fetch('/api/context')
+    ]);
+    const data = await jobsRes.json();
+    const ctx = await ctxRes.json();
 
     const roles = data.roles || [];
     const apps = data.applications || [];
     const targets = data.outreach_targets || [];
+    const events = data.interesting_events || [];
+
+    const applied = apps.filter(a => (a.stage || '').toLowerCase().includes('applied')).length;
+    const interviewing = apps.filter(a => /oa|interview/i.test(a.stage || '')).length;
+    const closed = apps.filter(a => /closed|reject/i.test(a.stage || '')).length;
 
     if (jobhubUpdated) jobhubUpdated.textContent = `Updated: ${data.updated_at || 'n/a'}`;
-    if (jobhubOpenRoles) jobhubOpenRoles.textContent = roles.length;
-    if (jobhubApplied) jobhubApplied.textContent = apps.filter(a => (a.stage || '').toLowerCase().includes('applied')).length;
-    if (jobhubInterviewing) jobhubInterviewing.textContent = apps.filter(a => (a.stage || '').toLowerCase().includes('interview')).length;
+    if (jobhubNew) jobhubNew.textContent = roles.filter(r => /new|sourcing/i.test(r.status || '')).length || roles.length;
+    if (jobhubApplied) jobhubApplied.textContent = applied;
+    if (jobhubInterviewing) jobhubInterviewing.textContent = interviewing;
+    if (jobhubClosed) jobhubClosed.textContent = closed;
     if (jobhubTargets) jobhubTargets.textContent = targets.length;
+    if (jobhubEventsCount) jobhubEventsCount.textContent = events.length;
 
-    if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0, 8).map(r => `
+    const alerts = [];
+    const today = new Date();
+    apps.forEach(a => {
+      if (!a.deadline) return;
+      const d = new Date(a.deadline);
+      const diff = Math.ceil((d - today) / 86400000);
+      if (diff <= 0) alerts.push(`Apply by tonight: ${a.company} — ${a.title}`);
+      else if (diff <= 2) alerts.push(`Deadline in ${diff}d: ${a.company} — ${a.title}`);
+    });
+    targets.forEach(t => {
+      if ((t.status || '').toLowerCase().includes('queued')) alerts.push(`Follow-up window reached: ${t.name}`);
+    });
+    if (jobhubAlerts) jobhubAlerts.innerHTML = alerts.length ? alerts.slice(0,6).map(a => `<div class="p-2 rounded border border-orange-500/30 bg-orange-500/5 text-xs text-orange-400">${a}</div>`).join('') : '<div class="text-xs text-gray-500">No urgent alerts.</div>';
+
+    if (jobhubRoles) jobhubRoles.innerHTML = roles.length ? roles.slice(0, 10).map(r => `
       <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${r.company} — ${r.title}</div>
         <div class="text-[10px] text-gray-500">${r.location || ''}</div>
-        <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'sourcing'}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase">${r.status || 'new'}</div>
       </div>
     `).join('') : '<div class="text-xs text-gray-500">No roles tracked yet.</div>';
 
-    if (jobhubApps) jobhubApps.innerHTML = apps.length ? apps.slice(0, 8).map(a => `
-      <div class="p-2 panel-soft">
-        <div class="text-sm font-semibold truncate">${a.company} — ${a.title}</div>
-        <div class="text-[10px] text-gray-500">Stage: ${a.stage || 'n/a'}</div>
-        <div class="text-[10px] text-primary mt-1">Next: ${a.next_step || 'n/a'} ${a.deadline ? `· due ${a.deadline}` : ''}</div>
-      </div>
-    `).join('') : '<div class="text-xs text-gray-500">No applications yet.</div>';
-
-    if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0, 8).map(t => `
+    if (jobhubOutreach) jobhubOutreach.innerHTML = targets.length ? targets.slice(0, 10).map(t => `
       <div class="p-2 panel-soft">
         <div class="text-sm font-semibold truncate">${t.name}</div>
-        <div class="text-[10px] text-gray-500">Mutuals: ${t.mutual_count || 0} · ${t.status || 'queued'}</div>
-        <div class="text-[10px] text-primary mt-1">${t.reason || ''}</div>
+        <div class="text-[10px] text-gray-500">Why: ${t.reason || 'Relevant to your goals'}</div>
+        <div class="text-[10px] text-primary mt-1">Opener: ${t.best_opener || 'Hey! Loved your recent work — could I ask a quick question?'}</div>
+        <div class="text-[10px] text-gray-400 mt-1">Last interaction: ${t.last_interaction || 'n/a'}</div>
       </div>
-    `).join('') : '<div class="text-xs text-gray-500">No warm targets yet.</div>';
+    `).join('') : '<div class="text-xs text-gray-500">No people queued yet.</div>';
+
+    const ctxEvents = (ctx.events || []).filter(e => /hack|career|fair|club|campus|workshop|meetup/i.test((e.title||'') + ' ' + (e.course||''))).slice(0,8).map(e => ({
+      title: e.title,
+      date: e.date,
+      source: e.course || 'Campus'
+    }));
+    const mergedEvents = [...events, ...ctxEvents].slice(0, 10);
+    if (jobhubEvents) jobhubEvents.innerHTML = mergedEvents.length ? mergedEvents.map(ev => `
+      <div class="p-2 panel-soft">
+        <div class="text-sm font-semibold truncate">${ev.title || 'Event'}</div>
+        <div class="text-[10px] text-gray-500">${ev.date || 'TBD'} · ${ev.source || 'Campus'}</div>
+      </div>
+    `).join('') : '<div class="text-xs text-gray-500">No interesting events yet.</div>';
   } catch {
-    if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load job hub.</div>';
+    if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load network engine.</div>';
   }
 }
 
@@ -953,9 +1078,9 @@ async function loadAgentInbox() {
         : (done ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>' : '<span class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>');
       return `
         <div class="group relative">
-          <button onclick="openSession('${s.id}')" class="w-full text-left p-2 pr-8 rounded-md ${active ? 'bg-gray-100 dark:bg-primary/10' : 'hover:bg-gray-100 dark:hover:bg-accent-dark'}">
+          <button data-inbox-session-id="${s.id}" onclick="openChatFromInbox('${s.id}')" class="w-full text-left p-2 pr-8 rounded-md border ${active ? 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600' : 'border-transparent hover:bg-gray-100 dark:hover:bg-accent-dark'}">
             <div class="flex items-center justify-between gap-2">
-              <div class="text-xs font-medium truncate ${active ? 'text-primary dark:text-blue-300' : ''}">${escapeHtml(s.title || 'Untitled')}</div>
+              <div class="text-xs font-medium truncate ${active ? 'text-gray-900 dark:text-gray-100' : ''}">${escapeHtml(s.title || 'Untitled')}</div>
               ${indicator}
             </div>
           </button>
@@ -981,26 +1106,58 @@ async function loadAgentInbox() {
         <div class="space-y-2">${feedHtml || '<div class="text-xs text-gray-500">No recent events.</div>'}</div>
       </div>
     `;
+    updateInboxActiveHighlight();
   } catch {
     agentInbox.innerHTML = '<div class="text-xs text-red-500">Failed to load inbox.</div>';
   }
 }
 
+function _cronJobNameFromCommand(command='') {
+  const m = String(command).match(/jobs\/([a-zA-Z0-9_\-]+)\.py/);
+  return m ? m[1] : 'custom';
+}
+
+function _cronScheduleLabel(expr='') {
+  if (expr.startsWith('*/15')) return 'Every 15 min';
+  if (expr.startsWith('*/30')) return 'Every 30 min';
+  if (expr === '0 */6 * * *') return 'Every 6 hours';
+  if (expr === '0 8 * * *') return 'Daily @ 08:00';
+  if (expr === '0 0 * * 0') return 'Weekly (Sun)';
+  return expr;
+}
+
 async function loadCronList() {
   if (!cronList) return;
-  cronList.innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
+  cronList.innerHTML = '<div class="p-4 text-xs text-gray-500">Loading...</div>';
   try {
     const res = await fetch('/api/cron/list');
     const data = await res.json();
     const jobs = data.jobs || [];
-    cronList.innerHTML = jobs.length ? jobs.map(j => `
-      <div class="p-2 rounded border border-border-light dark:border-border-dark text-xs">
-        <div class="font-mono text-primary">${j.schedule}</div>
-        <div class="mt-1 text-gray-500 break-all">${j.command}</div>
-      </div>
-    `).join('') : '<div class="text-xs text-gray-500">No cron entries found.</div>';
+
+    if (cronTotal) cronTotal.textContent = jobs.length;
+    if (cronHighfreq) cronHighfreq.textContent = jobs.filter(j => (j.schedule||'').includes('*/')).length;
+    if (cronDaily) cronDaily.textContent = jobs.filter(j => (j.schedule||'').includes('0 8') || (j.schedule||'').includes('0 0')).length;
+
+    cronList.innerHTML = jobs.length ? jobs.map(j => {
+      const name = _cronJobNameFromCommand(j.command || '');
+      return `
+        <div class="grid grid-cols-12 gap-2 px-4 py-3 text-xs items-center hover:bg-gray-50 dark:hover:bg-accent-dark/40 transition-colors">
+          <div class="col-span-3">
+            <div class="font-semibold text-gray-900 dark:text-gray-100">${name}</div>
+          </div>
+          <div class="col-span-3">
+            <div class="font-mono text-primary">${_cronScheduleLabel(j.schedule || '')}</div>
+            <div class="text-[10px] text-gray-500">${j.schedule || ''}</div>
+          </div>
+          <div class="col-span-4 truncate text-gray-500" title="${escapeHtml(j.command || '')}">${escapeHtml(j.command || '')}</div>
+          <div class="col-span-2 text-right">
+            <button onclick="runJob('${name}')" class="px-2 py-1 rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark text-[11px]">Run</button>
+          </div>
+        </div>
+      `;
+    }).join('') : '<div class="p-4 text-xs text-gray-500">No cron entries found.</div>';
   } catch {
-    cronList.innerHTML = '<div class="text-xs text-red-500">Failed to load cron list.</div>';
+    cronList.innerHTML = '<div class="p-4 text-xs text-red-500">Failed to load cron list.</div>';
   }
 }
 
