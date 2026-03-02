@@ -202,6 +202,15 @@ def _estimate_cost(prompt_tokens: int, completion_tokens: int) -> float:
     return (prompt_tokens / 1_000_000) * COST_INPUT_PER_1M + (completion_tokens / 1_000_000) * COST_OUTPUT_PER_1M
 
 
+def _read_json_file(path: Path, default: dict | list):
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return default
+
+
 def _sum_events(events: list[dict]) -> dict:
     prompt = sum(int(e.get("prompt_tokens", 0)) for e in events)
     completion = sum(int(e.get("completion_tokens", 0)) for e in events)
@@ -403,24 +412,20 @@ def get_skills():
 @app.get("/api/github")
 def get_github_snapshot():
     p = ROOT / "data" / "github_snapshot.json"
-    if not p.exists():
-        return {"updated_at": None, "repos": []}
-    return json.loads(p.read_text())
+    return _read_json_file(p, {"updated_at": None, "repos": []})
 
 
 @app.get("/api/network/jobs")
 def get_network_jobs():
-    if not JOB_PIPELINE_PATH.exists():
-        return {
+    return _read_json_file(
+        JOB_PIPELINE_PATH,
+        {
             "updated_at": None,
             "roles": [],
             "applications": [],
             "outreach_targets": [],
-        }
-    try:
-        return json.loads(JOB_PIPELINE_PATH.read_text())
-    except Exception:
-        raise HTTPException(status_code=500, detail="Invalid job pipeline data")
+        },
+    )
 
 
 @app.get("/api/agents/inbox")
@@ -431,16 +436,17 @@ def agents_inbox():
 @app.get("/api/network")
 def get_network():
     p = ROOT / "data" / "network_context.json"
-    if not p.exists():
-        return {
+    return _read_json_file(
+        p,
+        {
             "updated_at": None,
             "contacts": [],
             "interactions": [],
             "opportunities": [],
             "introductions": [],
             "summary": {"pending_followups": 0, "warm_leads": 0, "intros_available": 0, "reply_rate": 0},
-        }
-    return json.loads(p.read_text())
+        },
+    )
 
 
 @app.get("/api/system/stats")
@@ -603,15 +609,23 @@ def chat(body: ChatBody):
         "model": OPENCLAW_MODEL,
         "messages": messages,
     }
-    res = requests.post(
-        f"{OPENCLAW_BASE_URL}/v1/chat/completions",
-        headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=90,
-    )
+    try:
+        res = requests.post(
+            f"{OPENCLAW_BASE_URL}/v1/chat/completions",
+            headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=90,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"OpenClaw upstream request failed: {exc}")
+
     if res.status_code >= 400:
         raise HTTPException(status_code=res.status_code, detail=res.text)
-    data = res.json()
+
+    try:
+        data = res.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="OpenClaw upstream returned invalid JSON")
 
     event = _usage_from_response(data)
     _append_usage_event(event)

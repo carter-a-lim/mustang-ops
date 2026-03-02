@@ -775,12 +775,12 @@ async function runJob(name) {
   try {
     const res = await fetch('/api/run/' + name, {method:'POST'});
     const data = await res.json();
-    appendMessage('ai', `Job ${name} completed with exit code ${data.exit_code}.`);
+    appendMessage('assistant', `Job ${name} completed with exit code ${data.exit_code}.`);
     if (name === 'sync_github') loadGithub();
     if (name === 'sync_canvas') loadContext();
     if (name === 'sync_network') loadNetworkJobs();
   } catch {
-    appendMessage('ai', `Job ${name} failed.`);
+    appendMessage('assistant', `Job ${name} failed.`);
   } finally {
     setTimeout(() => { jobStatusPill.classList.add('hidden'); jobStatusPill.classList.remove('flex'); }, 1800);
   }
