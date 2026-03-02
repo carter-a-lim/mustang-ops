@@ -192,6 +192,43 @@ def _system_stats() -> dict:
     }
 
 
+def _load_openclaw_config() -> dict:
+    cfg_path = Path.home() / ".openclaw" / "openclaw.json"
+    if not cfg_path.exists():
+        return {}
+    try:
+        return json.loads(cfg_path.read_text())
+    except Exception:
+        return {}
+
+
+def _required_env_for_skill(skill_name: str) -> list[str]:
+    required = {
+        "github": ["GITHUB_TOKEN"],
+        "gog": ["GOG_ACCOUNT", "GOG_KEYRING_PASSWORD"],
+        "canvas-lms": ["CANVAS_URL", "CANVAS_TOKEN"],
+        "tavily-search": ["TAVILY_API_KEY"],
+    }
+    return required.get(skill_name, [])
+
+
+def _skill_group(skill_name: str) -> str:
+    school = {"canvas-lms", "gog"}
+    build = {"github", "coding", "clean-code", "playwright-mcp"}
+    growth = {"growth-hacker", "tavily-search", "find-skills", "startup-agent"}
+    ops = {"healthcheck", "self-improving-agent", "tmux", "clawhub"}
+
+    if skill_name in school:
+        return "School"
+    if skill_name in build:
+        return "Build"
+    if skill_name in growth:
+        return "Growth"
+    if skill_name in ops:
+        return "Ops"
+    return "General"
+
+
 @app.get("/")
 def home():
     return FileResponse(ROOT / "web" / "index.html")
@@ -204,13 +241,86 @@ def get_context():
 
 @app.get("/api/skills")
 def get_skills():
-    skills_dir = ROOT.parent / "skills"
-    skills = []
-    if skills_dir.exists():
+    workspace_skills_dir = ROOT.parent / "skills"
+    core_skills_dir = Path.home() / ".npm-global" / "lib" / "node_modules" / "openclaw" / "skills"
+
+    cfg = _load_openclaw_config()
+    configured_entries = cfg.get("skills", {}).get("entries", {})
+
+    discovered: dict[str, dict] = {}
+
+    for skills_dir, source in ((workspace_skills_dir, "workspace"), (core_skills_dir, "core")):
+        if not skills_dir.exists():
+            continue
         for d in sorted(skills_dir.iterdir()):
-            if d.is_dir() and (d / "SKILL.md").exists():
-                skills.append({"name": d.name, "status": "installed"})
-    return {"skills": skills}
+            if not d.is_dir() or not (d / "SKILL.md").exists():
+                continue
+            name = d.name
+            discovered[name] = {
+                "name": name,
+                "source": source,
+                "group": _skill_group(name),
+                "required_env": _required_env_for_skill(name),
+            }
+
+    skills = []
+    for name, meta in sorted(discovered.items(), key=lambda x: x[0].lower()):
+        env_cfg = (configured_entries.get(name) or {}).get("env", {})
+        required = meta["required_env"]
+        missing = [k for k in required if not env_cfg.get(k)]
+
+        if not required:
+            readiness = "ready"
+        elif missing:
+            readiness = "needs-config"
+        else:
+            readiness = "ready"
+
+        skills.append(
+            {
+                "name": name,
+                "source": meta["source"],
+                "group": meta["group"],
+                "status": "installed",
+                "readiness": readiness,
+                "required_env": required,
+                "missing_env": missing,
+                "configured": len(missing) == 0,
+                "usage": {
+                    "last_used": None,
+                    "runs_24h": 0,
+                    "runs_7d": 0,
+                    "success_rate": None,
+                    "common_failure": None,
+                },
+                "actions": {
+                    "docs": f"https://skills.sh/search?q={name}",
+                    "test": f"Test {name}",
+                    "update": f"Update {name}",
+                },
+            }
+        )
+
+    recommendations = [
+        {
+            "name": "linkedin-automation",
+            "why": "Automate outreach + profile actions for your Network pipeline",
+            "install": "npx skills add composiohq/awesome-claude-skills@linkedin-automation -g -y",
+        },
+        {
+            "name": "gtm-prospecting",
+            "why": "Rank high-value people to connect with from your field",
+            "install": "npx skills add jforksy/claude-skills@gtm-prospecting -g -y",
+        },
+    ]
+
+    health = {
+        "total": len(skills),
+        "ready": len([s for s in skills if s["readiness"] == "ready"]),
+        "needs_config": len([s for s in skills if s["readiness"] == "needs-config"]),
+    }
+
+    return {"skills": skills, "health": health, "recommendations": recommendations}
 
 
 @app.get("/api/github")

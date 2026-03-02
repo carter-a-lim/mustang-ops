@@ -222,7 +222,25 @@
             </div>
           </div>
         </div>
-        <div id="section-skills" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Skills</h1><div id="skills-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div></div>
+        <div id="section-skills" class="section-content hidden max-w-7xl mx-auto space-y-4">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Skills Control</h1>
+            <button onclick="loadSkills()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh Skills</button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Installed</p><p id="skills-total" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Ready</p><p id="skills-ready" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><p class="text-[10px] uppercase text-gray-500">Needs Config</p><p id="skills-needs" class="text-2xl font-bold">0</p></div>
+          </div>
+
+          <div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4">
+            <h3 class="text-xs uppercase text-gray-500 font-bold mb-3">Recommendations</h3>
+            <div id="skills-recs" class="space-y-2"></div>
+          </div>
+
+          <div id="skills-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
         <div id="section-cron" class="section-content hidden max-w-5xl mx-auto"><h1 class="text-2xl font-bold">Cron</h1><div class="mt-3"><button onclick="runJob('sync_canvas')" class="px-3 py-1.5 text-xs rounded-md border">Run Canvas Sync</button></div></div>
       </div>
     </section>
@@ -235,6 +253,10 @@
 <script>
 const githubList = document.getElementById('github-list');
 const skillsGrid = document.getElementById('skills-grid');
+const skillsTotal = document.getElementById('skills-total');
+const skillsReady = document.getElementById('skills-ready');
+const skillsNeeds = document.getElementById('skills-needs');
+const skillsRecs = document.getElementById('skills-recs');
 const usage5h = document.getElementById('usage-5h');
 const usage7d = document.getElementById('usage-7d');
 const usageCost = document.getElementById('usage-cost');
@@ -389,16 +411,64 @@ async function loadContext() {
 
 async function loadSkills() {
   if (!skillsGrid) return;
-  skillsGrid.innerHTML = 'Loading...';
+  skillsGrid.innerHTML = '<div class="text-xs text-gray-500">Loading…</div>';
   try {
     const res = await fetch('/api/skills');
     const data = await res.json();
     const skills = data.skills || [];
-    skillsGrid.innerHTML = skills.map(s => `<div class="p-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark"><div class="font-semibold">${s.name}</div><div class="text-xs text-gray-500">${s.status}</div></div>`).join('');
+    const health = data.health || {};
+    const recs = data.recommendations || [];
+
+    if (skillsTotal) skillsTotal.textContent = health.total || skills.length;
+    if (skillsReady) skillsReady.textContent = health.ready || 0;
+    if (skillsNeeds) skillsNeeds.textContent = health.needs_config || 0;
+
+    if (skillsRecs) {
+      skillsRecs.innerHTML = recs.length ? recs.map(r => `
+        <div class="p-2 rounded border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]">
+          <div class="text-sm font-semibold">${r.name}</div>
+          <div class="text-[11px] text-gray-500">${r.why}</div>
+          <div class="text-[10px] text-primary font-mono mt-1">${r.install}</div>
+        </div>
+      `).join('') : '<div class="text-xs text-gray-500">No recommendations right now.</div>';
+    }
+
+    if (!skills.length) {
+      skillsGrid.innerHTML = '<div class="text-xs text-gray-500">No skills found.</div>';
+      return;
+    }
+
+    skillsGrid.innerHTML = skills.map(s => {
+      const ready = s.readiness === 'ready';
+      const readinessCls = ready
+        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+        : 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+      const missing = (s.missing_env || []).length
+        ? `<div class="text-[10px] text-orange-400 mt-1">Missing: ${(s.missing_env || []).join(', ')}</div>`
+        : '<div class="text-[10px] text-gray-500 mt-1">Config: complete</div>';
+
+      return `<div class="p-4 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-gray-900 dark:text-white">${s.name}</div>
+            <div class="text-[10px] text-gray-500">${s.group} · ${s.source}</div>
+          </div>
+          <span class="px-2 py-1 rounded-md text-[10px] border font-mono ${readinessCls}">${s.readiness}</span>
+        </div>
+        ${missing}
+        <div class="text-[10px] text-gray-500 mt-2">Usage: no telemetry yet (next: wire runs_24h / success_rate)</div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.test}')">Run test</button>
+          <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark text-[10px]" onclick="window.open('${s.actions.docs}','_blank')">Docs</button>
+          <button class="px-2 py-1 rounded border border-border-light dark:border-border-dark text-[10px]" onclick="appendMessage('assistant','Quick action: ${s.actions.update}')">Update</button>
+        </div>
+      </div>`;
+    }).join('');
   } catch {
-    skillsGrid.innerHTML = 'Failed to load skills';
+    skillsGrid.innerHTML = '<div class="text-xs text-red-500">Failed to load skills.</div>';
   }
 }
+
 
 function setRing(el, pct) {
   if (!el) return;
