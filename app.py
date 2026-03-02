@@ -5,6 +5,7 @@ import subprocess
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 import requests
 from dotenv import load_dotenv
@@ -64,6 +65,81 @@ def read_context() -> dict:
     if not CONTEXT_PATH.exists():
         raise HTTPException(status_code=404, detail=f"Context not found: {CONTEXT_PATH}")
     return json.loads(CONTEXT_PATH.read_text())
+
+
+def _tail_lines(path: Path, n: int = 20) -> list[str]:
+    if not path.exists():
+        return []
+    try:
+        raw = path.read_text(errors="ignore").replace("\x00", "")
+        lines = ["".join(ch for ch in line if ch.isprintable() or ch.isspace()).strip() for line in raw.splitlines()]
+        lines = [l for l in lines if l]
+        return lines[-n:]
+    except Exception:
+        return []
+
+
+def _agent_inbox() -> dict[str, Any]:
+    now = datetime.now(timezone.utc).isoformat()
+    items = []
+
+    # Running background jobs related to Mustang Ops
+    try:
+        ps = subprocess.run(["ps", "-eo", "pid,etimes,args"], capture_output=True, text=True, check=False)
+        for line in ps.stdout.splitlines()[1:]:
+            if "jobs/" in line and "python3" in line and "mustang-ops" in line:
+                parts = line.strip().split(maxsplit=2)
+                if len(parts) < 3:
+                    continue
+                pid, etimes, cmd = parts[0], parts[1], parts[2]
+                items.append(
+                    {
+                        "type": "job",
+                        "name": cmd.split("jobs/")[-1].split()[0],
+                        "status": "running",
+                        "pid": int(pid),
+                        "seconds_running": int(etimes),
+                        "summary": cmd,
+                    }
+                )
+    except Exception:
+        pass
+
+    # Recent cron/server activity as monitor feed
+    for source, file_name in (("cron", "logs/cron.log"), ("server", "logs/server.log")):
+        lines = [l for l in _tail_lines(ROOT / file_name, 12) if l.strip()]
+        for l in lines[-4:]:
+            items.append(
+                {
+                    "type": source,
+                    "name": source,
+                    "status": "activity",
+                    "summary": l[-180:],
+                }
+            )
+
+    # Chat sessions recently active (treated as active threads)
+    store = _load_chat_store()
+    for s in store.get("sessions", [])[:12]:
+        items.append(
+            {
+                "type": "session",
+                "name": s.get("title", "Untitled"),
+                "status": "idle",
+                "updated_at": s.get("updated_at"),
+                "summary": f"{len(s.get('messages', []))} messages",
+                "id": s.get("id"),
+            }
+        )
+
+    # newest first for session/activity, running jobs pinned first
+    def _k(x):
+        if x.get("status") == "running":
+            return (0, x.get("seconds_running", 0))
+        return (1, 0)
+
+    items.sort(key=_k)
+    return {"updated_at": now, "items": items[:40]}
 
 
 def _load_chat_store() -> dict:
@@ -345,6 +421,11 @@ def get_network_jobs():
         return json.loads(JOB_PIPELINE_PATH.read_text())
     except Exception:
         raise HTTPException(status_code=500, detail="Invalid job pipeline data")
+
+
+@app.get("/api/agents/inbox")
+def agents_inbox():
+    return _agent_inbox()
 
 
 @app.get("/api/network")
