@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -17,6 +18,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 USAGE_EVENTS_PATH = DATA_DIR / "usage_events.jsonl"
+CHAT_SESSIONS_PATH = DATA_DIR / "chat_sessions.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -48,12 +50,37 @@ app.mount("/web", StaticFiles(directory=str(ROOT / "web")), name="web")
 
 class ChatBody(BaseModel):
     message: str
+    session_id: str | None = None
+
+
+class CreateSessionBody(BaseModel):
+    title: str | None = None
 
 
 def read_context() -> dict:
     if not CONTEXT_PATH.exists():
         raise HTTPException(status_code=404, detail=f"Context not found: {CONTEXT_PATH}")
     return json.loads(CONTEXT_PATH.read_text())
+
+
+def _load_chat_store() -> dict:
+    if not CHAT_SESSIONS_PATH.exists():
+        return {"sessions": []}
+    try:
+        return json.loads(CHAT_SESSIONS_PATH.read_text())
+    except Exception:
+        return {"sessions": []}
+
+
+def _save_chat_store(store: dict) -> None:
+    CHAT_SESSIONS_PATH.write_text(json.dumps(store, indent=2) + "\n")
+
+
+def _find_session(store: dict, session_id: str) -> dict | None:
+    for s in store.get("sessions", []):
+        if s.get("id") == session_id:
+            return s
+    return None
 
 
 def _usage_from_response(data: dict) -> dict:
@@ -204,19 +231,81 @@ def usage_summary():
     }
 
 
+@app.get("/api/chat/sessions")
+def list_chat_sessions():
+    store = _load_chat_store()
+    sessions = store.get("sessions", [])
+    sessions = sorted(sessions, key=lambda x: x.get("updated_at", ""), reverse=True)
+    return {
+        "sessions": [
+            {
+                "id": s.get("id"),
+                "title": s.get("title", "Untitled"),
+                "updated_at": s.get("updated_at"),
+                "created_at": s.get("created_at"),
+                "message_count": len(s.get("messages", [])),
+            }
+            for s in sessions
+        ]
+    }
+
+
+@app.post("/api/chat/sessions")
+def create_chat_session(body: CreateSessionBody):
+    now = datetime.now(timezone.utc).isoformat()
+    sid = str(uuid.uuid4())
+    session = {
+        "id": sid,
+        "title": (body.title or "New Chat").strip() or "New Chat",
+        "created_at": now,
+        "updated_at": now,
+        "messages": [],
+    }
+    store = _load_chat_store()
+    store.setdefault("sessions", []).append(session)
+    _save_chat_store(store)
+    return session
+
+
+@app.get("/api/chat/sessions/{session_id}")
+def get_chat_session(session_id: str):
+    store = _load_chat_store()
+    session = _find_session(store, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+
 @app.post("/api/chat")
 def chat(body: ChatBody):
     if not OPENCLAW_TOKEN:
         raise HTTPException(status_code=500, detail="OPENCLAW_TOKEN is missing")
+
+    store = _load_chat_store()
+    session = None
+    messages = []
+
+    if body.session_id:
+        session = _find_session(store, body.session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        for m in session.get("messages", [])[-30:]:
+            role = m.get("role")
+            content = m.get("content")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": body.message})
+
     payload = {
         "model": OPENCLAW_MODEL,
-        "messages": [{"role": "user", "content": body.message}],
+        "messages": messages,
     }
     res = requests.post(
         f"{OPENCLAW_BASE_URL}/v1/chat/completions",
         headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
         json=payload,
-        timeout=60,
+        timeout=90,
     )
     if res.status_code >= 400:
         raise HTTPException(status_code=res.status_code, detail=res.text)
@@ -224,11 +313,22 @@ def chat(body: ChatBody):
 
     event = _usage_from_response(data)
     _append_usage_event(event)
+    reply = data["choices"][0]["message"]["content"]
+
+    if session is not None:
+        now = datetime.now(timezone.utc).isoformat()
+        session.setdefault("messages", []).append({"role": "user", "content": body.message, "ts": now})
+        session.setdefault("messages", []).append({"role": "assistant", "content": reply, "ts": now})
+        session["updated_at"] = now
+        if session.get("title", "New Chat") in ("", "New Chat"):
+            session["title"] = body.message[:48]
+        _save_chat_store(store)
 
     return {
-        "reply": data["choices"][0]["message"]["content"],
+        "reply": reply,
         "raw": data,
         "usage": event,
+        "session_id": body.session_id,
     }
 
 
