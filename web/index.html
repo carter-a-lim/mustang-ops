@@ -403,20 +403,31 @@
         <div id="section-todo" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo List</h1>
-              <p class="text-sm text-gray-500">General task list, separate from cron jobs.</p>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo Notes</h1>
+              <p class="text-sm text-gray-500">Apple Notes style task workspace.</p>
             </div>
             <div class="flex gap-2">
               <span id="todo-open-count" class="todo-pill">Open: 0</span>
               <span id="todo-done-count" class="todo-pill">Done: 0</span>
+              <button onclick="createTodoNote()" class="px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">New Note</button>
             </div>
           </div>
-          <div class="todo-shell p-4">
-            <div class="flex gap-2 mb-3">
-              <input id="cron-todo-input" placeholder="What needs to get done?" class="flex-1 text-sm px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white/80 dark:bg-black/20" />
-              <button onclick="addCronTodo()" class="px-4 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">Add Task</button>
+
+          <div class="todo-shell p-0 overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-[300px_1fr] min-h-[520px]">
+              <div class="border-r border-border-light dark:border-border-dark p-3">
+                <input id="todo-search" oninput="renderTodoNotesList()" placeholder="Search notes" class="w-full mb-3 text-xs px-2 py-1.5 rounded-md border border-border-light dark:border-border-dark bg-transparent" />
+                <div id="todo-notes-list" class="space-y-2"></div>
+              </div>
+              <div class="p-4 space-y-3">
+                <input id="todo-note-title" placeholder="Note title" class="w-full text-base font-semibold px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white/70 dark:bg-black/20" oninput="saveActiveTodoNote()" />
+                <textarea id="todo-note-body" placeholder="Write your note or checklist here...&#10;- [ ] follow up with recruiter&#10;- [x] update resume" class="w-full h-[300px] text-sm px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white/70 dark:bg-black/20 font-mono" oninput="saveActiveTodoNote()"></textarea>
+                <div class="flex gap-2">
+                  <button id="todo-toggle-done" onclick="toggleActiveTodoDone()" class="px-3 py-1.5 text-xs rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Mark done</button>
+                  <button onclick="deleteActiveTodoNote()" class="px-3 py-1.5 text-xs rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Delete</button>
+                </div>
+              </div>
             </div>
-            <div id="cron-todo-list" class="space-y-2"></div>
           </div>
         </div>
       </div>
@@ -463,8 +474,11 @@ const cronList = document.getElementById('cron-list');
 const cronTotal = document.getElementById('cron-total');
 const cronHighfreq = document.getElementById('cron-highfreq');
 const cronDaily = document.getElementById('cron-daily');
-const cronTodoInput = document.getElementById('cron-todo-input');
-const cronTodoList = document.getElementById('cron-todo-list');
+const todoNotesList = document.getElementById('todo-notes-list');
+const todoSearch = document.getElementById('todo-search');
+const todoNoteTitle = document.getElementById('todo-note-title');
+const todoNoteBody = document.getElementById('todo-note-body');
+const todoToggleDone = document.getElementById('todo-toggle-done');
 const todoOpenCount = document.getElementById('todo-open-count');
 const todoDoneCount = document.getElementById('todo-done-count');
 const chatHistory = document.getElementById('chat-history');
@@ -1350,67 +1364,120 @@ function _cronScheduleLabel(expr='') {
   return expr;
 }
 
-function getCronTodos() {
+let activeTodoId = null;
+
+function getTodoNotes() {
   try {
-    return JSON.parse(localStorage.getItem('mustang_cron_todos') || '[]');
+    const raw = JSON.parse(localStorage.getItem('mustang_todo_notes') || '[]');
+    // Backward compatibility with old [{text, done}] todo format.
+    return raw.map((n, i) => n.id ? n : {
+      id: `legacy-${i}`,
+      title: (n.text || 'Untitled').slice(0, 60),
+      body: n.text || '',
+      done: !!n.done,
+      updated_at: n.created_at || new Date().toISOString(),
+      created_at: n.created_at || new Date().toISOString(),
+    });
   } catch {
     return [];
   }
 }
 
-function saveCronTodos(items) {
-  localStorage.setItem('mustang_cron_todos', JSON.stringify(items));
+function saveTodoNotes(items) {
+  localStorage.setItem('mustang_todo_notes', JSON.stringify(items));
 }
 
-function renderCronTodos() {
-  if (!cronTodoList) return;
-  const todos = getCronTodos();
-  const doneCount = todos.filter(t => !!t.done).length;
-  const openCount = Math.max(0, todos.length - doneCount);
+function createTodoNote() {
+  const notes = getTodoNotes();
+  const now = new Date().toISOString();
+  const note = { id: `n-${Date.now()}`, title: 'New Note', body: '', done: false, created_at: now, updated_at: now };
+  notes.unshift(note);
+  saveTodoNotes(notes.slice(0, 200));
+  activeTodoId = note.id;
+  renderTodoNotesList();
+  renderActiveTodoNote();
+}
+
+function renderTodoNotesList() {
+  const notes = getTodoNotes();
+  const q = (todoSearch?.value || '').toLowerCase().trim();
+  const filtered = q ? notes.filter(n => `${n.title} ${n.body}`.toLowerCase().includes(q)) : notes;
+
+  const doneCount = notes.filter(t => !!t.done).length;
+  const openCount = Math.max(0, notes.length - doneCount);
   if (todoOpenCount) todoOpenCount.textContent = `Open: ${openCount}`;
   if (todoDoneCount) todoDoneCount.textContent = `Done: ${doneCount}`;
 
-  cronTodoList.innerHTML = todos.length ? todos.map((t, i) => `
-    <div class="todo-row flex items-start justify-between gap-2 ${t.done ? 'opacity-75' : ''}">
-      <div class="flex items-start gap-2 min-w-0">
-        <button onclick="toggleCronTodo(${i})" class="mt-0.5 w-5 h-5 rounded-full border ${t.done ? 'bg-green-500 border-green-500 text-white' : 'border-border-light dark:border-border-dark'} text-[10px]">${t.done ? '✓' : ''}</button>
-        <div class="min-w-0">
-          <div class="text-sm ${t.done ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-100'}">${escapeHtml(t.text || '')}</div>
-          <div class="text-[10px] text-gray-500 mt-1">${t.created_at ? new Date(t.created_at).toLocaleString() : ''}</div>
+  if (!activeTodoId && filtered[0]) activeTodoId = filtered[0].id;
+  if (todoNotesList) {
+    todoNotesList.innerHTML = filtered.length ? filtered.map(n => `
+      <button onclick="selectTodoNote('${n.id}')" class="w-full text-left todo-row ${activeTodoId === n.id ? 'ring-2 ring-blue-500/40' : ''}">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-sm font-semibold truncate ${n.done ? 'line-through text-gray-500' : ''}">${escapeHtml(n.title || 'Untitled')}</div>
+          <span class="text-[10px] ${n.done ? 'text-green-500' : 'text-gray-400'}">${n.done ? 'done' : 'open'}</span>
         </div>
-      </div>
-      <div class="flex gap-1 shrink-0">
-        <button onclick="toggleCronTodo(${i})" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">${t.done ? 'Reopen' : 'Done'}</button>
-        <button onclick="deleteCronTodo(${i})" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Delete</button>
-      </div>
-    </div>
-  `).join('') : '<div class="text-sm text-gray-500 p-3 border border-dashed border-border-light dark:border-border-dark rounded-lg">No tasks yet. Add your first one above.</div>';
+        <div class="text-[10px] text-gray-500 mt-1 truncate">${escapeHtml((n.body || '').replace(/\n/g, ' '))}</div>
+      </button>
+    `).join('') : '<div class="text-xs text-gray-500">No notes yet.</div>';
+  }
 }
 
-function addCronTodo() {
-  const text = (cronTodoInput?.value || '').trim();
-  if (!text) return;
-  const todos = getCronTodos();
-  todos.unshift({ text, done: false, created_at: new Date().toISOString() });
-  saveCronTodos(todos.slice(0, 100));
-  if (cronTodoInput) cronTodoInput.value = '';
-  renderCronTodos();
+function selectTodoNote(id) {
+  activeTodoId = id;
+  renderTodoNotesList();
+  renderActiveTodoNote();
 }
 
-function toggleCronTodo(index) {
-  const todos = getCronTodos();
-  if (!todos[index]) return;
-  todos[index].done = !todos[index].done;
-  saveCronTodos(todos);
-  renderCronTodos();
+function renderActiveTodoNote() {
+  const notes = getTodoNotes();
+  const note = notes.find(n => n.id === activeTodoId) || null;
+  if (!note) {
+    if (todoNoteTitle) todoNoteTitle.value = '';
+    if (todoNoteBody) todoNoteBody.value = '';
+    if (todoToggleDone) todoToggleDone.textContent = 'Mark done';
+    return;
+  }
+  if (todoNoteTitle) todoNoteTitle.value = note.title || '';
+  if (todoNoteBody) todoNoteBody.value = note.body || '';
+  if (todoToggleDone) todoToggleDone.textContent = note.done ? 'Mark open' : 'Mark done';
 }
 
-function deleteCronTodo(index) {
-  const todos = getCronTodos();
-  if (!todos[index]) return;
-  todos.splice(index, 1);
-  saveCronTodos(todos);
-  renderCronTodos();
+function saveActiveTodoNote() {
+  const notes = getTodoNotes();
+  const idx = notes.findIndex(n => n.id === activeTodoId);
+  if (idx === -1) return;
+  notes[idx].title = (todoNoteTitle?.value || 'Untitled').trim() || 'Untitled';
+  notes[idx].body = (todoNoteBody?.value || '').trim();
+  notes[idx].updated_at = new Date().toISOString();
+  saveTodoNotes(notes);
+  renderTodoNotesList();
+}
+
+function toggleActiveTodoDone() {
+  const notes = getTodoNotes();
+  const idx = notes.findIndex(n => n.id === activeTodoId);
+  if (idx === -1) return;
+  notes[idx].done = !notes[idx].done;
+  notes[idx].updated_at = new Date().toISOString();
+  saveTodoNotes(notes);
+  renderTodoNotesList();
+  renderActiveTodoNote();
+}
+
+function deleteActiveTodoNote() {
+  const notes = getTodoNotes();
+  const idx = notes.findIndex(n => n.id === activeTodoId);
+  if (idx === -1) return;
+  notes.splice(idx, 1);
+  saveTodoNotes(notes);
+  activeTodoId = notes[0]?.id || null;
+  renderTodoNotesList();
+  renderActiveTodoNote();
+}
+
+function renderCronTodos() {
+  renderTodoNotesList();
+  renderActiveTodoNote();
 }
 
 async function loadCronList() {
