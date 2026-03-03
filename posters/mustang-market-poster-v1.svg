@@ -1,0 +1,41 @@
+<svg width="1080" height="1350" viewBox="0 0 1080 1350" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1080" y2="1350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A0F1D"/>
+      <stop offset="1" stop-color="#131E39"/>
+    </linearGradient>
+    <linearGradient id="cta" x1="120" y1="1030" x2="960" y2="1165" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <filter id="glow" x="0" y="0" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1350" fill="url(#bg)"/>
+  <rect x="70" y="90" width="940" height="1170" rx="28" fill="#121A30" stroke="#223155" stroke-width="2"/>
+  <rect x="90" y="560" width="900" height="420" rx="22" fill="#0D1427" stroke="#1F2B4A" stroke-width="2"/>
+
+  <rect x="90" y="190" width="360" height="14" fill="#3B82F6" filter="url(#glow)"/>
+  <rect x="470" y="190" width="290" height="14" fill="#10B981" filter="url(#glow)"/>
+
+  <text x="100" y="315" fill="#E6EEFC" font-size="108" font-family="Inter, Arial, sans-serif" font-weight="800" letter-spacing="1">MUSTANG</text>
+  <text x="100" y="425" fill="#7DD3FC" font-size="108" font-family="Inter, Arial, sans-serif" font-weight="800" letter-spacing="1">MARKET</text>
+  <text x="100" y="500" fill="#A8B7D7" font-size="38" font-family="Inter, Arial, sans-serif" font-weight="500">Buy. Sell. Trade on campus — fast.</text>
+
+  <text x="120" y="645" fill="#D7E3FF" font-size="34" font-family="Inter, Arial, sans-serif">• Student-only marketplace for Cal Poly</text>
+  <text x="120" y="725" fill="#D7E3FF" font-size="34" font-family="Inter, Arial, sans-serif">• Meetups, DMs, and safer campus exchanges</text>
+  <text x="120" y="805" fill="#D7E3FF" font-size="34" font-family="Inter, Arial, sans-serif">• List in under 60 seconds</text>
+  <text x="120" y="885" fill="#D7E3FF" font-size="34" font-family="Inter, Arial, sans-serif">• Find deals before they disappear</text>
+
+  <rect x="120" y="1030" width="840" height="135" rx="18" fill="url(#cta)"/>
+  <text x="155" y="1112" fill="white" font-size="44" font-family="Inter, Arial, sans-serif" font-weight="800">DOWNLOAD MUSTANG MARKET</text>
+
+  <text x="120" y="1200" fill="#8AA1CF" font-size="26" font-family="JetBrains Mono, monospace">mustangmarket.app   |   @mustangmarket</text>
+  <text x="120" y="1238" fill="#5F77A8" font-size="24" font-family="JetBrains Mono, monospace">EARLY ACCESS • CAMPUS VERIFIED • 2026</text>
+</svg>

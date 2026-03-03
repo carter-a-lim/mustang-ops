@@ -1,0 +1,258 @@
+{
+  "updated_at": "2026-03-03T01:30:28.749332+00:00",
+  "owner": "carter-a-lim",
+  "repos": [
+    {
+      "repo": "Spread-Goodness/SpreadGoodness",
+      "open_prs": 2,
+      "open_issues": 0,
+      "updated_at": "2026-03-03T01:13:10Z",
+      "html_url": "https://github.com/Spread-Goodness/SpreadGoodness",
+      "owned": false,
+      "issues": []
+    },
+    {
+      "repo": "codebox-calpoly/NoteSharer",
+      "open_prs": 1,
+      "open_issues": 2,
+      "updated_at": "2026-03-03T01:10:18Z",
+      "html_url": "https://github.com/codebox-calpoly/NoteSharer",
+      "owned": false,
+      "issues": [
+        {
+          "number": 65,
+          "title": "Implement favorites for notes (favorite action, filters, profile tab)",
+          "html_url": "https://github.com/codebox-calpoly/NoteSharer/issues/65",
+          "assignees": [
+            "ema-png"
+          ]
+        },
+        {
+          "number": 57,
+          "title": "Update filtering - by Term and Week (Week 10 - Winter 2026, etc), by Department, by Popularity",
+          "html_url": "https://github.com/codebox-calpoly/NoteSharer/issues/57",
+          "assignees": [
+            "joshuapanicker"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "carter-a-lim/mustang-market",
+      "open_prs": 0,
+      "open_issues": 7,
+      "updated_at": "2026-03-02T23:16:41Z",
+      "html_url": "https://github.com/carter-a-lim/mustang-market",
+      "owned": true,
+      "issues": [
+        {
+          "number": 126,
+          "title": "groq switch Llama-Guard-4-12B by mar 5",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/126",
+          "assignees": []
+        },
+        {
+          "number": 124,
+          "title": "add back dont show again to add listing",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/124",
+          "assignees": []
+        },
+        {
+          "number": 115,
+          "title": "no lowball feature",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/115",
+          "assignees": []
+        },
+        {
+          "number": 70,
+          "title": "system to get users to get friends onto platform",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/70",
+          "assignees": [
+            "carter-a-lim"
+          ]
+        },
+        {
+          "number": 62,
+          "title": "firebase extension - trigger email - Welcome emails, purchase confirmations",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/62",
+          "assignees": [
+            "carter-a-lim"
+          ]
+        },
+        {
+          "number": 42,
+          "title": "adjust map for meetup locations",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/42",
+          "assignees": [
+            "Damilss",
+            "carter-a-lim",
+            "cedmonst22"
+          ]
+        },
+        {
+          "number": 27,
+          "title": "Boost Listings",
+          "html_url": "https://github.com/carter-a-lim/mustang-market/issues/27",
+          "assignees": [
+            "Damilss",
+            "carter-a-lim"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "cedmonston22/mustang-market-mobile",
+      "open_prs": 0,
+      "open_issues": 1,
+      "updated_at": "2026-03-02T20:49:08Z",
+      "html_url": "https://github.com/cedmonston22/mustang-market-mobile",
+      "owned": false,
+      "issues": [
+        {
+          "number": 1,
+          "title": "Cache Images to stop firebase reads (same way as for with reads)",
+          "html_url": "https://github.com/cedmonston22/mustang-market-mobile/issues/1",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "repo": "cedmonston22/cortex",
+      "open_prs": 0,
+      "open_issues": 0,
+      "updated_at": "2026-02-28T03:16:34Z",
+      "html_url": "https://github.com/cedmonston22/cortex",
+      "owned": false,
+      "issues": []
+    },
+    {
+      "repo": "Campus-Compass-Org/CampusCompass",
+      "open_prs": 2,
+      "open_issues": 5,
+      "updated_at": "2026-02-26T11:03:00Z",
+      "html_url": "https://github.com/Campus-Compass-Org/CampusCompass",
+      "owned": false,
+      "issues": [
+        {
+          "number": 31,
+          "title": "Sign in with Microsoft SSO",
+          "html_url": "https://github.com/Campus-Compass-Org/CampusCompass/issues/31",
+          "assignees": []
+        },
+        {
+          "number": 26,
+          "title": "Put rating from survey responses into supabase",
+          "html_url": "https://github.com/Campus-Compass-Org/CampusCompass/issues/26",
+          "assignees": []
+        },
+        {
+          "number": 25,
+          "title": "Create Profile Page",
+          "html_url": "https://github.com/Campus-Compass-Org/CampusCompass/issues/25",
+          "assignees": []
+        },
+        {
+          "number": 24,
+          "title": "Tags, Questions, and Identity to Backend",
+          "html_url": "https://github.com/Campus-Compass-Org/CampusCompass/issues/24",
+          "assignees": []
+        },
+        {
+          "number": 11,
+          "title": "Add numbers to the identities (no frontend benefit, just backend)",
+          "html_url": "https://github.com/Campus-Compass-Org/CampusCompass/issues/11",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "repo": "bensoncady/lab4-csc202-bensoncady-carterlim",
+      "open_prs": 0,
+      "open_issues": 0,
+      "updated_at": "2026-02-23T02:32:15Z",
+      "html_url": "https://github.com/bensoncady/lab4-csc202-bensoncady-carterlim",
+      "owned": false,
+      "issues": []
+    },
+    {
+      "repo": "carter-a-lim/Video-Srt-Generator",
+      "open_prs": 0,
+      "open_issues": 1,
+      "updated_at": "2026-02-22T12:16:43Z",
+      "html_url": "https://github.com/carter-a-lim/Video-Srt-Generator",
+      "owned": true,
+      "issues": [
+        {
+          "number": 1,
+          "title": "i seem to have some issues starting this little gizmo",
+          "html_url": "https://github.com/carter-a-lim/Video-Srt-Generator/issues/1",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "repo": "jgomez243/csc202-assignment3-JoseGomez-IanNetherland-CarterLim",
+      "open_prs": 0,
+      "open_issues": 0,
+      "updated_at": "2026-02-14T06:53:35Z",
+      "html_url": "https://github.com/jgomez243/csc202-assignment3-JoseGomez-IanNetherland-CarterLim",
+      "owned": false,
+      "issues": []
+    },
+    {
+      "repo": "Damilss/mustang-market-mobile",
+      "open_prs": 0,
+      "open_issues": 6,
+      "updated_at": "2026-02-11T18:14:25Z",
+      "html_url": "https://github.com/Damilss/mustang-market-mobile",
+      "owned": false,
+      "issues": [
+        {
+          "number": 7,
+          "title": "users can list items",
+          "html_url": "https://github.com/Damilss/mustang-market-mobile/issues/7",
+          "assignees": []
+        },
+        {
+          "number": 6,
+          "title": "Home page items that users list",
+          "html_url": "https://github.com/Damilss/mustang-market-mobile/issues/6",
+          "assignees": []
+        },
+        {
+          "number": 5,
+          "title": "Users can customize their own profile",
+          "html_url": "https://github.com/Damilss/mustang-market-mobile/issues/5",
+          "assignees": []
+        },
+        {
+          "number": 4,
+          "title": "set up stripe for marketplace",
+          "html_url": "https://github.com/Damilss/mustang-market-mobile/issues/4",
+          "assignees": []
+        },
+        {
+          "number": 3,
+          "title": "QR code for generation for confirming payments",
+          "html_url": "https://github.com/Damilss/mustang-market-mobile/issues/3",
+          "assignees": []
+        },
+        {
+          "number": 1,
+          "title": "Items marked as sold",
+          "html_url": "https://github.com/Damilss/mustang-market-mobile/issues/1",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "repo": "jgomez243/csc202-lab3-JoseGomez-IanNetherland-CarterLim",
+      "open_prs": 0,
+      "open_issues": 0,
+      "updated_at": "2026-02-06T23:20:21Z",
+      "html_url": "https://github.com/jgomez243/csc202-lab3-JoseGomez-IanNetherland-CarterLim",
+      "owned": false,
+      "issues": []
+    }
+  ]
+}
