@@ -1390,6 +1390,18 @@ function deleteTodoItem(id) {
   renderTodoItems();
 }
 
+function moveTodoItem(id, dir) {
+  const items = getTodoItems();
+  const idx = items.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const next = idx + dir;
+  if (next < 0 || next >= items.length) return;
+  const [item] = items.splice(idx, 1);
+  items.splice(next, 0, item);
+  saveTodoItems(items);
+  renderTodoItems();
+}
+
 function renderTodoItems() {
   const items = getTodoItems();
   const done = items.filter(i => i.done).length;
@@ -1398,12 +1410,16 @@ function renderTodoItems() {
   if (todoDoneCount) todoDoneCount.textContent = `Done: ${done}`;
 
   if (todoItems) {
-    todoItems.innerHTML = items.length ? items.map(i => `
+    todoItems.innerHTML = items.length ? items.map((i, idx) => `
       <div class="todo-row flex items-center justify-between gap-2 ${i.done ? 'opacity-70' : ''}">
         <button onclick="toggleTodoItem('${i.id}')" class="text-left flex-1 text-sm ${i.done ? 'line-through text-gray-500' : 'text-gray-900 dark:text-gray-100'}">
           ${i.done ? '☑' : '☐'} ${escapeHtml(i.text || '')}
         </button>
-        <button onclick="deleteTodoItem('${i.id}')" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Delete</button>
+        <div class="flex items-center gap-1">
+          <button ${idx === 0 ? 'disabled' : ''} onclick="moveTodoItem('${i.id}', -1)" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark disabled:opacity-40">↑</button>
+          <button ${idx === items.length - 1 ? 'disabled' : ''} onclick="moveTodoItem('${i.id}', 1)" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark disabled:opacity-40">↓</button>
+          <button onclick="deleteTodoItem('${i.id}')" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Delete</button>
+        </div>
       </div>
     `).join('') : '<div class="text-sm text-gray-500">No checklist items yet.</div>';
   }
