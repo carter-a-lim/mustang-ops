@@ -400,26 +400,20 @@
           </div>
         </div>
 
-        <div id="section-todo" class="section-content hidden max-w-7xl mx-auto space-y-4">
-          <div class="flex items-center justify-between">
+        <div id="section-todo" class="section-content hidden h-full">
+          <div class="flex items-center justify-between px-1 pb-2">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo</h1>
-              <p class="text-sm text-gray-500">Simple notepad + check-off list.</p>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo Notes</h1>
+              <p class="text-sm text-gray-500">Type notes freely. Use - [ ] and - [x], then toggle current line.</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex items-center gap-2">
               <span id="todo-open-count" class="todo-pill">Open: 0</span>
               <span id="todo-done-count" class="todo-pill">Done: 0</span>
+              <button onclick="insertCheckboxLine()" class="px-3 py-1.5 text-xs rounded-lg border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ checkbox</button>
+              <button onclick="toggleCurrentCheckbox()" class="px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">toggle line</button>
             </div>
           </div>
-
-          <textarea id="todo-notepad" placeholder="Write quick notes here..." class="w-full h-48 text-sm px-3 py-3 rounded-xl border border-border-light dark:border-border-dark bg-white/70 dark:bg-black/20"></textarea>
-
-          <div class="flex gap-2">
-            <input id="todo-item-input" placeholder="Add checklist item..." class="flex-1 text-sm px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-transparent" />
-            <button onclick="addTodoItem()" class="px-4 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">Add</button>
-          </div>
-
-          <div id="todo-items" class="space-y-2"></div>
+          <textarea id="todo-notepad" placeholder="Groceries\n- [ ] Soda/Seltz\n- [x] Turkey\n\nPaste links and normal notes too..." class="w-full h-[calc(100vh-210px)] text-[15px] leading-7 px-2 py-2 bg-transparent resize-none focus:outline-none"></textarea>
         </div>
       </div>
     </section>
@@ -466,8 +460,6 @@ const cronTotal = document.getElementById('cron-total');
 const cronHighfreq = document.getElementById('cron-highfreq');
 const cronDaily = document.getElementById('cron-daily');
 const todoNotepad = document.getElementById('todo-notepad');
-const todoItemInput = document.getElementById('todo-item-input');
-const todoItems = document.getElementById('todo-items');
 const todoOpenCount = document.getElementById('todo-open-count');
 const todoDoneCount = document.getElementById('todo-done-count');
 const chatHistory = document.getElementById('chat-history');
@@ -1353,94 +1345,83 @@ function _cronScheduleLabel(expr='') {
   return expr;
 }
 
-function getTodoItems() {
-  try {
-    return JSON.parse(localStorage.getItem('mustang_todo_items') || '[]');
-  } catch {
-    return [];
+function getTodoText() {
+  return localStorage.getItem('mustang_todo_notepad') || '';
+}
+
+function saveTodoText(value = '') {
+  localStorage.setItem('mustang_todo_notepad', value);
+}
+
+function renderTodoStats() {
+  const lines = getTodoText().split('\n');
+  let open = 0;
+  let done = 0;
+  for (const line of lines) {
+    if (/^\s*- \[ \]/.test(line)) open += 1;
+    if (/^\s*- \[[xX]\]/.test(line)) done += 1;
   }
-}
-
-function saveTodoItems(items) {
-  localStorage.setItem('mustang_todo_items', JSON.stringify(items));
-}
-
-function addTodoItem() {
-  const text = (todoItemInput?.value || '').trim();
-  if (!text) return;
-  const items = getTodoItems();
-  items.unshift({ id: `t-${Date.now()}`, text, done: false, created_at: new Date().toISOString() });
-  saveTodoItems(items.slice(0, 300));
-  if (todoItemInput) todoItemInput.value = '';
-  renderTodoItems();
-}
-
-function toggleTodoItem(id) {
-  const items = getTodoItems();
-  const i = items.findIndex(x => x.id === id);
-  if (i < 0) return;
-  items[i].done = !items[i].done;
-  saveTodoItems(items);
-  renderTodoItems();
-}
-
-function deleteTodoItem(id) {
-  const items = getTodoItems();
-  saveTodoItems(items.filter(x => x.id !== id));
-  renderTodoItems();
-}
-
-function moveTodoItem(id, dir) {
-  const items = getTodoItems();
-  const idx = items.findIndex(x => x.id === id);
-  if (idx < 0) return;
-  const next = idx + dir;
-  if (next < 0 || next >= items.length) return;
-  const [item] = items.splice(idx, 1);
-  items.splice(next, 0, item);
-  saveTodoItems(items);
-  renderTodoItems();
-}
-
-function renderTodoItems() {
-  const items = getTodoItems();
-  const done = items.filter(i => i.done).length;
-  const open = items.length - done;
   if (todoOpenCount) todoOpenCount.textContent = `Open: ${open}`;
   if (todoDoneCount) todoDoneCount.textContent = `Done: ${done}`;
-
-  if (todoItems) {
-    todoItems.innerHTML = items.length ? items.map((i, idx) => `
-      <div class="todo-row flex items-center justify-between gap-2 ${i.done ? 'opacity-70' : ''}">
-        <button onclick="toggleTodoItem('${i.id}')" class="text-left flex-1 text-sm ${i.done ? 'line-through text-gray-500' : 'text-gray-900 dark:text-gray-100'}">
-          ${i.done ? '☑' : '☐'} ${escapeHtml(i.text || '')}
-        </button>
-        <div class="flex items-center gap-1">
-          <button ${idx === 0 ? 'disabled' : ''} onclick="moveTodoItem('${i.id}', -1)" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark disabled:opacity-40">↑</button>
-          <button ${idx === items.length - 1 ? 'disabled' : ''} onclick="moveTodoItem('${i.id}', 1)" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark disabled:opacity-40">↓</button>
-          <button onclick="deleteTodoItem('${i.id}')" class="px-2 py-1 text-[10px] rounded border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">Delete</button>
-        </div>
-      </div>
-    `).join('') : '<div class="text-sm text-gray-500">No checklist items yet.</div>';
-  }
 }
 
-function loadTodoNotepad() {
-  if (todoNotepad) todoNotepad.value = localStorage.getItem('mustang_todo_notepad') || '';
+function insertCheckboxLine() {
+  if (!todoNotepad) return;
+  const start = todoNotepad.selectionStart || 0;
+  const end = todoNotepad.selectionEnd || 0;
+  const value = todoNotepad.value || '';
+  const insert = '- [ ] ';
+  todoNotepad.value = value.slice(0, start) + insert + value.slice(end);
+  const pos = start + insert.length;
+  todoNotepad.selectionStart = pos;
+  todoNotepad.selectionEnd = pos;
+  saveTodoText(todoNotepad.value || '');
+  renderTodoStats();
+  todoNotepad.focus();
+}
+
+function toggleCurrentCheckbox() {
+  if (!todoNotepad) return;
+  const value = todoNotepad.value || '';
+  const cursor = todoNotepad.selectionStart || 0;
+  const lineStart = value.lastIndexOf('\n', Math.max(0, cursor - 1)) + 1;
+  const lineEndRaw = value.indexOf('\n', cursor);
+  const lineEnd = lineEndRaw === -1 ? value.length : lineEndRaw;
+  const line = value.slice(lineStart, lineEnd);
+
+  let updated = line;
+  if (/^\s*- \[ \]/.test(line)) updated = line.replace(/^(\s*- \[) (\])/, '$1x$2');
+  else if (/^\s*- \[[xX]\]/.test(line)) updated = line.replace(/^(\s*- \[)[xX](\])/, '$1 $2');
+  else updated = `- [ ] ${line}`;
+
+  todoNotepad.value = value.slice(0, lineStart) + updated + value.slice(lineEnd);
+  const delta = updated.length - line.length;
+  const nextPos = Math.max(lineStart, cursor + delta);
+  todoNotepad.selectionStart = nextPos;
+  todoNotepad.selectionEnd = nextPos;
+  saveTodoText(todoNotepad.value || '');
+  renderTodoStats();
+  todoNotepad.focus();
+}
+
+function renderTodoNotepad() {
+  if (!todoNotepad) return;
+  todoNotepad.value = getTodoText();
+  renderTodoStats();
 }
 
 function bindTodoNotepad() {
   if (!todoNotepad || todoNotepad.dataset.bound === '1') return;
   todoNotepad.dataset.bound = '1';
   todoNotepad.addEventListener('input', () => {
-    localStorage.setItem('mustang_todo_notepad', todoNotepad.value || '');
+    saveTodoText(todoNotepad.value || '');
+    renderTodoStats();
   });
 }
 
 function renderCronTodos() {
-  loadTodoNotepad();
   bindTodoNotepad();
-  renderTodoItems();
+  renderTodoNotepad();
 }
 
 async function loadCronList() {
