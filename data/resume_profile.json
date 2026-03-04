@@ -1,9 +1,39 @@
 {
-  "updated_at": null,
-  "source": null,
+  "updated_at": "2026-03-04T23:06:00Z",
+  "source": "gdoc:1qWnL3jthnT-gucpctoXNvl2GCc8qa5b_FWr8SdmhVvk",
   "profile": {
-    "skills": [],
-    "grad_year": null,
-    "work_auth": "unknown"
+    "name": "Carter Lim",
+    "email": "clim40@calpoly.edu",
+    "phone": "(360) 325-3124",
+    "school": "California Polytechnic State University",
+    "major": "Computer Science",
+    "grad_year": 2029,
+    "gpa": "3.9",
+    "work_auth": "unknown",
+    "skills": [
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "Node.js",
+      "React",
+      "Firebase",
+      "Supabase",
+      "Vercel",
+      "Git",
+      "Google Cloud",
+      "Stripe",
+      "Cloud Functions",
+      "Next.js"
+    ],
+    "links": {
+      "linkedin": "LinkedIn",
+      "github": "GitHub"
+    },
+    "highlights": [
+      "Built and shipped products quickly with measurable early traction",
+      "Implemented Stripe + Firebase payment and automation flows",
+      "Built data pipelines to Google Sheets",
+      "Strong blend of product execution + engineering"
+    ]
   }
 }

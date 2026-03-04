@@ -1,5 +1,47 @@
 {
-  "updated_at": null,
-  "entries": [],
-  "notes": "Store your best answers so assisted apply can match your voice."
+  "updated_at": "2026-03-04T23:07:00Z",
+  "entries": [
+    {
+      "question_type": "motivation",
+      "prompt": "Why do you want this role?",
+      "answer": "I like roles where I can ship quickly and tie code to real outcomes. In past projects and internships, I’ve worked across product and engineering to launch features fast, and I’m looking for another environment where I can do that at a higher level.",
+      "tags": ["general", "internship", "impact"],
+      "created_at": "2026-03-04T23:07:00Z"
+    },
+    {
+      "question_type": "company-fit",
+      "prompt": "Why this company?",
+      "answer": "I’m drawn to teams that move fast and care about practical execution. I’ve built and launched products from idea to users, so I value environments where ownership is real and engineering decisions directly affect growth and user experience.",
+      "tags": ["company-fit", "startup"],
+      "created_at": "2026-03-04T23:07:00Z"
+    },
+    {
+      "question_type": "project",
+      "prompt": "Tell us about a project you’re proud of.",
+      "answer": "One project I’m proud of is Mustang Market. Our team of three planned, built, and launched it in about two weeks, then grew it to thousands of visitors quickly. I focused on both technical execution and launch velocity, which taught me how to balance shipping quality with speed.",
+      "tags": ["project", "mustang-market"],
+      "created_at": "2026-03-04T23:07:00Z"
+    },
+    {
+      "question_type": "technical",
+      "prompt": "Describe a technical challenge you solved.",
+      "answer": "At Spread Goodness, I had to implement a payment workflow on a tight timeline. I used Stripe webhooks and Firebase Cloud Functions so user records updated automatically after successful payments. The key challenge was making the flow reliable under time pressure while keeping the data model clean.",
+      "tags": ["technical", "stripe", "firebase"],
+      "created_at": "2026-03-04T23:07:00Z"
+    },
+    {
+      "question_type": "strengths",
+      "prompt": "What are your strengths?",
+      "answer": "My strengths are execution speed, ownership, and adaptability. I can move from planning to implementation quickly, and I’m comfortable learning unfamiliar tools when needed to get a feature shipped.",
+      "tags": ["strengths", "general"],
+      "created_at": "2026-03-04T23:07:00Z"
+    },
+    {
+      "question_type": "work-style",
+      "prompt": "How do you work with teams?",
+      "answer": "I like clear goals, quick iteration, and strong communication. I usually help keep momentum by breaking work into concrete steps, sharing progress early, and adjusting fast when requirements change.",
+      "tags": ["teamwork", "communication"],
+      "created_at": "2026-03-04T23:07:00Z"
+    }
+  ]
 }
