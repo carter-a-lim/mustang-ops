@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1d4ed8"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Mustang Ops"/>
+  <link rel="manifest" href="/manifest.webmanifest"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
   <title>DX Optimized Engineering Panel</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
@@ -1654,6 +1660,13 @@ async function runJob(name) {
 
 document.addEventListener('click', () => closeAllSessionMenus());
 msgInput?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('Service worker registration failed', err);
+    });
+  });
+}
 applyTheme(localStorage.getItem('mustang_theme') || 'dark');
 const initialSection = (window.location.hash || '').replace('#', '') || localStorage.getItem('mustang_active_section') || 'coding';
 showSection(initialSection);

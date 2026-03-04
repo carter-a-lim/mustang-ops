@@ -56,8 +56,24 @@ JOBS = {
 
 app = FastAPI(title="Mustang Ops")
 app.mount("/web", StaticFiles(directory=str(ROOT / "web")), name="web")
+app.mount("/icons", StaticFiles(directory=str(ROOT / "web" / "icons")), name="icons")
 if (ROOT / "node_modules").exists():
     app.mount("/node_modules", StaticFiles(directory=str(ROOT / "node_modules")), name="node_modules")
+
+
+@app.get("/")
+def index():
+    return FileResponse(ROOT / "web" / "index.html")
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    return FileResponse(ROOT / "web" / "manifest.webmanifest", media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(ROOT / "web" / "sw.js", media_type="application/javascript")
 
 
 class ChatBody(BaseModel):
