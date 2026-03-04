@@ -18,6 +18,7 @@ cd mustang-ops
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+playwright install chromium
 npm install
 cp .env.example .env
 ```
@@ -43,8 +44,12 @@ Open: `http://localhost:8080`
 - `GET /api/context` -> returns context JSON
 - `POST /api/chat` -> sends prompt to OpenClaw `/v1/chat/completions`
 - `POST /api/run/{job_name}` -> runs one job script
+- `POST /api/network/apply/scrape` -> scrape application questions (Greenhouse/Lever)
+- `POST /api/network/apply/generate` -> generate draft answers from resume + answer memory
+- `PATCH /api/network/apply/queue/{job_id}` -> approve/reject/status updates for queue items
+- `POST /api/network/apply/queue/{job_id}/execute` -> run Playwright autofill worker (`dry-run` or `live`)
 
-Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`, `scrape_simplify_jobs`, `auto_apply_orchestrator`
+Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`, `scrape_simplify_jobs`, `auto_apply_orchestrator`, `sync_gmail`
 
 ## Auto-apply orchestration (semi-auto)
 

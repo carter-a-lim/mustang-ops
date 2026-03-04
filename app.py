@@ -10,7 +10,7 @@ from typing import Any
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -53,6 +53,7 @@ JOBS = {
     "token_sync": ROOT / "jobs" / "token_sync.py",
     "scrape_simplify_jobs": ROOT / "jobs" / "scrape_simplify_jobs.py",
     "auto_apply_orchestrator": ROOT / "jobs" / "auto_apply_orchestrator.py",
+    "sync_gmail": ROOT / "jobs" / "sync_gmail.py",
 }
 
 app = FastAPI(title="Mustang Ops")
@@ -113,6 +114,27 @@ class AutoApplyRunBody(BaseModel):
     stage: str = Field(default="all", pattern="^(prepare|enrich|draft|queue|submit|all)$")
     max: int = 10
     dry_run: bool = False
+
+
+class ScrapeQuestionsBody(BaseModel):
+    url: str | None = None
+    html: str | None = None
+    company: str
+    title: str
+
+
+class GenerateAnswersBody(BaseModel):
+    company: str
+    title: str
+    questions: list[str]
+
+
+class UpdateQueueItemBody(BaseModel):
+    status: str
+
+
+class AutofillExecuteBody(BaseModel):
+    mode: str = Field(default="dry-run", pattern="^(dry-run|live)$")
 
 
 def read_context() -> dict:
@@ -456,6 +478,75 @@ def _system_stats() -> dict:
     }
 
 
+def _call_openclaw(messages: list[dict[str, str]]) -> str:
+    if not OPENCLAW_TOKEN:
+        raise HTTPException(status_code=500, detail="OPENCLAW_TOKEN is missing")
+
+    payload = {
+        "model": OPENCLAW_MODEL,
+        "messages": messages,
+    }
+    try:
+        res = requests.post(
+            f"{OPENCLAW_BASE_URL}/v1/chat/completions",
+            headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=90,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"OpenClaw upstream request failed: {exc}")
+
+    if res.status_code >= 400:
+        raise HTTPException(status_code=res.status_code, detail=res.text)
+
+    try:
+        data = res.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="OpenClaw upstream returned invalid JSON")
+
+    event = _usage_from_response(data)
+    _append_usage_event(event)
+    return data["choices"][0]["message"]["content"]
+
+
+def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, str]:
+    profile_data = _load_resume_profile()
+    profile = profile_data.get("profile", {})
+    memory_data = _load_answer_memory()
+    entries = memory_data.get("entries", [])
+
+    context_lines = []
+    if profile:
+        skills = profile.get("skills", [])
+        context_lines.append(f"Resume skills: {', '.join(skills)}")
+        context_lines.append(f"Grad year: {profile.get('grad_year', 'Unknown')}")
+        context_lines.append(f"Work auth: {profile.get('work_auth', 'Unknown')}")
+
+    memory_context = ""
+    if entries:
+        memory_context = "Past answers for tone/context:\n"
+        for e in entries[:5]:
+            memory_context += f"- Q: {e.get('prompt')}\n  A: {e.get('answer')}\n"
+
+    answers: dict[str, str] = {}
+    for q in questions:
+        prompt = (
+            "Draft a concise, natural-sounding answer for this job application question.\n"
+            f"Company: {company}\n"
+            f"Role: {role}\n"
+            f"Question: {q}\n"
+        )
+        if context_lines:
+            prompt += "\nProfile details:\n" + "\n".join(context_lines)
+        if memory_context:
+            prompt += "\n" + memory_context
+        prompt += "\nWrite only the final answer text."
+
+        answers[q] = _call_openclaw([{"role": "user", "content": prompt}]).strip()
+
+    return answers
+
+
 def _load_openclaw_config() -> dict:
     cfg_path = Path.home() / ".openclaw" / "openclaw.json"
     if not cfg_path.exists():
@@ -775,6 +866,7 @@ def prepare_assisted_apply_queue(body: AssistedQueueBuildBody):
 
         candidates.append(
             {
+                "id": str(uuid.uuid4()),
                 "company": company,
                 "title": title,
                 "location": location,
@@ -822,6 +914,111 @@ def get_assisted_apply_queue():
             "queue": [],
         },
     )
+
+
+@app.patch("/api/network/apply/queue/{job_id}")
+def update_assisted_apply_queue_item(job_id: str, body: UpdateQueueItemBody):
+    data = get_assisted_apply_queue()
+    queue = data.get("queue", [])
+
+    found = False
+    for item in queue:
+        if item.get("id") == job_id:
+            item["status"] = body.status
+            item["updated_at"] = datetime.now(timezone.utc).isoformat()
+            found = True
+            break
+
+    if not found:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    ASSISTED_QUEUE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+    return {"ok": True, "job_id": job_id, "status": body.status}
+
+
+@app.post("/api/network/apply/queue/{job_id}/execute")
+def execute_autofill(job_id: str, body: AutofillExecuteBody, background_tasks: BackgroundTasks):
+    data = get_assisted_apply_queue()
+    queue = data.get("queue", [])
+
+    job_item = next((item for item in queue if item.get("id") == job_id), None)
+    if not job_item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
+    script_path = ROOT / "jobs" / "autofill_worker.py"
+    if not script_path.exists():
+        raise HTTPException(status_code=404, detail="autofill worker not found")
+
+    def _spawn_worker() -> None:
+        subprocess.Popen(["python3", str(script_path), job_id, body.mode], cwd=str(ROOT))
+
+    background_tasks.add_task(_spawn_worker)
+    return {"ok": True, "job_id": job_id, "mode": body.mode, "status": "started"}
+
+
+@app.post("/api/network/apply/scrape")
+def scrape_application_questions(body: ScrapeQuestionsBody):
+    from scrapers import extract_questions_from_html, fetch_html
+
+    html_content = body.html or ""
+    if not html_content and body.url:
+        html_content = fetch_html(body.url)
+
+    if not html_content:
+        raise HTTPException(status_code=400, detail="Must provide url or html to scrape")
+
+    questions = extract_questions_from_html(html_content, body.url or "")
+
+    try:
+        data = _read_json_file(JOB_PIPELINE_PATH, {})
+        applications = data.get("applications", [])
+
+        app_record = None
+        for a in applications:
+            if a.get("company", "").lower() == body.company.lower() and a.get("title", "").lower() == body.title.lower():
+                app_record = a
+                break
+
+        if not app_record:
+            app_record = {
+                "company": body.company,
+                "title": body.title,
+                "stage": "Draft",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            applications.append(app_record)
+
+        app_record["questions"] = questions
+        data["applications"] = applications
+        data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        JOB_PIPELINE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+    except Exception:
+        pass
+
+    return {"questions": questions}
+
+
+@app.post("/api/network/apply/generate")
+def generate_application_answers(body: GenerateAnswersBody):
+    if not body.questions:
+        return {"answers": {}}
+
+    answers = _generate_draft_answers(body.company, body.title, body.questions)
+
+    try:
+        data = _read_json_file(JOB_PIPELINE_PATH, {})
+        applications = data.get("applications", [])
+        for a in applications:
+            if a.get("company", "").lower() == body.company.lower() and a.get("title", "").lower() == body.title.lower():
+                a["draft_answers"] = answers
+                data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                JOB_PIPELINE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+                break
+    except Exception:
+        pass
+
+    return {"answers": answers}
 
 
 @app.get("/api/network")
