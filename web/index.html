@@ -24,8 +24,13 @@
             'surface-dark': '#161b22',
             'border-dark': '#30363d',
             'border-light': '#e5e7eb',
+            'text-main-light': '#111827',
+            'text-main-dark': '#f4f4f5',
+            'text-muted-light': '#6b7280',
+            'text-muted-dark': '#a1a1aa',
           },
           fontFamily: {
+
             display: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
@@ -400,21 +405,74 @@
           </div>
         </div>
 
-        <div id="section-todo" class="section-content hidden h-full">
-          <div class="flex items-center justify-between px-1 pb-2">
-            <div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Todo Notes</h1>
-              <p class="text-sm text-gray-500">Type notes freely. Use - [ ] and - [x], then toggle current line.</p>
-            </div>
+        <div id="section-todo" class="section-content hidden h-full flex flex-col -m-6 bg-surface-light dark:bg-surface-dark">
+          <div class="h-12 border-b border-border-light dark:border-border-dark flex items-center px-6 sticky top-0 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur z-10 gap-6 text-text-muted-light dark:text-text-muted-dark rounded-t-xl">
+            <button onclick="document.execCommand('formatBlock', false, 'H2'); todoNotepad.focus();" class="hover:text-text-main-light dark:hover:text-text-main-dark transition-colors flex items-center justify-center opacity-70 hover:opacity-100" title="Format Heading">
+              <span class="material-icons text-[18px]">title</span>
+            </button>
+            <button onclick="document.execCommand('bold'); todoNotepad.focus();" class="hover:text-text-main-light dark:hover:text-text-main-dark transition-colors flex items-center justify-center opacity-70 hover:opacity-100" title="Bold">
+              <span class="material-icons text-[18px]">format_bold</span>
+            </button>
+            <button onclick="document.execCommand('italic'); todoNotepad.focus();" class="hover:text-text-main-light dark:hover:text-text-main-dark transition-colors flex items-center justify-center opacity-70 hover:opacity-100" title="Italic">
+              <span class="material-icons text-[18px]">format_italic</span>
+            </button>
+            <div class="w-px h-4 bg-border-light dark:border-border-dark mx-2"></div>
+            <button onclick="insertCheckboxLine()" class="hover:text-text-main-light dark:hover:text-text-main-dark transition-colors flex items-center justify-center opacity-70 hover:opacity-100 text-primary" title="Add Checklist">
+              <span class="material-icons text-[18px]">checklist</span>
+            </button>
+            <div class="w-px h-4 bg-border-light dark:border-border-dark mx-2"></div>
+            <button onclick="const url = prompt('Image URL:'); if(url) { document.execCommand('insertImage', false, url); } todoNotepad.focus();" class="hover:text-text-main-light dark:hover:text-text-main-dark transition-colors flex items-center justify-center opacity-70 hover:opacity-100" title="Add Image">
+              <span class="material-icons text-[18px]">image</span>
+            </button>
+            <div class="flex-1"></div>
             <div class="flex items-center gap-2">
-              <span id="todo-open-count" class="todo-pill">Open: 0</span>
-              <span id="todo-done-count" class="todo-pill">Done: 0</span>
-              <button onclick="insertCheckboxLine()" class="px-3 py-1.5 text-xs rounded-lg border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-accent-dark">+ checkbox</button>
-              <button onclick="toggleCurrentCheckbox()" class="px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">toggle line</button>
+              <span id="todo-open-count" class="text-xs font-mono text-gray-500">Open: 0</span>
+              <span id="todo-done-count" class="text-xs font-mono text-gray-500 ml-2">Done: 0</span>
             </div>
           </div>
-          <textarea id="todo-notepad" placeholder="Groceries\n- [ ] Soda/Seltz\n- [x] Turkey\n\nPaste links and normal notes too..." class="w-full h-[calc(100vh-210px)] text-[15px] leading-7 px-2 py-2 bg-transparent resize-none focus:outline-none"></textarea>
+          
+          <div class="p-8 md:px-16 lg:px-24 xl:px-32 max-w-5xl mx-auto w-full flex-1 relative text-[16px] leading-relaxed text-text-main-light dark:text-text-main-dark outline-none overflow-y-auto no-scrollbar" contenteditable="true" spellcheck="false" id="todo-notepad">
+            <h1 class="text-3xl font-semibold mb-6 tracking-tight">Pretentious transfer targets (added by Mustang)</h1>
+            <div class="flex items-start gap-3 my-2 group" contenteditable="false">
+              <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]"></div>
+              <div class="flex-1" contenteditable="true">Stanford — transfer app due Mar 15
+                <br/><a class="text-primary hover:text-blue-400 hover:underline break-all transition-colors" href="#">https://admission.stanford.edu/apply/transfer/index.html</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 my-2 group" contenteditable="false">
+              <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500 bg-blue-500 flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_12px_rgba(59,130,246,0.4)]">
+                <span class="material-icons text-[14px] text-white font-bold leading-none">check</span>
+              </div>
+              <div class="flex-1 text-text-muted-light dark:text-text-muted-dark line-through" contenteditable="true">Cornell — transfer app due Mar 15 (supporting docs by Apr 15)
+                <br/><a class="text-primary/70 hover:text-blue-400 hover:underline break-all transition-colors" href="#">https://admissions.cornell.edu/how-to-apply/transfer-applicants</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 my-2 group" contenteditable="false">
+              <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]"></div>
+              <div class="flex-1" contenteditable="true">Boston University — transfer app due Mar 15
+                <br/><a class="text-primary hover:text-blue-400 hover:underline break-all transition-colors" href="#">https://www.bu.edu/admissions/apply/deadlines/</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 my-2 group" contenteditable="false">
+              <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]"></div>
+              <div class="flex-1" contenteditable="true">Northwestern — Regular Decision transfer due Apr 1 (ED transfer Mar 2 passed)
+                <br/><a class="text-primary hover:text-blue-400 hover:underline break-all transition-colors" href="#">https://admissions.northwestern.edu/apply/application-deadlines.html</a>
+              </div>
+            </div>
+            <h2 class="text-xl font-semibold mt-8 mb-4 tracking-tight">Also elite but likely passed this cycle (verify if any exception)</h2>
+            <div class="flex items-start gap-3 my-2 group" contenteditable="false">
+              <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]"></div>
+              <div class="flex-1" contenteditable="true">Harvard — transfer deadline listed as Mar 1
+                <br/><a class="text-primary hover:text-blue-400 hover:underline break-all transition-colors" href="#">https://college.harvard.edu/admissions/apply/transfer-applicants</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 my-2 group" contenteditable="false">
+              <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]"></div>
+              <div class="flex-1" contenteditable="true">Compare requirements + major fit and choose top 1-2 to prioritize this cycle</div>
+            </div>
+          </div>
         </div>
+
       </div>
     </section>
 
@@ -1346,77 +1404,164 @@ function _cronScheduleLabel(expr='') {
 }
 
 function getTodoText() {
-  return localStorage.getItem('mustang_todo_notepad') || '';
+  if (!todoNotepad) return '';
+  return todoNotepad.innerHTML;
 }
 
-function saveTodoText(value = '') {
-  localStorage.setItem('mustang_todo_notepad', value);
+function saveTodoText(html = '') {
+  localStorage.setItem('mustang_todo_notepad_html', html);
 }
 
 function renderTodoStats() {
-  const lines = getTodoText().split('\n');
-  let open = 0;
-  let done = 0;
-  for (const line of lines) {
-    if (/^\s*- \[ \]/.test(line)) open += 1;
-    if (/^\s*- \[[xX]\]/.test(line)) done += 1;
+  if (!todoNotepad) return;
+  // Stats aren't shown in the new UI, but we could hook them back in if we add the spans.
+  // The new snipped doesn't seem to have the 'Open: 6 Done: 0' pills in the html provided (wait, let me check - ah, it doesn't have them in the new snippet, or maybe it does? The snippet you provided originally for "OpenClaw Collaborative Doc" did NOT have those pills in the main header). 
+  // Wait, I see them in the screenshot. Let me restore them if they exist.
+  if (todoOpenCount) {
+    const uncheck = todoNotepad.querySelectorAll('div[contenteditable="false"] > div:first-child:empty').length;
+    todoOpenCount.textContent = `Open: ${uncheck}`;
   }
-  if (todoOpenCount) todoOpenCount.textContent = `Open: ${open}`;
-  if (todoDoneCount) todoDoneCount.textContent = `Done: ${done}`;
+  if (todoDoneCount) {
+    const done = todoNotepad.querySelectorAll('div[contenteditable="false"] > div.bg-blue-500').length;
+    todoDoneCount.textContent = `Done: ${done}`;
+  }
+}
+
+// Ensure the checkboxes can be toggled via click delegation
+function setupTodoNotepadListeners() {
+  if (!todoNotepad || todoNotepad.dataset.bound === '1') return;
+  todoNotepad.dataset.bound = '1';
+  
+  // Load saved HTML if exists
+  const saved = localStorage.getItem('mustang_todo_notepad_html');
+  if (saved) {
+    todoNotepad.innerHTML = saved;
+  }
+
+  todoNotepad.addEventListener('click', (e) => {
+    const target = e.target;
+    // Check if clicked the circle div or the checkmark icon inside it
+    const clickBox = target.closest('div[contenteditable="false"] > div:first-child');
+    
+    if (clickBox) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const isChecked = clickBox.classList.contains('bg-blue-500');
+      const textContainer = clickBox.nextElementSibling;
+      
+      if (isChecked) {
+        // Uncheck
+        clickBox.className = 'mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]';
+        clickBox.innerHTML = '';
+        if (textContainer) {
+          textContainer.classList.remove('text-text-muted-light', 'dark:text-text-muted-dark', 'line-through');
+          // For nested links
+          const links = textContainer.querySelectorAll('a');
+          links.forEach(a => {
+            a.classList.remove('text-primary/70');
+            a.classList.add('text-primary');
+          });
+        }
+      } else {
+        // Check
+        clickBox.className = 'mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500 bg-blue-500 flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_12px_rgba(59,130,246,0.4)]';
+        clickBox.innerHTML = '<span class="material-icons text-[14px] text-white font-bold leading-none">check</span>';
+        if (textContainer) {
+          textContainer.classList.add('text-text-muted-light', 'dark:text-text-muted-dark', 'line-through');
+          const links = textContainer.querySelectorAll('a');
+          links.forEach(a => {
+            a.classList.remove('text-primary');
+            a.classList.add('text-primary/70');
+          });
+        }
+      }
+      
+      saveTodoText(todoNotepad.innerHTML);
+      renderTodoStats();
+    }
+  });
+
+  todoNotepad.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace') {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      
+      if (range.startOffset === 0 && range.collapsed) {
+        let node = sel.anchorNode;
+        let flexContainer = node.nodeType === 3 ? node.parentElement.closest('.flex-1') : (node.closest ? node.closest('.flex-1') : null);
+        
+        if (flexContainer && flexContainer.parentElement && flexContainer.parentElement.classList.contains('group')) {
+          e.preventDefault();
+          const groupDiv = flexContainer.parentElement;
+          
+          let unwrapped = document.createElement('div');
+          unwrapped.innerHTML = flexContainer.innerHTML;
+          if (!unwrapped.innerHTML) {
+            unwrapped.innerHTML = '<br>';
+          }
+          
+          groupDiv.parentNode.insertBefore(unwrapped, groupDiv);
+          groupDiv.remove();
+          
+          const newRange = document.createRange();
+          newRange.setStart(unwrapped, 0);
+          newRange.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+          
+          saveTodoText(todoNotepad.innerHTML);
+          renderTodoStats();
+        }
+      }
+    }
+  });
+
+  todoNotepad.addEventListener('input', () => {
+    saveTodoText(todoNotepad.innerHTML);
+    renderTodoStats();
+  });
 }
 
 function insertCheckboxLine() {
   if (!todoNotepad) return;
-  const start = todoNotepad.selectionStart || 0;
-  const end = todoNotepad.selectionEnd || 0;
-  const value = todoNotepad.value || '';
-  const insert = '- [ ] ';
-  todoNotepad.value = value.slice(0, start) + insert + value.slice(end);
-  const pos = start + insert.length;
-  todoNotepad.selectionStart = pos;
-  todoNotepad.selectionEnd = pos;
-  saveTodoText(todoNotepad.value || '');
+  
+  const focusNode = document.getSelection().focusNode;
+  
+  // Add a new empty checkbox line at the end if we can't figure out where to insert
+  const newLine = document.createElement('div');
+  newLine.className = 'flex items-start gap-3 my-2 group';
+  newLine.setAttribute('contenteditable', 'false');
+  newLine.innerHTML = `
+    <div class="mt-[5px] cursor-pointer w-[20px] h-[20px] rounded-full border border-blue-500/50 hover:border-blue-400 bg-transparent flex-shrink-0 flex items-center justify-center transition-all shadow-[0_0_8px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]"></div>
+    <div class="flex-1" contenteditable="true">New Item</div>
+  `;
+  
+  todoNotepad.appendChild(newLine);
+  saveTodoText(todoNotepad.innerHTML);
   renderTodoStats();
-  todoNotepad.focus();
+  
+  // Focus the new text area
+  const el = newLine.querySelector('div[contenteditable="true"]');
+  if (el) {
+    el.focus();
+    // Select all contents ('New Item')
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
 }
 
-function toggleCurrentCheckbox() {
-  if (!todoNotepad) return;
-  const value = todoNotepad.value || '';
-  const cursor = todoNotepad.selectionStart || 0;
-  const lineStart = value.lastIndexOf('\n', Math.max(0, cursor - 1)) + 1;
-  const lineEndRaw = value.indexOf('\n', cursor);
-  const lineEnd = lineEndRaw === -1 ? value.length : lineEndRaw;
-  const line = value.slice(lineStart, lineEnd);
-
-  let updated = line;
-  if (/^\s*- \[ \]/.test(line)) updated = line.replace(/^(\s*- \[) (\])/, '$1x$2');
-  else if (/^\s*- \[[xX]\]/.test(line)) updated = line.replace(/^(\s*- \[)[xX](\])/, '$1 $2');
-  else updated = `- [ ] ${line}`;
-
-  todoNotepad.value = value.slice(0, lineStart) + updated + value.slice(lineEnd);
-  const delta = updated.length - line.length;
-  const nextPos = Math.max(lineStart, cursor + delta);
-  todoNotepad.selectionStart = nextPos;
-  todoNotepad.selectionEnd = nextPos;
-  saveTodoText(todoNotepad.value || '');
-  renderTodoStats();
-  todoNotepad.focus();
-}
-
+// Provide a stub for functions that are not relevant but called elsewhere
+function toggleCurrentCheckbox() {} 
 function renderTodoNotepad() {
-  if (!todoNotepad) return;
-  todoNotepad.value = getTodoText();
-  renderTodoStats();
-}
-
-function bindTodoNotepad() {
-  if (!todoNotepad || todoNotepad.dataset.bound === '1') return;
-  todoNotepad.dataset.bound = '1';
-  todoNotepad.addEventListener('input', () => {
-    saveTodoText(todoNotepad.value || '');
     renderTodoStats();
-  });
+}
+function bindTodoNotepad() {
+    setupTodoNotepadListeners();
 }
 
 function renderCronTodos() {
