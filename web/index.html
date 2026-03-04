@@ -79,7 +79,7 @@
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display transition-colors duration-200 h-screen overflow-hidden flex">
-  <aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] relative z-20">
+  <aside class="hidden md:flex w-64 flex-shrink-0 flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-[#0d1117] relative z-20">
     <div class="p-6 flex items-center space-x-3">
       <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-glow relative overflow-hidden">
         <div class="absolute inset-0 bg-white opacity-10 blur-sm"></div>
@@ -144,7 +144,7 @@
         </div>
       </header>
 
-      <div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6">
+      <div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-4 md:p-6 pb-24 md:pb-6">
         <div id="section-coding" class="section-content max-w-7xl mx-auto space-y-6">
           <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Build & Ship</h1>
@@ -206,7 +206,7 @@
           </div>
         </div>
 
-        <div id="section-chat" class="section-content hidden max-w-6xl mx-auto h-[calc(100vh-9rem)] flex flex-col">
+        <div id="section-chat" class="section-content hidden max-w-6xl mx-auto h-full md:h-[calc(100vh-9rem)] flex flex-col">
           <div class="px-1 py-2">
             <div id="active-session-title" class="text-sm font-semibold">No session selected</div>
           </div>
@@ -494,6 +494,17 @@
         <div id="agent-inbox" class="space-y-2"></div>
       </div>
     </aside>
+
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-border-light dark:border-border-dark bg-surface-light/95 dark:bg-[#0d1117]/95 backdrop-blur">
+      <div class="grid grid-cols-6">
+        <button id="navb-chat" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('chat')"><span class="material-icons text-[18px]">chat</span><span>Chat</span></button>
+        <button id="navb-calendar" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('calendar')"><span class="material-icons text-[18px]">calendar_today</span><span>Cal</span></button>
+        <button id="navb-network" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('network')"><span class="material-icons text-[18px]">hub</span><span>Net</span></button>
+        <button id="navb-coding" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('coding')"><span class="material-icons text-[18px]">code</span><span>Build</span></button>
+        <button id="navb-skills" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('skills')"><span class="material-icons text-[18px]">military_tech</span><span>Skills</span></button>
+        <button id="navb-todo" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('todo')"><span class="material-icons text-[18px]">checklist</span><span>Todo</span></button>
+      </div>
+    </nav>
   </main>
 
 <script>
@@ -627,8 +638,11 @@ function showSection(sectionId) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   document.getElementById(`section-${sectionId}`)?.classList.remove('hidden');
   document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('bg-gray-100','dark:bg-primary/10','text-primary','dark:text-blue-400'));
+  document.querySelectorAll('.nav-bottom-link').forEach(link => link.classList.remove('text-primary','dark:text-blue-400'));
   const active = document.getElementById(`nav-${sectionId}`);
+  const mobileActive = document.getElementById(`navb-${sectionId}`);
   if (active) active.classList.add('bg-gray-100','dark:bg-primary/10','text-primary','dark:text-blue-400');
+  if (mobileActive) mobileActive.classList.add('text-primary','dark:text-blue-400');
   localStorage.setItem('mustang_active_section', sectionId);
   if (window.location.hash !== `#${sectionId}`) window.location.hash = sectionId;
   const loader = sectionLoaders[sectionId];
