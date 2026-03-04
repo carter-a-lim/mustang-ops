@@ -1100,7 +1100,7 @@ def run_job(job_name: str):
     }
 
 
-@app.post("/api/run/auto-apply")
+@app.post("/api/auto-apply/run")
 def run_auto_apply(body: AutoApplyRunBody):
     script = JOBS.get("auto_apply_orchestrator")
     if not script or not script.exists():

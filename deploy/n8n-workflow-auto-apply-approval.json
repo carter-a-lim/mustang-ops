@@ -53,7 +53,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:8080/api/run/auto-apply",
+        "url": "http://127.0.0.1:8080/api/auto-apply/run",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"stage\": \"submit\",\n  \"max\": {{$json.body.max || 5}},\n  \"dry_run\": false\n}",

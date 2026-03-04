@@ -65,7 +65,7 @@ State is written to `data/auto_apply_state.json`.
 
 ### API trigger endpoints
 
-- `POST /api/run/auto-apply` with body:
+- `POST /api/auto-apply/run` with body:
 
 ```json
 { "stage": "all", "max": 25, "dry_run": false }
