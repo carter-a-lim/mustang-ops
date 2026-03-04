@@ -35,6 +35,24 @@ class TestScrapers(unittest.TestCase):
         self.assertEqual(len(questions), 1)
         self.assertEqual(questions[0], "What is your favorite color?")
 
+    def test_ashby_fallback(self):
+        html = """
+        <div>Why do you want to join our startup?</div>
+        <label>Email</label>
+        <label>Tell us about a project you shipped</label>
+        """
+        questions = extract_questions_from_html(html, "https://jobs.ashbyhq.com/company/role/application")
+        self.assertIn("Why do you want to join our startup?", questions)
+        self.assertIn("Tell us about a project you shipped", questions)
+
+    def test_workday_pattern(self):
+        html = """
+        <div data-automation-id="questionLabel">Are you legally authorized to work in the US?</div>
+        <label>First Name</label>
+        """
+        questions = extract_questions_from_html(html, "https://company.wd1.myworkdayjobs.com/en-US/careers/job/123")
+        self.assertIn("Are you legally authorized to work in the US?", questions)
+
     @patch("app._generate_draft_answers")
     def test_generate_endpoint(self, mock_generate):
         mock_generate.return_value = {"Why here?": "Because it's cool."}

@@ -117,32 +117,108 @@ class LeverParser(HTMLParser):
             self.current_text.append(data)
 
 
+def _normalize_question(text: str) -> str:
+    text = re.sub(r"\s+", " ", text or "").strip().strip("* ")
+    return text
+
+
+def _is_noise(text: str) -> bool:
+    clean = text.lower().replace("*", "").strip()
+    if not clean or len(clean) < 6:
+        return True
+    ignore = {
+        "resume",
+        "cv",
+        "resume/cv",
+        "cover letter",
+        "first name",
+        "last name",
+        "full name",
+        "email",
+        "phone",
+        "company",
+        "school",
+        "degree",
+        "discipline",
+        "linkedin profile",
+        "website",
+        "portfolio",
+        "portfolio url",
+        "github",
+        "github url",
+        "start date",
+        "upload",
+    }
+    return clean in ignore
+
+
+def _extract_with_regex(html: str) -> list[str]:
+    out: list[str] = []
+    patterns = [
+        r"<label[^>]*>(.*?)</label>",
+        r"<legend[^>]*>(.*?)</legend>",
+        r"aria-label=[\"']([^\"']+)[\"']",
+        r"placeholder=[\"']([^\"']+\?)[\"']",
+    ]
+    for pat in patterns:
+        for m in re.findall(pat, html, flags=re.I | re.S):
+            t = re.sub(r"<[^>]+>", "", m)
+            t = _normalize_question(t)
+            if not _is_noise(t):
+                out.append(t)
+    return out
+
+
+def _extract_ashby(html: str) -> list[str]:
+    out = _extract_with_regex(html)
+    # Ashby often renders prompts in heading-like blocks
+    for m in re.findall(r">\s*([^<\n\r]{12,140}\?)\s*<", html, flags=re.I):
+        t = _normalize_question(m)
+        if not _is_noise(t):
+            out.append(t)
+    return out
+
+
+def _extract_workday(html: str) -> list[str]:
+    out = _extract_with_regex(html)
+    # Workday often has data-automation-id markers near prompt text
+    for m in re.findall(r'data-automation-id=[\"\'][^\"\']*(?:question|label)[^\"\']*[\"\'][^>]*>(.*?)<', html, flags=re.I | re.S):
+        t = _normalize_question(re.sub(r"<[^>]+>", "", m))
+        if not _is_noise(t):
+            out.append(t)
+    return out
+
+
 def extract_questions_from_html(html: str, url: str = "") -> list[str]:
     html_lower = html.lower()
+    url_lower = (url or "").lower()
 
-    if "boards.greenhouse.io" in url.lower() or "greenhouse" in html_lower or 'class="field"' in html_lower:
+    questions: list[str] = []
+
+    if "boards.greenhouse.io" in url_lower or "greenhouse" in html_lower or 'class="field"' in html_lower:
         parser = GreenhouseParser()
         parser.feed(html)
         questions = parser.questions
-        if not questions:
-            parser = LeverParser()
-            parser.feed(html)
-            questions = parser.questions
-    else:
+    elif "jobs.lever.co" in url_lower or "application-question" in html_lower:
         parser = LeverParser()
         parser.feed(html)
         questions = parser.questions
-        if not questions:
-            parser = GreenhouseParser()
-            parser.feed(html)
-            questions = parser.questions
+    elif "ashbyhq" in url_lower or "ashby" in html_lower:
+        questions = _extract_ashby(html)
+    elif "workday" in url_lower or "myworkdayjobs" in url_lower:
+        questions = _extract_workday(html)
+
+    if not questions:
+        # generic fallback for unknown ATS patterns
+        questions = _extract_with_regex(html)
 
     seen = set()
-    out = []
+    out: list[str] = []
     for q in questions:
-        if q and q not in seen:
-            seen.add(q)
-            out.append(q)
+        t = _normalize_question(q)
+        if t and not _is_noise(t) and t not in seen:
+            seen.add(t)
+            out.append(t)
     return out
 
 
@@ -156,9 +232,31 @@ def fetch_html(url: str) -> str:
             "Chrome/120.0.0.0 Safari/537.36"
         )
     }
+    html = ""
     try:
         response = requests.get(url, headers=headers, timeout=12)
         response.raise_for_status()
-        return response.text
+        html = response.text
     except Exception:
-        return ""
+        html = ""
+
+    # Some ATS pages (e.g. Ashby/Workday) render fields client-side.
+    # If static HTML looks too thin, try a browser-rendered snapshot.
+    if html and ("<label" in html.lower() or "application-question" in html.lower()):
+        return html
+
+    try:
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, wait_until="networkidle", timeout=30000)
+            rendered = page.content()
+            browser.close()
+            if rendered:
+                return rendered
+    except Exception:
+        pass
+
+    return html
