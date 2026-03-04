@@ -685,6 +685,59 @@ def get_github_snapshot():
     return _read_json_file(p, {"updated_at": None, "repos": []})
 
 
+@app.get("/api/network/metrics")
+def get_network_metrics():
+    jobs = get_network_jobs()
+    queue = get_assisted_apply_queue()
+
+    simplify_snapshot = _read_json_file(DATA_DIR / "simplify_software_internships.json", {"roles": []})
+    ingest_total = len(simplify_snapshot.get("roles", [])) + len(jobs.get("roles", []))
+
+    queue_items = queue.get("queue", [])
+    queued_qualified = len([q for q in queue_items if q.get("status") in {"needs-review", "approved", "needs-approval", "drafted", "approval-queued"}])
+
+    applications = jobs.get("applications", [])
+    total_qualified = queued_qualified + len(applications)
+
+    def _stage(app: dict[str, Any]) -> str:
+        return str(app.get("stage") or app.get("status") or "").lower()
+
+    total_submitted = len([a for a in applications if any(x in _stage(a) for x in ["applied", "submitted", "oa", "interview", "reject", "closed", "offer", "accept"])])
+    waiting_response = len([a for a in applications if any(x in _stage(a) for x in ["applied", "submitted", "await", "waiting"])])
+
+    interview = len([a for a in applications if "interview" in _stage(a)])
+    oa = len([a for a in applications if "oa" in _stage(a) or "assessment" in _stage(a)])
+    rejected = len([a for a in applications if any(x in _stage(a) for x in ["reject", "closed"])])
+    accepted = len([a for a in applications if any(x in _stage(a) for x in ["offer", "accept"])])
+    other = max(0, total_submitted - (interview + oa + rejected + accepted + waiting_response))
+
+    return {
+        "pipeline": {
+            "ingest_total": ingest_total,
+            "qualified": {
+                "total": total_qualified,
+                "currently_queued": queued_qualified,
+            },
+            "applications": {
+                "total_submitted": total_submitted,
+                "waiting_response": waiting_response,
+            },
+            "outcomes": {
+                "interview": interview,
+                "oa": oa,
+                "rejected": rejected,
+                "accepted": accepted,
+                "other": other,
+            },
+        },
+        "conversions": {
+            "ingest_to_qualified_pct": round((total_qualified / max(ingest_total, 1)) * 100, 1),
+            "qualified_to_submitted_pct": round((total_submitted / max(total_qualified, 1)) * 100, 1),
+            "submitted_to_interview_pct": round((interview / max(total_submitted, 1)) * 100, 1),
+        },
+    }
+
+
 @app.get("/api/network/jobs")
 def get_network_jobs():
     base = _read_json_file(

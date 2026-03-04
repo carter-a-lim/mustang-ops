@@ -42,9 +42,10 @@ Open: `http://localhost:8080`
 ## API Endpoints
 
 - `GET /api/context` -> returns context JSON
+- `GET /api/network/metrics` -> pipeline totals + conversion metrics
 - `POST /api/chat` -> sends prompt to OpenClaw `/v1/chat/completions`
 - `POST /api/run/{job_name}` -> runs one job script
-- `POST /api/network/apply/scrape` -> scrape application questions (Greenhouse/Lever)
+- `POST /api/network/apply/scrape` -> scrape application questions (Greenhouse/Lever/Ashby/Workday + fallback)
 - `POST /api/network/apply/generate` -> generate draft answers from resume + answer memory
 - `PATCH /api/network/apply/queue/{job_id}` -> approve/reject/status updates for queue items
 - `POST /api/network/apply/queue/{job_id}/execute` -> run Playwright autofill worker (`dry-run` or `live`)

@@ -1078,46 +1078,55 @@ async function ensureCountUp() {
   return countUpCtor;
 }
 
-async function renderPipelineFlowchart(stats = {}) {
+async function renderPipelineFlowchart(metrics = {}) {
   if (!pipelineFlowchart) return;
 
-  const source = stats.sourceCount ?? 0;
-  const merged = stats.totalRoles ?? 0;
-  const scored = stats.scoredCount ?? merged;
-  const queue = stats.queueCount ?? 0;
-  const drafted = stats.draftedCount ?? queue;
-  const submitted = stats.submittedCount ?? 0;
-  const memory = stats.answerCount ?? 0;
+  const p = metrics.pipeline || {};
+  const c = metrics.conversions || {};
+
+  const source = p.ingest_total ?? 0;
+  const qualified = p.qualified?.total ?? 0;
+  const queued = p.qualified?.currently_queued ?? 0;
+  const submitted = p.applications?.total_submitted ?? 0;
+  const waiting = p.applications?.waiting_response ?? 0;
+  const interview = p.outcomes?.interview ?? 0;
+  const oa = p.outcomes?.oa ?? 0;
+  const rejected = p.outcomes?.rejected ?? 0;
+  const accepted = p.outcomes?.accepted ?? 0;
 
   pipelineFlowchart.innerHTML = `
     <div class="pipeline-grid">
-      <div class="pipeline-node"><div class="pipeline-title">Simplify Scrape</div><div id="p-source" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">1) Ingested (All-time)</div><div id="p-source" class="pipeline-count">0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">Network Merge</div><div id="p-merged" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">2) Qualified (All-time)</div><div id="p-qualified" class="pipeline-count">0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">Resume Fit Scoring</div><div id="p-scored" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">3) In Queue (Now)</div><div id="p-queued" class="pipeline-count">0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">Assisted Queue</div><div id="p-queue" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">4) Submitted (All-time)</div><div id="p-submitted" class="pipeline-count">0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">Drafted Answers</div><div id="p-drafted" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">5) Waiting Response</div><div id="p-waiting" class="pipeline-count">0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">Submitted</div><div id="p-submitted" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">6) Accepted</div><div id="p-accepted" class="pipeline-count">0</div></div>
     </div>
-    <div class="text-[10px] text-gray-500 mt-2">Answer memory entries: <span id="p-memory">0</span></div>
+    <div class="text-[10px] text-gray-500 mt-2">
+      Outcomes: interview ${interview} · OA ${oa} · rejected ${rejected}
+      · conv: ingest→qualified ${c.ingest_to_qualified_pct ?? 0}%
+      · qualified→submitted ${c.qualified_to_submitted_pct ?? 0}%
+      · submitted→interview ${c.submitted_to_interview_pct ?? 0}%
+    </div>
   `;
 
-  if (pipelineFlowMeta) pipelineFlowMeta.textContent = `src:${source} merge:${merged} queue:${queue} submit:${submitted}`;
+  if (pipelineFlowMeta) pipelineFlowMeta.textContent = `ingested:${source} qualified:${qualified} queued:${queued} submitted:${submitted}`;
 
   try {
     const CountUp = await ensureCountUp();
     const values = {
       'p-source': source,
-      'p-merged': merged,
-      'p-scored': scored,
-      'p-queue': queue,
-      'p-drafted': drafted,
+      'p-qualified': qualified,
+      'p-queued': queued,
       'p-submitted': submitted,
-      'p-memory': memory,
+      'p-waiting': waiting,
+      'p-accepted': accepted,
     };
     Object.entries(values).forEach(([id, value]) => {
       const anim = new CountUp(id, Number(value || 0), { duration: 0.9, separator: ',' });
@@ -1174,30 +1183,13 @@ async function loadNetworkJobs() {
     loadApplyQueue();
     loadAnswerMemory();
 
-    let queueCount = 0;
-    let answerCount = 0;
     try {
-      const [queueRes, answerRes] = await Promise.all([
-        fetch('/api/network/apply/queue'),
-        fetch('/api/network/answer-memory'),
-      ]);
-      const q = await queueRes.json();
-      const a = await answerRes.json();
-      queueCount = (q.queue || []).length;
-      answerCount = (a.entries || []).length;
-    } catch {}
-
-    const submittedCount = apps.filter(a => /submitted|applied/i.test(a.stage || '')).length;
-    const draftedCount = Math.min(queueCount, Math.max(0, queueCount - submittedCount));
-    renderPipelineFlowchart({
-      sourceCount: data?.sources?.simplify?.count || 0,
-      totalRoles: roles.length,
-      scoredCount: roles.length,
-      queueCount,
-      draftedCount,
-      submittedCount,
-      answerCount,
-    });
+      const metricsRes = await fetch('/api/network/metrics');
+      const metrics = await metricsRes.json();
+      renderPipelineFlowchart(metrics);
+    } catch {
+      renderPipelineFlowchart({});
+    }
   } catch {
     if (jobhubRoles) jobhubRoles.innerHTML = '<div class="text-xs text-red-500">Failed to load network engine.</div>';
   }
