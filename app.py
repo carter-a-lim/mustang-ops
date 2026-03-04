@@ -109,6 +109,12 @@ class ResumeSyncBody(BaseModel):
     doc_id: str | None = None
 
 
+class AutoApplyRunBody(BaseModel):
+    stage: str = Field(default="all", pattern="^(prepare|enrich|draft|queue|submit|all)$")
+    max: int = 10
+    dry_run: bool = False
+
+
 def read_context() -> dict:
     if not CONTEXT_PATH.exists():
         raise HTTPException(status_code=404, detail=f"Context not found: {CONTEXT_PATH}")
@@ -1091,4 +1097,42 @@ def run_job(job_name: str):
         "exit_code": proc.returncode,
         "stdout": proc.stdout,
         "stderr": proc.stderr,
+    }
+
+
+@app.post("/api/run/auto-apply")
+def run_auto_apply(body: AutoApplyRunBody):
+    script = JOBS.get("auto_apply_orchestrator")
+    if not script or not script.exists():
+        raise HTTPException(status_code=404, detail="Auto apply orchestrator not found")
+
+    cmd = [
+        "python3",
+        str(script),
+        "--stage",
+        body.stage,
+        "--max",
+        str(max(1, min(body.max, 500))),
+    ]
+    if body.dry_run:
+        cmd.append("--dry-run")
+
+    started = datetime.now(timezone.utc).isoformat()
+    proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+
+    parsed: dict[str, Any] | None = None
+    if proc.stdout.strip():
+        try:
+            parsed = json.loads(proc.stdout)
+        except Exception:
+            parsed = None
+
+    return {
+        "job": "auto_apply_orchestrator",
+        "started_at": started,
+        "cmd": cmd,
+        "exit_code": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+        "result": parsed,
     }

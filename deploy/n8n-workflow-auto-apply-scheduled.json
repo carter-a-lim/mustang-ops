@@ -1,0 +1,88 @@
+{
+  "name": "Mustang Auto Apply - Scheduled Prep",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-hourly",
+      "name": "Hourly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8080/api/run/auto-apply",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"stage\": \"all\",\n  \"max\": 25,\n  \"dry_run\": false\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "run-orchestrator",
+      "name": "Run Auto-Apply (all)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        540,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8080/api/network/apply/queue",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "fetch-queue",
+      "name": "Fetch Assisted Queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        820,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Hourly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Auto-Apply (all)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Auto-Apply (all)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Assisted Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "versionId": "f9d5ef85-6e14-4d0e-8f15-cde4d9bd1001"
+}

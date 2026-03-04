@@ -62,3 +62,33 @@ python3 jobs/auto_apply_orchestrator.py --stage all --dry-run
 ```
 
 State is written to `data/auto_apply_state.json`.
+
+### API trigger endpoints
+
+- `POST /api/run/auto-apply` with body:
+
+```json
+{ "stage": "all", "max": 25, "dry_run": false }
+```
+
+`stage` supports: `prepare | enrich | draft | queue | submit | all`
+
+### n8n workflow templates
+
+Import these in n8n:
+
+- `deploy/n8n-workflow-auto-apply-scheduled.json`
+- `deploy/n8n-workflow-auto-apply-approval.json`
+
+After import:
+
+1. In approval workflow, edit **Token OK?** and replace `change-me-strong-token`.
+2. Activate both workflows.
+3. Trigger approval submit via webhook (example):
+
+```bash
+curl -X POST "https://<your-n8n>/webhook/auto-apply-approve" \
+  -H 'content-type: application/json' \
+  -d '{"token":"change-me-strong-token","max":5}'
+```
+
