@@ -1,0 +1,38 @@
+{
+  "updated_at": "2026-03-04T23:49:00Z",
+  "source": "user-confirmed",
+  "voice": {
+    "sentence_style": "medium_clear",
+    "confidence": "confident",
+    "ownership_language": "balanced",
+    "startup_energy": "high"
+  },
+  "content_rules": {
+    "avoid": [
+      "unnecessary corporate buzzwords"
+    ],
+    "prioritize": [
+      "speed",
+      "learning",
+      "productivity",
+      "ownership",
+      "critical thinking"
+    ],
+    "hard_no_topics": []
+  },
+  "targeting": {
+    "role_preference_order": [],
+    "location": ["remote", "in-person", "anywhere"],
+    "job_types": ["internship"],
+    "work_constraints": "none",
+    "include_stretch_roles": true
+  },
+  "resume_constraints": {
+    "max_bullets_per_role_or_project": 3,
+    "one_page_strict": true,
+    "space_priority_order": [
+      "most impact metrics",
+      "most relevant to JD"
+    ]
+  }
+}
