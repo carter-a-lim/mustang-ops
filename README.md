@@ -44,4 +44,21 @@ Open: `http://localhost:8080`
 - `POST /api/chat` -> sends prompt to OpenClaw `/v1/chat/completions`
 - `POST /api/run/{job_name}` -> runs one job script
 
-Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`, `scrape_simplify_jobs`
+Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`, `scrape_simplify_jobs`, `auto_apply_orchestrator`
+
+## Auto-apply orchestration (semi-auto)
+
+This repo includes `jobs/auto_apply_orchestrator.py` to coordinate application prep.
+
+```bash
+# Full pipeline (prepare -> enrich -> draft -> queue approval)
+python3 jobs/auto_apply_orchestrator.py --stage all
+
+# Just submit already-approved apps (max 3)
+python3 jobs/auto_apply_orchestrator.py --stage submit --max 3
+
+# Safe test run
+python3 jobs/auto_apply_orchestrator.py --stage all --dry-run
+```
+
+State is written to `data/auto_apply_state.json`.

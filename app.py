@@ -52,6 +52,7 @@ JOBS = {
     "linkedin_scout": ROOT / "jobs" / "linkedin_scout.py",
     "token_sync": ROOT / "jobs" / "token_sync.py",
     "scrape_simplify_jobs": ROOT / "jobs" / "scrape_simplify_jobs.py",
+    "auto_apply_orchestrator": ROOT / "jobs" / "auto_apply_orchestrator.py",
 }
 
 app = FastAPI(title="Mustang Ops")
