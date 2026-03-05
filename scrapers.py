@@ -16,7 +16,7 @@ class GreenhouseParser(HTMLParser):
         attr_dict = dict(attrs)
         if tag == "div":
             self.div_depth += 1
-            if "field" in attr_dict.get("class", ""):
+            if "field" in (attr_dict.get("class") or ""):
                 self.is_field = True
                 self.field_div_depth = self.div_depth
 
@@ -29,27 +29,7 @@ class GreenhouseParser(HTMLParser):
             self.in_label = False
             text = "".join(self.current_label).strip()
             text = re.sub(r"\s+", " ", text).strip("* \n")
-
-            clean_text = text.lower().replace("*", "").strip()
-            ignore_list = {
-                "resume",
-                "cv",
-                "resume/cv",
-                "cover letter",
-                "first name",
-                "last name",
-                "email",
-                "phone",
-                "school",
-                "degree",
-                "discipline",
-                "linkedin profile",
-                "website",
-                "portfolio",
-                "github",
-                "start date",
-            }
-            if text and clean_text not in ignore_list:
+            if text and not _is_noise(text):
                 self.questions.append(text)
             self.current_label = []
 
@@ -76,7 +56,7 @@ class LeverParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         self.current_depth += 1
         attr_dict = dict(attrs)
-        cls = attr_dict.get("class", "")
+        cls = attr_dict.get("class") or ""
         if ("application-question" in cls or "application-label" in cls) and not self.in_question:
             self.in_question = True
             self.target_depth = self.current_depth
@@ -87,26 +67,7 @@ class LeverParser(HTMLParser):
             self.in_question = False
             text = "".join(self.current_text).strip()
             text = re.sub(r"\s+", " ", text).strip("* \n")
-
-            clean_text = text.lower().replace("*", "").strip()
-            ignore_list = {
-                "resume/cv",
-                "resume",
-                "cv",
-                "cover letter",
-                "first name",
-                "last name",
-                "full name",
-                "email",
-                "phone",
-                "company",
-                "linkedin profile",
-                "website",
-                "portfolio url",
-                "github url",
-                "start date",
-            }
-            if text and clean_text not in ignore_list:
+            if text and not _is_noise(text):
                 self.questions.append(text)
             self.current_text = []
             self.target_depth = -1
@@ -115,6 +76,62 @@ class LeverParser(HTMLParser):
     def handle_data(self, data):
         if self.in_question:
             self.current_text.append(data)
+
+
+class SmartRecruitersParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.in_label = False
+        self.current_label: list[str] = []
+        self.questions: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        attr_dict = dict(attrs)
+        cls = (attr_dict.get("class") or "").lower()
+        if tag == "label" or "question" in cls or "label" in cls:
+            self.in_label = True
+            self.current_label = []
+
+    def handle_endtag(self, tag):
+        if self.in_label:
+            text = "".join(self.current_label).strip()
+            text = re.sub(r"\s+", " ", text).strip("* \n")
+            if text and not _is_noise(text):
+                self.questions.append(text)
+            self.in_label = False
+            self.current_label = []
+
+    def handle_data(self, data):
+        if self.in_label:
+            self.current_label.append(data)
+
+
+class ICIMSParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.in_label = False
+        self.current_label: list[str] = []
+        self.questions: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        attr_dict = dict(attrs)
+        cls = (attr_dict.get("class") or "").lower()
+        if tag in ["label", "dt", "span"] and ("label" in cls or "field" in cls):
+            self.in_label = True
+            self.current_label = []
+
+    def handle_endtag(self, tag):
+        if self.in_label:
+            text = "".join(self.current_label).strip()
+            text = re.sub(r"\s+", " ", text).strip("* \n")
+            if text and not _is_noise(text):
+                self.questions.append(text)
+            self.in_label = False
+            self.current_label = []
+
+    def handle_data(self, data):
+        if self.in_label:
+            self.current_label.append(data)
 
 
 def _normalize_question(text: str) -> str:
@@ -148,6 +165,11 @@ def _is_noise(text: str) -> bool:
         "github url",
         "start date",
         "upload",
+        "job location",
+        "posted date",
+        "category",
+        "employment type",
+        "hiring company",
     }
     return clean in ignore
 
@@ -171,9 +193,12 @@ def _extract_with_regex(html: str) -> list[str]:
 
 def _extract_ashby(html: str) -> list[str]:
     out = _extract_with_regex(html)
-    # Ashby often renders prompts in heading-like blocks
-    for m in re.findall(r">\s*([^<\n\r]{12,140}\?)\s*<", html, flags=re.I):
+    for m in re.findall(r">\s*([^<\n\r]{12,160}\?)\s*<", html, flags=re.I):
         t = _normalize_question(m)
+        if not _is_noise(t):
+            out.append(t)
+    for m in re.findall(r'data-testid=[\"\'][^\"\']*question[^\"\']*[\"\'][^>]*>(.*?)<', html, flags=re.I | re.S):
+        t = _normalize_question(re.sub(r"<[^>]+>", "", m))
         if not _is_noise(t):
             out.append(t)
     return out
@@ -181,35 +206,81 @@ def _extract_ashby(html: str) -> list[str]:
 
 def _extract_workday(html: str) -> list[str]:
     out = _extract_with_regex(html)
-    # Workday often has data-automation-id markers near prompt text
-    for m in re.findall(r'data-automation-id=[\"\'][^\"\']*(?:question|label)[^\"\']*[\"\'][^>]*>(.*?)<', html, flags=re.I | re.S):
-        t = _normalize_question(re.sub(r"<[^>]+>", "", m))
-        if not _is_noise(t):
-            out.append(t)
+    patterns = [
+        r'data-automation-id=[\"\'][^\"\']*(?:question|label|prompt)[^\"\']*[\"\'][^>]*>(.*?)<',
+        r'aria-labelledby=[\"\'][^\"\']*[\"\'][^>]*>(.*?)<',
+    ]
+    for pat in patterns:
+        for m in re.findall(pat, html, flags=re.I | re.S):
+            t = _normalize_question(re.sub(r"<[^>]+>", "", m))
+            if not _is_noise(t):
+                out.append(t)
     return out
 
 
-def extract_questions_from_html(html: str, url: str = "") -> list[str]:
+def _calculate_confidence(questions: list[str], source: str, html: str) -> float:
+    if not questions:
+        return 0.0
+    score = 0.5
+    markers = {
+        "greenhouse": ["greenhouse", "field"],
+        "lever": ["lever", "application-question"],
+        "ashby": ["ashby"],
+        "workday": ["workday", "data-automation-id"],
+        "smartrecruiters": ["smartrecruiters"],
+        "icims": ["icims"],
+    }
+    html_l = html.lower()
+    for mk in markers.get(source, []):
+        if mk in html_l:
+            score += 0.1
+    if 2 <= len(questions) <= 15:
+        score += 0.2
+    elif len(questions) > 15:
+        score += 0.1
+    return min(1.0, score)
+
+
+def extract_questions_from_html(html: str, url: str = "") -> dict:
     html_lower = html.lower()
     url_lower = (url or "").lower()
 
     questions: list[str] = []
+    source = "generic"
+    error = None
 
-    if "boards.greenhouse.io" in url_lower or "greenhouse" in html_lower or 'class="field"' in html_lower:
-        parser = GreenhouseParser()
-        parser.feed(html)
-        questions = parser.questions
-    elif "jobs.lever.co" in url_lower or "application-question" in html_lower:
-        parser = LeverParser()
-        parser.feed(html)
-        questions = parser.questions
-    elif "ashbyhq" in url_lower or "ashby" in html_lower:
-        questions = _extract_ashby(html)
-    elif "workday" in url_lower or "myworkdayjobs" in url_lower:
-        questions = _extract_workday(html)
+    try:
+        if "boards.greenhouse.io" in url_lower or "greenhouse" in html_lower or 'class="field"' in html_lower:
+            source = "greenhouse"
+            p = GreenhouseParser()
+            p.feed(html)
+            questions = p.questions
+        elif "jobs.lever.co" in url_lower or "application-question" in html_lower:
+            source = "lever"
+            p = LeverParser()
+            p.feed(html)
+            questions = p.questions
+        elif "ashbyhq" in url_lower or "ashby" in html_lower:
+            source = "ashby"
+            questions = _extract_ashby(html)
+        elif "workday" in url_lower or "myworkdayjobs" in url_lower:
+            source = "workday"
+            questions = _extract_workday(html)
+        elif "smartrecruiters" in url_lower:
+            source = "smartrecruiters"
+            p = SmartRecruitersParser()
+            p.feed(html)
+            questions = p.questions
+        elif "icims" in url_lower:
+            source = "icims"
+            p = ICIMSParser()
+            p.feed(html)
+            questions = p.questions
+    except Exception as exc:
+        error = str(exc)
 
     if not questions:
-        # generic fallback for unknown ATS patterns
+        source = "generic"
         questions = _extract_with_regex(html)
 
     seen = set()
@@ -219,7 +290,13 @@ def extract_questions_from_html(html: str, url: str = "") -> list[str]:
         if t and not _is_noise(t) and t not in seen:
             seen.add(t)
             out.append(t)
-    return out
+
+    return {
+        "questions": out,
+        "source": source,
+        "confidence": _calculate_confidence(out, source, html),
+        "error": error,
+    }
 
 
 def fetch_html(url: str) -> str:
@@ -240,8 +317,6 @@ def fetch_html(url: str) -> str:
     except Exception:
         html = ""
 
-    # Some ATS pages (e.g. Ashby/Workday) render fields client-side.
-    # If static HTML looks too thin, try a browser-rendered snapshot.
     if html and ("<label" in html.lower() or "application-question" in html.lower()):
         return html
 

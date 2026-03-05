@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -90,20 +91,39 @@ def fill_form(page, data: dict) -> None:
 
     import re
 
-    locators = page.locator('input:not([type="hidden"]):not([type="submit"]):not([type="file"]):not([type="checkbox"]):not([type="radio"])')
     for pattern, value in mappings.items():
+        filled = False
         try:
-            count = locators.count()
-            for i in range(count):
-                loc = locators.nth(i)
-                id_val = loc.get_attribute("id") or ""
-                name_val = loc.get_attribute("name") or ""
-                placeholder_val = loc.get_attribute("placeholder") or ""
-                if re.search(pattern, id_val, re.I) or re.search(pattern, name_val, re.I) or re.search(pattern, placeholder_val, re.I):
-                    loc.fill(value)
-                    break
+            placeholders = page.get_by_placeholder(re.compile(pattern, re.I))
+            if placeholders.count() > 0:
+                placeholders.first.fill(value)
+                filled = True
         except Exception:
-            continue
+            pass
+
+        if not filled:
+            try:
+                labels = page.get_by_label(re.compile(pattern, re.I))
+                if labels.count() > 0:
+                    labels.first.fill(value)
+                    filled = True
+            except Exception:
+                pass
+
+        if not filled:
+            try:
+                locators = page.locator('input:not([type="hidden"]):not([type="submit"]):not([type="file"]):not([type="checkbox"]):not([type="radio"])')
+                count = locators.count()
+                for i in range(count):
+                    loc = locators.nth(i)
+                    id_val = loc.get_attribute("id") or ""
+                    name_val = loc.get_attribute("name") or ""
+                    placeholder_val = loc.get_attribute("placeholder") or ""
+                    if re.search(pattern, id_val, re.I) or re.search(pattern, name_val, re.I) or re.search(pattern, placeholder_val, re.I):
+                        loc.fill(value)
+                        break
+            except Exception:
+                pass
 
     try:
         file_inputs = page.locator('input[type="file"]')
@@ -131,6 +151,16 @@ def main() -> None:
         update_job_status(args.job_id, "error", "Missing apply_url")
         sys.exit(1)
 
+    log_artifact = {
+        "job_id": args.job_id,
+        "mode": args.mode,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "job_details": job,
+        "outcome": "unknown",
+        "error_classification": None,
+        "screenshot_path": f"{args.job_id}_{args.mode}.png",
+    }
+
     with sync_playwright() as p:
         browser = None
         try:
@@ -147,7 +177,10 @@ def main() -> None:
 
             if args.mode == "live":
                 if job.get("status") != "approved":
-                    update_job_status(args.job_id, "error", "Must be approved before live submit")
+                    error_msg = "Must be approved before live submit"
+                    update_job_status(args.job_id, "error", error_msg)
+                    log_artifact["outcome"] = "error"
+                    log_artifact["error_classification"] = "ApprovalGateError"
                     return
 
                 submit_btn = page.locator('button[type="submit"], input[type="submit"], button:has-text("Submit"), button:has-text("Apply")').first
@@ -155,15 +188,29 @@ def main() -> None:
                     submit_btn.click(timeout=5000)
                     page.wait_for_load_state("networkidle", timeout=10000)
                     update_job_status(args.job_id, "submitted")
+                    log_artifact["outcome"] = "submitted"
                 else:
                     update_job_status(args.job_id, "error", "Submit button not found")
+                    log_artifact["outcome"] = "error"
+                    log_artifact["error_classification"] = "FormFillError"
             else:
                 if job.get("status") != "approved":
                     update_job_status(args.job_id, "needs-approval")
+                log_artifact["outcome"] = "dry-run-complete"
 
+        except PlaywrightTimeoutError as exc:
+            logging.error(f"TimeoutError: {exc}")
+            update_job_status(args.job_id, "error", f"TimeoutError: {str(exc)}")
+            log_artifact["outcome"] = "error"
+            log_artifact["error_classification"] = "TimeoutError"
         except Exception as exc:
-            update_job_status(args.job_id, "error", str(exc))
+            logging.error(f"Exception: {exc}")
+            update_job_status(args.job_id, "error", f"Error: {str(exc)}")
+            log_artifact["outcome"] = "error"
+            log_artifact["error_classification"] = "GeneralError"
         finally:
+            log_artifact_path = ARTIFACTS_DIR / f"{args.job_id}_{args.mode}_log.json"
+            log_artifact_path.write_text(json.dumps(log_artifact, indent=2) + "\n")
             if browser:
                 browser.close()
 

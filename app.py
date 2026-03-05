@@ -1144,7 +1144,12 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
     if not html_content:
         raise HTTPException(status_code=400, detail="Must provide url or html to scrape")
 
-    questions = extract_questions_from_html(html_content, body.url or "")
+    extraction = extract_questions_from_html(html_content, body.url or "")
+    if isinstance(extraction, dict):
+        questions = extraction.get("questions", [])
+    else:
+        questions = extraction
+        extraction = {"questions": questions, "source": "legacy", "confidence": 0.5, "error": None}
 
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
@@ -1166,13 +1171,22 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
             applications.append(app_record)
 
         app_record["questions"] = questions
+        app_record["parser_source"] = extraction.get("source")
+        app_record["extraction_confidence"] = extraction.get("confidence")
+        if extraction.get("error"):
+            app_record["extraction_error"] = extraction.get("error")
         data["applications"] = applications
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
         JOB_PIPELINE_PATH.write_text(json.dumps(data, indent=2) + "\n")
     except Exception:
         pass
 
-    return {"questions": questions}
+    return {
+        "questions": questions,
+        "source": extraction.get("source"),
+        "confidence": extraction.get("confidence"),
+        "error": extraction.get("error"),
+    }
 
 
 @app.post("/api/network/apply/generate")
