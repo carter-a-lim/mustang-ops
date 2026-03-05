@@ -170,6 +170,12 @@ def _is_noise(text: str) -> bool:
         "category",
         "employment type",
         "hiring company",
+        "attach",
+        "attach resume",
+        "attach cover letter",
+        "enter manually",
+        "upload",
+        "upload resume",
     }
     return clean in ignore
 
@@ -241,7 +247,85 @@ def _calculate_confidence(questions: list[str], source: str, html: str) -> float
     return min(1.0, score)
 
 
-def extract_questions_from_html(html: str, url: str = "") -> dict:
+def playwright_fallback_extract(url: str) -> dict:
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return {"questions": [], "field_map": [], "source": "playwright_fallback", "confidence": 0.0, "error": "Playwright not installed"}
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, wait_until="networkidle", timeout=30000)
+
+            script = """
+            () => {
+                const results = [];
+                const inputs = document.querySelectorAll('input, select, textarea');
+                inputs.forEach(el => {
+                    const tag = el.tagName.toLowerCase();
+                    const type = tag === 'input' ? el.type : tag;
+                    if (['hidden', 'submit', 'button'].includes(type)) return;
+                    
+                    let labelText = '';
+                    if (el.id) {
+                        const labelEl = document.querySelector(`label[for="${el.id}"]`);
+                        if (labelEl) labelText = labelEl.innerText;
+                    }
+                    if (!labelText && el.closest('label')) {
+                        labelText = el.closest('label').innerText;
+                    }
+                    if (!labelText) {
+                        labelText = el.getAttribute('aria-label') || el.placeholder || '';
+                    }
+
+                    let opts = [];
+                    if (tag === 'select') {
+                        opts = Array.from(el.querySelectorAll('option')).map(o => o.value).filter(v => v);
+                    }
+
+                    results.push({
+                        label: labelText.trim(),
+                        name: el.name || el.id || '',
+                        type: type,
+                        required: el.required || el.hasAttribute('aria-required') || false,
+                        options: opts
+                    });
+                });
+                return results;
+            }
+            """
+            fields = page.evaluate(script)
+            browser.close()
+
+            filtered_fields = []
+            questions = []
+            for f in fields:
+                q = _normalize_question(f['label'])
+                if q and not _is_noise(q):
+                    f['label'] = q
+                    filtered_fields.append(f)
+                    if q not in questions:
+                        questions.append(q)
+
+            return {
+                "questions": questions,
+                "field_map": filtered_fields,
+                "source": "playwright_fallback",
+                "confidence": 0.9,
+                "error": None
+            }
+    except Exception as exc:
+        return {
+            "questions": [],
+            "field_map": [],
+            "source": "playwright_fallback",
+            "confidence": 0.0,
+            "error": str(exc)
+        }
+
+def extract_questions_from_html(html: str, url: str = "", threshold: float = 0.65) -> dict:
     html_lower = html.lower()
     url_lower = (url or "").lower()
 
@@ -291,10 +375,25 @@ def extract_questions_from_html(html: str, url: str = "") -> dict:
             seen.add(t)
             out.append(t)
 
+    confidence = _calculate_confidence(out, source, html)
+    
+    # Dynamic ATS indicators check: if we see 'workday', 'greenhouse', 'lever', etc.
+    # but the generic regex or parser didn't find much.
+    is_dynamic = False
+    if "myworkdayjobs" in url_lower or "workday" in html_lower or "smartrecruiters" in url_lower or "ashby" in html_lower:
+        is_dynamic = True
+
+    if (confidence < threshold or is_dynamic) and url:
+        fallback = playwright_fallback_extract(url)
+        if fallback["questions"]:
+            # We log the stage transition in app.py or here, but it's easier in app.py.
+            return fallback
+
     return {
         "questions": out,
+        "field_map": [{"label": q, "name": q, "type": "text"} for q in out],
         "source": source,
-        "confidence": _calculate_confidence(out, source, html),
+        "confidence": confidence,
         "error": error,
     }
 

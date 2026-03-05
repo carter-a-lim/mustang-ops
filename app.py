@@ -496,6 +496,24 @@ def _node_version() -> str:
     return "unknown"
 
 
+def log_stage_transition(source: str, target: str, metadata: dict) -> None:
+    metrics_path = DATA_DIR / "pipeline_metrics.json"
+    try:
+        data = _read_json_file(metrics_path, {"transitions": []})
+        data["transitions"].append({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": source,
+            "target": target,
+            "metadata": metadata
+        })
+        # Keep only the last 1000 transitions
+        if len(data["transitions"]) > 1000:
+            data["transitions"] = data["transitions"][-1000:]
+        metrics_path.write_text(json.dumps(data, indent=2) + "\n")
+    except Exception:
+        pass
+
+
 def _system_stats() -> dict:
     load1 = os.getloadavg()[0] if hasattr(os, "getloadavg") else 0.0
 
@@ -834,6 +852,9 @@ def get_network_metrics():
     accepted = len([a for a in applications if any(x in _stage(a) for x in ["offer", "accept"])])
     other = max(0, total_submitted - (interview + oa + rejected + accepted + waiting_response))
 
+    metrics_path = DATA_DIR / "pipeline_metrics.json"
+    metrics_data = _read_json_file(metrics_path, {"transitions": []})
+
     return {
         "pipeline": {
             "ingest_total": ingest_total,
@@ -858,6 +879,7 @@ def get_network_metrics():
             "qualified_to_submitted_pct": round((total_submitted / max(total_qualified, 1)) * 100, 1),
             "submitted_to_interview_pct": round((interview / max(total_submitted, 1)) * 100, 1),
         },
+        "transitions": metrics_data.get("transitions", []),
     }
 
 
@@ -1173,6 +1195,8 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
         app_record["questions"] = questions
         app_record["parser_source"] = extraction.get("source")
         app_record["extraction_confidence"] = extraction.get("confidence")
+        if "field_map" in extraction:
+            app_record["field_map"] = extraction.get("field_map")
         if extraction.get("error"):
             app_record["extraction_error"] = extraction.get("error")
         data["applications"] = applications
@@ -1181,11 +1205,25 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
     except Exception:
         pass
 
+    # Log stage transition for browser fallback path
+    if extraction.get("source") == "playwright_fallback":
+        log_stage_transition(
+            "HTTP", "BROWSER_FALLBACK",
+            {
+                "company": body.company,
+                "title": body.title,
+                "url": body.url,
+                "confidence_was": extraction.get("confidence"),
+                "fields_extracted": len(extraction.get("field_map", []))
+            }
+        )
+
     return {
         "questions": questions,
         "source": extraction.get("source"),
         "confidence": extraction.get("confidence"),
         "error": extraction.get("error"),
+        "field_map": extraction.get("field_map", []),
     }
 
 
