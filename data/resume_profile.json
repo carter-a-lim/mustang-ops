@@ -33,7 +33,18 @@
       "Built and shipped products quickly with measurable early traction",
       "Implemented Stripe + Firebase payment and automation flows",
       "Built data pipelines to Google Sheets",
-      "Strong blend of product execution + engineering"
+      "Strong blend of product execution + engineering",
+      "Built Campus Compass to help reduce student loneliness by improving club discovery"
+    ],
+    "experiences": [
+      {
+        "name": "Campus Compass",
+        "type": "project",
+        "problem": "Roughly 50% of graduating seniors were classified as lonely in experiment context",
+        "what_built": "Club discovery product to help students find communities",
+        "impact": "Pilot expansion planned across additional CSU schools",
+        "stage": "active"
+      }
     ]
   }
 }
