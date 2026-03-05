@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-03-05T20:01:47.046213+00:00",
+  "updated_at": "2026-03-02T21:59:00Z",
   "roles": [
     {
       "company": "OpenAI",
@@ -44,18 +44,6 @@
       "stage": "Closed",
       "next_step": "Archive and reapply next cycle",
       "deadline": "2026-02-20"
-    },
-    {
-      "company": "TestCo",
-      "title": "SWE",
-      "stage": "Draft",
-      "updated_at": "2026-03-05T20:01:47.046195+00:00",
-      "questions": [
-        "Q1",
-        "Q2"
-      ],
-      "parser_source": "test",
-      "extraction_confidence": 0.9
     }
   ],
   "outreach_targets": [
@@ -63,14 +51,14 @@
       "name": "Alumni SWE @ FAANG",
       "reason": "Potential referral + interview prep",
       "status": "queued",
-      "best_opener": "Hey! I\u2019m applying to SWE internships and noticed your path from Cal Poly \u2014 could I ask 2 quick questions?",
+      "best_opener": "Hey! I’m applying to SWE internships and noticed your path from Cal Poly — could I ask 2 quick questions?",
       "last_interaction": "2026-02-18"
     },
     {
       "name": "Marketplace startup founder",
       "reason": "High-leverage growth mentorship",
       "status": "to-message",
-      "best_opener": "Loved your post on early GTM mistakes. I\u2019m building in a similar space and would value one tactical tip.",
+      "best_opener": "Loved your post on early GTM mistakes. I’m building in a similar space and would value one tactical tip.",
       "last_interaction": "2026-02-24"
     }
   ],
