@@ -34,6 +34,59 @@
       "Implemented Stripe + Firebase payment and automation flows",
       "Built data pipelines to Google Sheets",
       "Strong blend of product execution + engineering"
+    ],
+    "experience": [
+      {
+        "company": "Mustang Market",
+        "role": "Founder & Lead Engineer",
+        "location": "San Luis Obispo, CA",
+        "dates": "Jan 2026 - Present",
+        "bullet_bank": [
+          {
+            "text": "Built a campus marketplace using React, Firebase, and Stripe, reaching 500+ active users in first month.",
+            "tags": ["React", "Firebase", "Stripe", "Fullstack", "Growth"],
+            "metric": "500+ active users"
+          },
+          {
+            "text": "Optimized image loading and state management, reducing page load time by 40%.",
+            "tags": ["Performance", "React", "Optimization"],
+            "metric": "40% faster load time"
+          },
+          {
+            "text": "Implemented automated notification system using Cloud Functions, increasing user retention by 15%.",
+            "tags": ["Cloud Functions", "Node.js", "Retention"],
+            "metric": "15% retention increase"
+          },
+          {
+            "text": "Led a team of 2 junior developers, conducting code reviews and mentoring on best practices.",
+            "tags": ["Leadership", "Mentorship", "Code Review"],
+            "metric": "Managed 2 developers"
+          }
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "name": "Mustang Ops",
+        "description": "Local-only dashboard + automation backend",
+        "bullet_bank": [
+          {
+            "text": "Architected a FastAPI backend with a vanilla JS frontend for local task automation.",
+            "tags": ["FastAPI", "Python", "JavaScript", "Architecture"],
+            "metric": "Core architect"
+          },
+          {
+            "text": "Integrated Playwright for automated job application autofilling, saving 10+ hours per week.",
+            "tags": ["Playwright", "Automation", "Efficiency"],
+            "metric": "10+ hours saved weekly"
+          },
+          {
+            "text": "Developed a custom LLM gateway for intelligent task routing and answer generation.",
+            "tags": ["LLM", "AI", "Python", "Integration"],
+            "metric": "Key feature"
+          }
+        ]
+      }
     ]
   }
 }
