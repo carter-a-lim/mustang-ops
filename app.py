@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import re
@@ -202,14 +203,20 @@ def _tail_lines(path: Path, n: int = 20) -> list[str]:
         return []
 
 
-def _agent_inbox() -> dict[str, Any]:
+async def _agent_inbox() -> dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     items = []
 
     # Running background jobs related to Mustang Ops
     try:
-        ps = subprocess.run(["ps", "-eo", "pid,etimes,args"], capture_output=True, text=True, check=False)
-        for line in ps.stdout.splitlines()[1:]:
+        proc = await asyncio.create_subprocess_exec(
+            "ps", "-eo", "pid,etimes,args",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await proc.communicate()
+        output = stdout.decode()
+        for line in output.splitlines()[1:]:
             if "jobs/" in line and "python3" in line and "mustang-ops" in line:
                 parts = line.strip().split(maxsplit=2)
                 if len(parts) < 3:
@@ -1065,8 +1072,8 @@ def get_network_jobs():
 
 
 @app.get("/api/agents/inbox")
-def agents_inbox():
-    return _agent_inbox()
+async def agents_inbox():
+    return await _agent_inbox()
 
 
 @app.get("/api/network/resume-profile")
