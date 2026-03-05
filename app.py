@@ -1361,7 +1361,54 @@ def generate_application_answers(body: GenerateAnswersBody):
     if not filtered:
         return {"answers": {}, "questions_used": [], "filter": filter_meta}
 
-    answers = _generate_draft_answers(body.company, body.title, filtered)
+    labels = filter_meta.get("labels", {}) if isinstance(filter_meta, dict) else {}
+    profile = _load_resume_profile().get("profile", {})
+
+    def _direct_value_for_field(q: str) -> str | None:
+        l = q.lower().strip()
+        if "graduate" in l or "graduation" in l:
+            return str(profile.get("grad_year", "2029"))
+        if "gpa" in l:
+            return str(profile.get("gpa", "3.9"))
+        if "country" in l:
+            return "United States"
+        if "end date year" in l:
+            return str(profile.get("grad_year", "2029"))
+        if "end date month" in l:
+            return "June"
+        if "veteran" in l:
+            return "I am not a veteran."
+        if "disability" in l:
+            return "I do not identify as having a disability."
+        if "hispanic" in l or "latino" in l:
+            return "Prefer not to say."
+        if "first name" in l:
+            name = str(profile.get("name", "")).split(" ")[0] if profile.get("name") else "Carter"
+            return name
+        if "last name" in l:
+            parts = str(profile.get("name", "")).split(" ")
+            return parts[-1] if len(parts) > 1 else "Lim"
+        if "email" in l:
+            return str(profile.get("email", "carter.limster@gmail.com"))
+        if "phone" in l:
+            return str(profile.get("phone", "(360) 325-3124"))
+        return None
+
+    direct_answers: dict[str, str] = {}
+    narrative_questions: list[str] = []
+    for q in filtered:
+        label = labels.get(q, "")
+        if label in {"basic_profile_field", "demographic_or_compliance"}:
+            v = _direct_value_for_field(q)
+            if v:
+                direct_answers[q] = v
+            else:
+                direct_answers[q] = "Answer in form based on your preference."
+        else:
+            narrative_questions.append(q)
+
+    ai_answers = _generate_draft_answers(body.company, body.title, narrative_questions) if narrative_questions else {}
+    answers = {**direct_answers, **ai_answers}
 
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
