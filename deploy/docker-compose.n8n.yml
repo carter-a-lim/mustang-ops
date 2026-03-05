@@ -9,7 +9,9 @@ services:
       - N8N_HOST=localhost
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
-      - N8N_EDITOR_BASE_URL=http://localhost:5678/
+      - N8N_PATH=/n8n/
+      - N8N_EDITOR_BASE_URL=https://instance-20260304-0315.tail040da3.ts.net/n8n/
+      - WEBHOOK_URL=https://instance-20260304-0315.tail040da3.ts.net/n8n/
       - N8N_BASIC_AUTH_ACTIVE=true
       - TZ=UTC
     ports:
