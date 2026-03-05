@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+import llm
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -27,6 +28,8 @@ ANSWER_MEMORY_PATH = DATA_DIR / "application_answer_memory.json"
 ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
 RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
+DISCOVERED_SOURCES_PATH = DATA_DIR / "discovered_sources.json"
+INGESTION_CONFIG_PATH = DATA_DIR / "ingestion_config.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -54,6 +57,7 @@ JOBS = {
     "scrape_simplify_jobs": ROOT / "jobs" / "scrape_simplify_jobs.py",
     "auto_apply_orchestrator": ROOT / "jobs" / "auto_apply_orchestrator.py",
     "sync_gmail": ROOT / "jobs" / "sync_gmail.py",
+    "discovery_agent": ROOT / "jobs" / "discovery_agent.py",
 }
 
 app = FastAPI(title="Mustang Ops")
@@ -135,6 +139,10 @@ class UpdateQueueItemBody(BaseModel):
 
 class AutofillExecuteBody(BaseModel):
     mode: str = Field(default="dry-run", pattern="^(dry-run|live)$")
+
+
+class ApproveSourceBody(BaseModel):
+    name: str
 
 
 class CalendarEventBody(BaseModel):
@@ -285,24 +293,6 @@ def _find_session(store: dict, session_id: str) -> dict | None:
     return None
 
 
-def _usage_from_response(data: dict) -> dict:
-    usage = data.get("usage") or {}
-    prompt_tokens = int(usage.get("prompt_tokens") or 0)
-    completion_tokens = int(usage.get("completion_tokens") or 0)
-    total_tokens = int(usage.get("total_tokens") or (prompt_tokens + completion_tokens))
-    model = data.get("model") or OPENCLAW_MODEL
-    return {
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "model": model,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-        "total_tokens": total_tokens,
-    }
-
-
-def _append_usage_event(event: dict) -> None:
-    with USAGE_EVENTS_PATH.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(event) + "\n")
 
 
 def _load_usage_events() -> list[dict]:
@@ -526,34 +516,10 @@ def _system_stats() -> dict:
 
 
 def _call_openclaw(messages: list[dict[str, str]]) -> str:
-    if not OPENCLAW_TOKEN:
-        raise HTTPException(status_code=500, detail="OPENCLAW_TOKEN is missing")
-
-    payload = {
-        "model": OPENCLAW_MODEL,
-        "messages": messages,
-    }
     try:
-        res = requests.post(
-            f"{OPENCLAW_BASE_URL}/v1/chat/completions",
-            headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
-            json=payload,
-            timeout=90,
-        )
-    except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"OpenClaw upstream request failed: {exc}")
-
-    if res.status_code >= 400:
-        raise HTTPException(status_code=res.status_code, detail=res.text)
-
-    try:
-        data = res.json()
-    except ValueError:
-        raise HTTPException(status_code=502, detail="OpenClaw upstream returned invalid JSON")
-
-    event = _usage_from_response(data)
-    _append_usage_event(event)
-    return data["choices"][0]["message"]["content"]
+        return llm.call_openclaw(messages)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, str]:
@@ -1426,31 +1392,19 @@ def chat(body: ChatBody):
 
     messages.append({"role": "user", "content": body.message})
 
-    payload = {
-        "model": OPENCLAW_MODEL,
-        "messages": messages,
-    }
     try:
-        res = requests.post(
-            f"{OPENCLAW_BASE_URL}/v1/chat/completions",
-            headers={"Authorization": f"Bearer {OPENCLAW_TOKEN}", "Content-Type": "application/json"},
-            json=payload,
-            timeout=90,
-        )
-    except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"OpenClaw upstream request failed: {exc}")
-
-    if res.status_code >= 400:
-        raise HTTPException(status_code=res.status_code, detail=res.text)
-
-    try:
-        data = res.json()
-    except ValueError:
-        raise HTTPException(status_code=502, detail="OpenClaw upstream returned invalid JSON")
-
-    event = _usage_from_response(data)
-    _append_usage_event(event)
-    reply = data["choices"][0]["message"]["content"]
+        reply = llm.call_openclaw(messages)
+        # Re-fetch event/data for session logging if needed, or just mock it
+        # Actually session needs the reply and we can get usage event from log
+        event = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "model": OPENCLAW_MODEL,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
     if session is not None:
         now = datetime.now(timezone.utc).isoformat()
@@ -1465,7 +1419,7 @@ def chat(body: ChatBody):
 
     return {
         "reply": reply,
-        "raw": data,
+        "raw": {"choices": [{"message": {"content": reply}}]},
         "usage": event,
         "session_id": body.session_id,
     }
@@ -1485,6 +1439,52 @@ def run_job(job_name: str):
         "stdout": proc.stdout,
         "stderr": proc.stderr,
     }
+
+
+@app.get("/api/discovery/sources")
+def get_discovered_sources():
+    return _read_json_file(DISCOVERED_SOURCES_PATH, {"updated_at": None, "sources": []})
+
+
+@app.post("/api/discovery/run")
+def run_discovery_agent(background_tasks: BackgroundTasks):
+    script = JOBS.get("discovery_agent")
+    if not script or not script.exists():
+        raise HTTPException(status_code=404, detail="Discovery agent not found")
+
+    def _spawn():
+        subprocess.Popen(["python3", str(script)], cwd=str(ROOT))
+
+    background_tasks.add_task(_spawn)
+    return {"ok": True, "status": "started"}
+
+
+@app.post("/api/discovery/approve")
+def approve_discovered_source(body: ApproveSourceBody):
+    discovered = _read_json_file(DISCOVERED_SOURCES_PATH, {"sources": []})
+    config = _read_json_file(INGESTION_CONFIG_PATH, {"sources": []})
+
+    source_item = next((s for s in discovered.get("sources", []) if s.get("name") == body.name), None)
+    if not source_item:
+        raise HTTPException(status_code=404, detail="Discovered source not found")
+
+    # Add to ingestion config if not already there
+    if not any(s.get("url") == source_item.get("url") for s in config.get("sources", [])):
+        config.setdefault("sources", []).append({
+            "name": source_item.get("name"),
+            "url": source_item.get("url"),
+            "type": "github_readme" if "github.com" in source_item.get("url", "").lower() else "web",
+            "status": "active",
+            "added_at": datetime.now(timezone.utc).isoformat()
+        })
+        config["updated_at"] = datetime.now(timezone.utc).isoformat()
+        INGESTION_CONFIG_PATH.write_text(json.dumps(config, indent=2) + "\n")
+
+    # Update status in discovered list
+    source_item["status"] = "approved"
+    DISCOVERED_SOURCES_PATH.write_text(json.dumps(discovered, indent=2) + "\n")
+
+    return {"ok": True, "name": body.name}
 
 
 @app.post("/api/auto-apply/run")
