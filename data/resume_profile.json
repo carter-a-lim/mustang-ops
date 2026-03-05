@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-03-04T23:06:00Z",
+  "updated_at": "2026-03-05T18:43:00Z",
   "source": "gdoc:1qWnL3jthnT-gucpctoXNvl2GCc8qa5b_FWr8SdmhVvk",
   "profile": {
     "name": "Carter Lim",
-    "email": "clim40@calpoly.edu",
+    "email": "carter.limster@gmail.com",
     "phone": "(360) 325-3124",
     "school": "California Polytechnic State University",
     "major": "Computer Science",
@@ -11,39 +11,118 @@
     "gpa": "3.9",
     "work_auth": "unknown",
     "skills": [
-      "Python",
-      "JavaScript",
-      "TypeScript",
-      "Node.js",
-      "React",
-      "Firebase",
-      "Supabase",
-      "Vercel",
-      "Git",
-      "Google Cloud",
-      "Stripe",
       "Cloud Functions",
-      "Next.js"
+      "Firebase",
+      "Flask",
+      "Git",
+      "Google Apps Script",
+      "Google Cloud",
+      "JavaScript",
+      "Netlify",
+      "Next.js",
+      "Node.js",
+      "PostgreSQL",
+      "Python",
+      "React",
+      "Stripe",
+      "Supabase",
+      "TypeScript",
+      "UX Design",
+      "Vercel",
+      "Vite",
+      "ngrok"
     ],
     "links": {
-      "linkedin": "LinkedIn",
-      "github": "GitHub"
+      "linkedin": "https://www.linkedin.com/in/carter-a-lim/"
     },
     "highlights": [
-      "Built and shipped products quickly with measurable early traction",
-      "Implemented Stripe + Firebase payment and automation flows",
-      "Built data pipelines to Google Sheets",
-      "Strong blend of product execution + engineering",
-      "Built Campus Compass to help reduce student loneliness by improving club discovery"
+      "Founder/engineer of VocaView, an AI language-learning SaaS with subscriptions and usage-based credits",
+      "Built Stripe + Firebase payment and workflow automations",
+      "Improved Campus Compass recommendation accuracy from ~65% to ~90% using similarity modeling",
+      "Built Python data pipelines for club-profile vectorization and matching",
+      "Designed inventory automation at Sharetea reducing manual entry/errors by ~50%"
     ],
     "experiences": [
       {
-        "name": "Campus Compass",
-        "type": "project",
-        "problem": "Roughly 50% of graduating seniors were classified as lonely in experiment context",
-        "what_built": "Club discovery product to help students find communities",
-        "impact": "Pilot expansion planned across additional CSU schools",
-        "stage": "active"
+        "name": "VocaView",
+        "type": "founder/full-stack",
+        "dates": "2025-08 to present",
+        "what_built": "AI-powered language-learning SaaS (web app + Chrome extension)",
+        "tech": [
+          "Python",
+          "Flask",
+          "React",
+          "Vite",
+          "Supabase",
+          "PostgreSQL",
+          "Stripe",
+          "JWT",
+          "OAuth",
+          "Vercel",
+          "Render"
+        ],
+        "impact": "Launched production product with auth, monetization, and usage-based AI credit system"
+      },
+      {
+        "name": "Spread Goodness",
+        "type": "software engineer",
+        "dates": "2025-11 to present",
+        "what_built": "Integrated payments and interest-form workflows",
+        "tech": [
+          "Firebase Cloud Functions",
+          "Stripe API",
+          "Google Sheets"
+        ],
+        "impact": "Enabled in-app payment + structured lead capture pipeline"
+      },
+      {
+        "name": "CodeBox",
+        "type": "software engineer",
+        "dates": "2025-10 to present",
+        "what_built": "Notesharer app for students to share class resources",
+        "tech": [
+          "Web app development",
+          "GitHub collaboration"
+        ],
+        "impact": "Supported student prep through resource-sharing platform"
+      },
+      {
+        "name": "Campus Compass (Cal Poly)",
+        "type": "software engineer",
+        "dates": "2025-10 to present",
+        "what_built": "Club recommendation system with intelligent matching",
+        "tech": [
+          "Python",
+          "cosine similarity",
+          "embeddings",
+          "Netlify",
+          "ngrok"
+        ],
+        "impact": "Improved match accuracy from ~65% to ~90%; scaled profile pipeline for 100+ clubs"
+      },
+      {
+        "name": "Sharetea",
+        "type": "shift lead + database engineer",
+        "dates": "2024-06 to 2025-09",
+        "what_built": "Inventory automation database for stock tracking",
+        "tech": [
+          "Google Apps Script",
+          "spreadsheets",
+          "operations"
+        ],
+        "impact": "Reduced manual entry/errors by ~50% while leading shift operations"
+      },
+      {
+        "name": "ARC Results",
+        "type": "tutor + operations assistant",
+        "dates": "2024-02 to 2024-06",
+        "what_built": "Marketing campaigns and student tutoring support",
+        "tech": [
+          "copywriting",
+          "outreach",
+          "operations"
+        ],
+        "impact": "Supported campaign execution and student outcomes"
       }
     ]
   }
