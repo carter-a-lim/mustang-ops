@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-03-05T18:43:00Z",
+  "updated_at": "2026-03-05T19:16:00Z",
   "source": "gdoc:1qWnL3jthnT-gucpctoXNvl2GCc8qa5b_FWr8SdmhVvk",
   "profile": {
     "name": "Carter Lim",
@@ -36,81 +36,80 @@
       "linkedin": "https://www.linkedin.com/in/carter-a-lim/"
     },
     "highlights": [
-      "Founder/engineer of VocaView, an AI language-learning SaaS with subscriptions and usage-based credits",
-      "Built Stripe + Firebase payment and workflow automations",
-      "Improved Campus Compass recommendation accuracy from ~65% to ~90% using similarity modeling",
-      "Built Python data pipelines for club-profile vectorization and matching",
-      "Designed inventory automation at Sharetea reducing manual entry/errors by ~50%"
+      "Shipped VocaView solo in ~1 month; grew visitors +150% and page views +400% in 2 months",
+      "Built deadline-critical Stripe+Firebase payment flow in 2 days for Spread Goodness conference launch",
+      "Improved Campus Compass recommendation accuracy from ~65% to ~90% (similarity + data pipeline work)",
+      "Reduced Sharetea inventory operation time by ~90% through automation",
+      "Launched Mustang Market in 2 weeks and reached 600+ users in first week"
     ],
     "experiences": [
       {
         "name": "VocaView",
         "type": "founder/full-stack",
         "dates": "2025-08 to present",
-        "what_built": "AI-powered language-learning SaaS (web app + Chrome extension)",
+        "what_built": "AI-powered language-learning SaaS + Chrome extension; designed site and animations; shipped solo in ~1 month",
         "tech": [
-          "Python",
-          "Flask",
-          "React",
           "Vite",
           "Supabase",
-          "PostgreSQL",
-          "Stripe",
-          "JWT",
-          "OAuth",
-          "Vercel",
-          "Render"
+          "Render",
+          "Groq API",
+          "JavaScript",
+          "Chrome Extension"
         ],
-        "impact": "Launched production product with auth, monetization, and usage-based AI credit system"
+        "impact": "150+ visitors and 10+ users in first week; visitors +150% and page views +400% in first 2 months; reduced API calls ~50% via local machine IP optimization",
+        "team_size": "solo"
       },
       {
         "name": "Spread Goodness",
-        "type": "software engineer",
+        "type": "software engineer intern",
         "dates": "2025-11 to present",
-        "what_built": "Integrated payments and interest-form workflows",
+        "what_built": "Implemented Stripe+Firebase payment system in 2 days before education conference; Google login; forms-to-Sheets tracking; UI updates; analytics dashboard optimization",
         "tech": [
+          "Stripe Webhooks",
           "Firebase Cloud Functions",
-          "Stripe API",
-          "Google Sheets"
+          "Google Sheets",
+          "Google Auth"
         ],
-        "impact": "Enabled in-app payment + structured lead capture pipeline"
+        "impact": "Enabled conference-ready payment flow under deadline; automated post-payment user updates",
+        "team_size": "small team"
       },
       {
         "name": "CodeBox",
         "type": "software engineer",
         "dates": "2025-10 to present",
-        "what_built": "Notesharer app for students to share class resources",
+        "what_built": "Notesharer app; implemented login/onboarding, Supabase-backed save system, and multiple UI flows",
         "tech": [
-          "Web app development",
-          "GitHub collaboration"
+          "Next.js",
+          "Supabase",
+          "Frontend"
         ],
-        "impact": "Supported student prep through resource-sharing platform"
+        "impact": "Core auth/storage flows delivered for year-long club project",
+        "team_size": "~10 (dev club)"
       },
       {
         "name": "Campus Compass (Cal Poly)",
-        "type": "software engineer",
+        "type": "software engineer (frontend)",
         "dates": "2025-10 to present",
-        "what_built": "Club recommendation system with intelligent matching",
+        "what_built": "Frontend UI/logic, test weight storage in Supabase, cosine scoring support; weekly task execution",
         "tech": [
-          "Python",
-          "cosine similarity",
-          "embeddings",
-          "Netlify",
-          "ngrok"
+          "Frontend",
+          "Supabase",
+          "Cosine scoring"
         ],
-        "impact": "Improved match accuracy from ~65% to ~90%; scaled profile pipeline for 100+ clubs"
+        "impact": "Contributed to recommendation quality improvements and test infrastructure",
+        "team_size": "2 frontend (cross-functional overall)"
       },
       {
         "name": "Sharetea",
         "type": "shift lead + database engineer",
         "dates": "2024-06 to 2025-09",
-        "what_built": "Inventory automation database for stock tracking",
+        "what_built": "Google Sheets + Google cloud automation for daily/monthly/yearly sheet creation; dual employee/employer privacy views; usage/provenance tracking; trend prediction",
         "tech": [
-          "Google Apps Script",
-          "spreadsheets",
-          "operations"
+          "Google Sheets",
+          "Google Cloud Functions",
+          "Apps Script"
         ],
-        "impact": "Reduced manual entry/errors by ~50% while leading shift operations"
+        "impact": "Reduced inventory operation time ~90% with low-friction workflow"
       },
       {
         "name": "ARC Results",
@@ -123,6 +122,20 @@
           "operations"
         ],
         "impact": "Supported campaign execution and student outcomes"
+      },
+      {
+        "name": "Mustang Market",
+        "type": "project",
+        "dates": "2025",
+        "what_built": "Student marketplace MVP; Firebase storage/cloud functions/webhooks/image pipeline",
+        "tech": [
+          "Next.js",
+          "Firebase",
+          "Cloud Functions",
+          "Webhooks"
+        ],
+        "impact": "Built in 2 weeks (team of 3); reached 600+ users in first week via social + in-person outreach",
+        "team_size": "3"
       }
     ]
   }
