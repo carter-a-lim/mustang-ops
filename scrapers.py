@@ -1,4 +1,7 @@
 import re
+import json
+import os
+from pathlib import Path
 from html.parser import HTMLParser
 
 
@@ -241,6 +244,69 @@ def _calculate_confidence(questions: list[str], source: str, html: str) -> float
     return min(1.0, score)
 
 
+def _try_active_adapters(html: str, url: str) -> tuple[list[str], str | None]:
+    active_path = Path(__file__).resolve().parent / "data" / "adapters" / "active_adapters.json"
+    if not active_path.exists():
+        return [], None
+
+    try:
+        active = json.loads(active_path.read_text())
+    except Exception:
+        return [], None
+
+    from urllib.parse import urlparse
+    domain = urlparse(url).netloc
+
+    for adapter in active:
+        # Match by exact domain or suffix
+        target_domain = adapter.get("domain")
+        if target_domain and (domain == target_domain or domain.endswith("." + target_domain)):
+            try:
+                parser_code = adapter.get("parser_code")
+                # Look for the class name
+                class_match = re.search(r'class\s+(\w+)\(HTMLParser\)', parser_code)
+                if class_match:
+                    class_name = class_match.group(1)
+                    # Simple restrictive environment
+                    safe_globals = {
+                        "HTMLParser": HTMLParser,
+                        "re": re,
+                        "__name__": "ai_adapter",
+                        "__builtins__": {
+                            "getattr": getattr,
+                            "setattr": setattr,
+                            "hasattr": hasattr,
+                            "range": range,
+                            "len": len,
+                            "list": list,
+                            "str": str,
+                            "int": int,
+                            "dict": dict,
+                            "set": set,
+                            "bool": bool,
+                            "float": float,
+                            "super": super,
+                            "print": print,
+                        }
+                    }
+                    if hasattr(__builtins__, "__build_class__"):
+                        safe_globals["__builtins__"]["__build_class__"] = __builtins__.__build_class__
+                    elif isinstance(__builtins__, dict) and "__build_class__" in __builtins__:
+                        safe_globals["__builtins__"]["__build_class__"] = __builtins__["__build_class__"]
+                    exec(parser_code, safe_globals)
+                    parser_cls = safe_globals.get(class_name)
+                    if parser_cls:
+                        parser = parser_cls()
+                        parser.feed(html)
+                        questions = getattr(parser, 'questions', [])
+                        if questions:
+                            return questions, f"ai-adapter-{adapter.get('id')[:8]}"
+            except Exception as e:
+                # print(f"DEBUG: AI adapter failed: {e}")
+                continue
+    return [], None
+
+
 def extract_questions_from_html(html: str, url: str = "") -> dict:
     html_lower = html.lower()
     url_lower = (url or "").lower()
@@ -249,35 +315,49 @@ def extract_questions_from_html(html: str, url: str = "") -> dict:
     source = "generic"
     error = None
 
+    # 1. Try AI-generated active adapters first
     try:
-        if "boards.greenhouse.io" in url_lower or "greenhouse" in html_lower or 'class="field"' in html_lower:
-            source = "greenhouse"
-            p = GreenhouseParser()
-            p.feed(html)
-            questions = p.questions
-        elif "jobs.lever.co" in url_lower or "application-question" in html_lower:
-            source = "lever"
-            p = LeverParser()
-            p.feed(html)
-            questions = p.questions
-        elif "ashbyhq" in url_lower or "ashby" in html_lower:
-            source = "ashby"
-            questions = _extract_ashby(html)
-        elif "workday" in url_lower or "myworkdayjobs" in url_lower:
-            source = "workday"
-            questions = _extract_workday(html)
-        elif "smartrecruiters" in url_lower:
-            source = "smartrecruiters"
-            p = SmartRecruitersParser()
-            p.feed(html)
-            questions = p.questions
-        elif "icims" in url_lower:
-            source = "icims"
-            p = ICIMSParser()
-            p.feed(html)
-            questions = p.questions
+        ai_questions, ai_source = _try_active_adapters(html, url)
+        if ai_questions:
+            questions = ai_questions
+            source = ai_source
     except Exception as exc:
-        error = str(exc)
+        error = f"AI adapter error: {exc}"
+
+    if questions:
+        # Proceed to normalization
+        pass
+    else:
+        # 2. Try hardcoded parsers
+        try:
+            if "boards.greenhouse.io" in url_lower or "greenhouse" in html_lower or 'class="field"' in html_lower:
+                source = "greenhouse"
+                p = GreenhouseParser()
+                p.feed(html)
+                questions = p.questions
+            elif "jobs.lever.co" in url_lower or "application-question" in html_lower:
+                source = "lever"
+                p = LeverParser()
+                p.feed(html)
+                questions = p.questions
+            elif "ashbyhq" in url_lower or "ashby" in html_lower:
+                source = "ashby"
+                questions = _extract_ashby(html)
+            elif "workday" in url_lower or "myworkdayjobs" in url_lower:
+                source = "workday"
+                questions = _extract_workday(html)
+            elif "smartrecruiters" in url_lower:
+                source = "smartrecruiters"
+                p = SmartRecruitersParser()
+                p.feed(html)
+                questions = p.questions
+            elif "icims" in url_lower:
+                source = "icims"
+                p = ICIMSParser()
+                p.feed(html)
+                questions = p.questions
+        except Exception as exc:
+            error = str(exc)
 
     if not questions:
         source = "generic"

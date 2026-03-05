@@ -28,6 +28,11 @@ ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
 RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
 
+ADAPTERS_DIR = DATA_DIR / "adapters"
+FIXTURES_DIR = ADAPTERS_DIR / "fixtures"
+PROPOSALS_DIR = ADAPTERS_DIR / "proposals"
+ACTIVE_ADAPTERS_PATH = ADAPTERS_DIR / "active_adapters.json"
+
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
 if not CONTEXT_PATH.exists() and FALLBACK_CONTEXT.exists():
@@ -143,6 +148,18 @@ class CalendarEventBody(BaseModel):
     end: str | None = None
     location: str | None = None
     description: str | None = None
+
+
+class ProposeAdapterBody(BaseModel):
+    fixture_id: str
+
+
+class TestAdapterBody(BaseModel):
+    proposal_id: str
+
+
+class ApproveAdapterBody(BaseModel):
+    proposal_id: str
 
 
 def read_context() -> dict:
@@ -1151,6 +1168,23 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
         questions = extraction
         extraction = {"questions": questions, "source": "legacy", "confidence": 0.5, "error": None}
 
+    fixture_id = None
+    confidence = extraction.get("confidence") or 0.0
+    if confidence < 0.6:
+        fixture_id = str(uuid.uuid4())
+        fixture_path = FIXTURES_DIR / f"{fixture_id}.json"
+        fixture_data = {
+            "id": fixture_id,
+            "url": body.url,
+            "company": body.company,
+            "title": body.title,
+            "html": html_content,
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "extraction": extraction
+        }
+        FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
+        fixture_path.write_text(json.dumps(fixture_data, indent=2))
+
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
         applications = data.get("applications", [])
@@ -1186,6 +1220,8 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
         "source": extraction.get("source"),
         "confidence": extraction.get("confidence"),
         "error": extraction.get("error"),
+        "fixture_id": fixture_id,
+        "low_confidence": confidence < 0.6,
     }
 
 
@@ -1230,6 +1266,231 @@ def get_network():
 @app.get("/api/system/stats")
 def system_stats():
     return _system_stats()
+
+
+@app.get("/api/adapters/fixtures")
+def list_adapter_fixtures():
+    if not FIXTURES_DIR.exists():
+        return {"fixtures": []}
+
+    fixtures = []
+    for p in FIXTURES_DIR.glob("*.json"):
+        try:
+            data = json.loads(p.read_text())
+            fixtures.append({
+                "id": data.get("id"),
+                "url": data.get("url"),
+                "company": data.get("company"),
+                "title": data.get("title"),
+                "captured_at": data.get("captured_at"),
+                "confidence": (data.get("extraction") or {}).get("confidence")
+            })
+        except Exception:
+            continue
+
+    fixtures.sort(key=lambda x: x.get("captured_at", ""), reverse=True)
+    return {"fixtures": fixtures}
+
+
+@app.post("/api/adapters/propose")
+def propose_adapter(body: ProposeAdapterBody):
+    fixture_path = FIXTURES_DIR / f"{body.fixture_id}.json"
+    if not fixture_path.exists():
+        raise HTTPException(status_code=404, detail="Fixture not found")
+
+    fixture = json.loads(fixture_path.read_text())
+    html = fixture.get("html", "")
+
+    prompt = f"""
+I need a Python HTML parser to extract job application questions from the following HTML.
+The parser should be a class that inherits from `html.parser.HTMLParser`.
+It should have a `questions` list attribute.
+I also need a test function that demonstrates its usage on the provided HTML.
+
+Target Company: {fixture.get('company')}
+Target Role: {fixture.get('title')}
+
+HTML Snippet (truncated if too long):
+{html[:50000]}
+
+Return ONLY a JSON object with two fields:
+1. "parser_code": The Python code for the class.
+2. "test_code": A Python snippet to run the parser and print the questions.
+
+Example response format:
+{{
+  "parser_code": "class MyParser(HTMLParser): ...",
+  "test_code": "p = MyParser(); p.feed(html); print(p.questions)"
+}}
+"""
+
+    reply = _call_openclaw([{"role": "user", "content": prompt}])
+
+    # Try to extract JSON from the reply
+    try:
+        # Simple extraction if AI wraps in ```json
+        if "```json" in reply:
+            reply = reply.split("```json")[1].split("```")[0].strip()
+        elif "{" in reply:
+            reply = reply[reply.find("{"):reply.rfind("}")+1]
+
+        proposal = json.loads(reply)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to parse AI proposal: {exc}\n\nRaw reply: {reply}")
+
+    proposal_id = str(uuid.uuid4())
+    proposal["id"] = proposal_id
+    proposal["fixture_id"] = body.fixture_id
+    proposal["created_at"] = datetime.now(timezone.utc).isoformat()
+    proposal["status"] = "draft"
+
+    PROPOSALS_DIR.mkdir(parents=True, exist_ok=True)
+    proposal_path = PROPOSALS_DIR / f"{proposal_id}.json"
+    proposal_path.write_text(json.dumps(proposal, indent=2))
+
+    return proposal
+
+
+@app.get("/api/adapters/proposals")
+def list_adapter_proposals():
+    if not PROPOSALS_DIR.exists():
+        return {"proposals": []}
+
+    proposals = []
+    for p in PROPOSALS_DIR.glob("*.json"):
+        try:
+            data = json.loads(p.read_text())
+            proposals.append({
+                "id": data.get("id"),
+                "fixture_id": data.get("fixture_id"),
+                "created_at": data.get("created_at"),
+                "status": data.get("status")
+            })
+        except Exception:
+            continue
+
+    proposals.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"proposals": proposals}
+
+
+@app.post("/api/adapters/test")
+def test_adapter(body: TestAdapterBody):
+    proposal_path = PROPOSALS_DIR / f"{body.proposal_id}.json"
+    if not proposal_path.exists():
+        raise HTTPException(status_code=404, detail="Proposal not found")
+
+    proposal = json.loads(proposal_path.read_text())
+    fixture_path = FIXTURES_DIR / f"{proposal.get('fixture_id')}.json"
+    if not fixture_path.exists():
+        raise HTTPException(status_code=404, detail="Fixture not found")
+
+    fixture = json.loads(fixture_path.read_text())
+    html = fixture.get("html", "")
+
+    # Create a temporary test script
+    test_script_content = f"""
+import json
+import sys
+from html.parser import HTMLParser
+import re
+
+{proposal.get('parser_code')}
+
+html = {json.dumps(html)}
+try:
+    # Look for the class name in parser_code
+    class_match = re.search(r'class\s+(\w+)\(HTMLParser\)', proposal.get('parser_code', ''))
+    if not class_match:
+        print(json.dumps({{"error": "Could not find class name in parser_code"}}))
+        sys.exit(0)
+
+    class_name = class_match.group(1)
+    parser = globals()[class_name]()
+    parser.feed(html)
+
+    questions = getattr(parser, 'questions', [])
+    print(json.dumps({{"questions": questions}}))
+except Exception as e:
+    print(json.dumps({{"error": str(e)}}))
+"""
+
+    test_script_path = ADAPTERS_DIR / f"test_{body.proposal_id}.py"
+    test_script_path.write_text(test_script_content)
+
+    try:
+        proc = subprocess.run(["python3", str(test_script_path)], capture_output=True, text=True, timeout=10)
+        if proc.returncode != 0:
+            return {"ok": False, "error": proc.stderr or "Process failed"}
+
+        result = json.loads(proc.stdout.strip())
+
+        # Simple quality score:
+        # +0.4 if questions found
+        # +0.3 if more than 3 questions
+        # +0.3 if most questions end in ?
+        score = 0.0
+        qs = result.get("questions", [])
+        if qs:
+            score += 0.4
+            if len(qs) > 3:
+                score += 0.3
+            q_marks = len([q for q in qs if "?" in q])
+            if q_marks / len(qs) > 0.5:
+                score += 0.3
+
+        result["quality_score"] = round(score, 2)
+        proposal["last_test_result"] = result
+        proposal["updated_at"] = datetime.now(timezone.utc).isoformat()
+        proposal_path.write_text(json.dumps(proposal, indent=2))
+        return result
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    finally:
+        if test_script_path.exists():
+            test_script_path.unlink()
+
+
+@app.post("/api/adapters/approve")
+def approve_adapter(body: ApproveAdapterBody):
+    proposal_path = PROPOSALS_DIR / f"{body.proposal_id}.json"
+    if not proposal_path.exists():
+        raise HTTPException(status_code=404, detail="Proposal not found")
+
+    proposal = json.loads(proposal_path.read_text())
+    fixture_id = proposal.get("fixture_id")
+    fixture_path = FIXTURES_DIR / f"{fixture_id}.json"
+
+    if not fixture_path.exists():
+         raise HTTPException(status_code=404, detail="Fixture not found")
+
+    fixture = json.loads(fixture_path.read_text())
+    domain = ""
+    if fixture.get("url"):
+        from urllib.parse import urlparse
+        domain = urlparse(fixture.get("url")).netloc
+
+    active = _read_json_file(ACTIVE_ADAPTERS_PATH, [])
+
+    # Check if already approved
+    if any(a.get("proposal_id") == body.proposal_id for a in active):
+        return {"ok": True, "message": "Already approved"}
+
+    new_adapter = {
+        "id": str(uuid.uuid4()),
+        "proposal_id": body.proposal_id,
+        "domain": domain,
+        "company": fixture.get("company"),
+        "parser_code": proposal.get("parser_code"),
+        "approved_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    active.append(new_adapter)
+    ACTIVE_ADAPTERS_PATH.write_text(json.dumps(active, indent=2))
+
+    proposal["status"] = "approved"
+    proposal_path.write_text(json.dumps(proposal, indent=2))
+
+    return {"ok": True, "adapter_id": new_adapter["id"]}
 
 
 @app.get("/api/cron/list")
