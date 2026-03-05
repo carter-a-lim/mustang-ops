@@ -25,6 +25,8 @@ CHAT_SESSIONS_PATH = DATA_DIR / "chat_sessions.json"
 JOB_PIPELINE_PATH = DATA_DIR / "job_pipeline.json"
 ANSWER_MEMORY_PATH = DATA_DIR / "application_answer_memory.json"
 ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
+DISCOVERED_SOURCES_PATH = DATA_DIR / "discovered_sources.json"
+INGESTION_CONFIG_PATH = DATA_DIR / "ingestion_config.json"
 RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
 
@@ -54,6 +56,7 @@ JOBS = {
     "scrape_simplify_jobs": ROOT / "jobs" / "scrape_simplify_jobs.py",
     "auto_apply_orchestrator": ROOT / "jobs" / "auto_apply_orchestrator.py",
     "sync_gmail": ROOT / "jobs" / "sync_gmail.py",
+    "discovery_agent": ROOT / "jobs" / "discovery_agent.py",
 }
 
 app = FastAPI(title="Mustang Ops")
@@ -108,6 +111,10 @@ class AssistedQueueBuildBody(BaseModel):
 
 class ResumeSyncBody(BaseModel):
     doc_id: str | None = None
+
+
+class ApproveSourceBody(BaseModel):
+    name: str
 
 
 class AutoApplyRunBody(BaseModel):
@@ -496,24 +503,6 @@ def _node_version() -> str:
     return "unknown"
 
 
-def log_stage_transition(source: str, target: str, metadata: dict) -> None:
-    metrics_path = DATA_DIR / "pipeline_metrics.json"
-    try:
-        data = _read_json_file(metrics_path, {"transitions": []})
-        data["transitions"].append({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "source": source,
-            "target": target,
-            "metadata": metadata
-        })
-        # Keep only the last 1000 transitions
-        if len(data["transitions"]) > 1000:
-            data["transitions"] = data["transitions"][-1000:]
-        metrics_path.write_text(json.dumps(data, indent=2) + "\n")
-    except Exception:
-        pass
-
-
 def _system_stats() -> dict:
     load1 = os.getloadavg()[0] if hasattr(os, "getloadavg") else 0.0
 
@@ -574,18 +563,11 @@ def _call_openclaw(messages: list[dict[str, str]]) -> str:
     return data["choices"][0]["message"]["content"]
 
 
-def _classify_questions_with_groq(questions: list[str]) -> dict[str, str]:
+def _call_groq(prompt: str) -> str:
     groq_key = os.getenv("GROQ_API_KEY")
     groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-    if not groq_key or not questions:
-        return {}
-
-    prompt = (
-        "Classify each application field into one label: "
-        "screening_question | demographic_or_compliance | basic_profile_field | ui_noise. "
-        "Return strict JSON object: {\"items\":[{\"text\":\"...\",\"label\":\"...\"}]}.\n"
-        "Items:\n" + "\n".join(f"- {q}" for q in questions)
-    )
+    if not groq_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY is missing")
 
     try:
         res = requests.post(
@@ -594,14 +576,31 @@ def _classify_questions_with_groq(questions: list[str]) -> dict[str, str]:
             json={
                 "model": groq_model,
                 "messages": [{"role": "user", "content": prompt}],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.1,
+                "temperature": 0.35,
             },
-            timeout=60,
+            timeout=90,
         )
-        if res.status_code >= 400:
-            return {}
-        content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Groq upstream request failed: {exc}")
+
+    if res.status_code >= 400:
+        raise HTTPException(status_code=res.status_code, detail=res.text)
+
+    data = res.json()
+    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+
+def _classify_questions_with_groq(questions: list[str]) -> dict[str, str]:
+    if not questions:
+        return {}
+    prompt = (
+        "Classify each application field into one label: "
+        "screening_question | demographic_or_compliance | basic_profile_field | ui_noise. "
+        "Return strict JSON object: {\"items\":[{\"text\":\"...\",\"label\":\"...\"}]}.\n"
+        "Items:\n" + "\n".join(f"- {q}" for q in questions)
+    )
+    try:
+        content = _call_groq(prompt)
         parsed = json.loads(content)
         out: dict[str, str] = {}
         for item in parsed.get("items", []):
@@ -638,11 +637,7 @@ def _filter_questions_for_answering(questions: list[str]) -> tuple[list[str], di
 
     labels = _classify_questions_with_groq(heuristic_kept)
     if not labels:
-        return heuristic_kept, {
-            "kept": len(heuristic_kept),
-            "removed": len(removed),
-            "method": "heuristic",
-        }
+        return heuristic_kept, {"kept": len(heuristic_kept), "removed": len(removed), "method": "heuristic"}
 
     final_kept: list[str] = []
     for q in heuristic_kept:
@@ -658,37 +653,6 @@ def _filter_questions_for_answering(questions: list[str]) -> tuple[list[str], di
         "method": "heuristic+groq",
         "labels": labels,
     }
-
-
-def _call_groq(prompt: str) -> str:
-    groq_key = os.getenv("GROQ_API_KEY")
-    groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-    if not groq_key:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY is missing")
-
-    try:
-        res = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
-            json={
-                "model": groq_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.35,
-            },
-            timeout=90,
-        )
-    except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"Groq upstream request failed: {exc}")
-
-    if res.status_code >= 400:
-        raise HTTPException(status_code=res.status_code, detail=res.text)
-
-    try:
-        data = res.json()
-    except ValueError:
-        raise HTTPException(status_code=502, detail="Groq upstream returned invalid JSON")
-
-    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
 
 def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, str]:
@@ -724,8 +688,6 @@ def _generate_draft_answers(company: str, role: str, questions: list[str]) -> di
             prompt += "\n" + memory_context
         prompt += "\nWrite only the final answer text."
 
-        # Prefer Groq for draft generation (cost/latency).
-        # If Groq fails, return a deterministic fallback template instead of failing the endpoint.
         try:
             answers[q] = _call_groq(prompt).strip()
         except HTTPException:
@@ -977,9 +939,6 @@ def get_network_metrics():
     accepted = len([a for a in applications if any(x in _stage(a) for x in ["offer", "accept"])])
     other = max(0, total_submitted - (interview + oa + rejected + accepted + waiting_response))
 
-    metrics_path = DATA_DIR / "pipeline_metrics.json"
-    metrics_data = _read_json_file(metrics_path, {"transitions": []})
-
     return {
         "pipeline": {
             "ingest_total": ingest_total,
@@ -1004,7 +963,6 @@ def get_network_metrics():
             "qualified_to_submitted_pct": round((total_submitted / max(total_qualified, 1)) * 100, 1),
             "submitted_to_interview_pct": round((interview / max(total_submitted, 1)) * 100, 1),
         },
-        "transitions": metrics_data.get("transitions", []),
     }
 
 
@@ -1291,12 +1249,8 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
     if not html_content:
         raise HTTPException(status_code=400, detail="Must provide url or html to scrape")
 
-    extraction = extract_questions_from_html(html_content, body.url or "")
-    if isinstance(extraction, dict):
-        questions = extraction.get("questions", [])
-    else:
-        questions = extraction
-        extraction = {"questions": questions, "source": "legacy", "confidence": 0.5, "error": None}
+    res = extract_questions_from_html(html_content, body.url or "")
+    questions = res.get("questions", [])
 
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
@@ -1318,38 +1272,18 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
             applications.append(app_record)
 
         app_record["questions"] = questions
-        app_record["parser_source"] = extraction.get("source")
-        app_record["extraction_confidence"] = extraction.get("confidence")
-        if "field_map" in extraction:
-            app_record["field_map"] = extraction.get("field_map")
-        if extraction.get("error"):
-            app_record["extraction_error"] = extraction.get("error")
+        app_record["parser_source"] = res.get("source")
+        app_record["extraction_confidence"] = res.get("confidence")
+        if res.get("error"):
+            app_record["extraction_error"] = res.get("error")
+
         data["applications"] = applications
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
         JOB_PIPELINE_PATH.write_text(json.dumps(data, indent=2) + "\n")
     except Exception:
         pass
 
-    # Log stage transition for browser fallback path
-    if extraction.get("source") == "playwright_fallback":
-        log_stage_transition(
-            "HTTP", "BROWSER_FALLBACK",
-            {
-                "company": body.company,
-                "title": body.title,
-                "url": body.url,
-                "confidence_was": extraction.get("confidence"),
-                "fields_extracted": len(extraction.get("field_map", []))
-            }
-        )
-
-    return {
-        "questions": questions,
-        "source": extraction.get("source"),
-        "confidence": extraction.get("confidence"),
-        "error": extraction.get("error"),
-        "field_map": extraction.get("field_map", []),
-    }
+    return res
 
 
 @app.post("/api/network/apply/generate")
@@ -1703,6 +1637,52 @@ def run_job(job_name: str):
     }
 
 
+@app.get("/api/discovery/sources")
+def get_discovered_sources():
+    return _read_json_file(DISCOVERED_SOURCES_PATH, {"updated_at": None, "sources": []})
+
+
+@app.post("/api/discovery/run")
+def run_discovery_agent(background_tasks: BackgroundTasks):
+    script = JOBS.get("discovery_agent")
+    if not script or not script.exists():
+        raise HTTPException(status_code=404, detail="Discovery agent not found")
+
+    def _spawn():
+        subprocess.Popen(["python3", str(script)], cwd=str(ROOT))
+
+    background_tasks.add_task(_spawn)
+    return {"ok": True, "status": "started"}
+
+
+@app.post("/api/discovery/approve")
+def approve_discovered_source(body: ApproveSourceBody):
+    discovered = _read_json_file(DISCOVERED_SOURCES_PATH, {"sources": []})
+    config = _read_json_file(INGESTION_CONFIG_PATH, {"sources": []})
+
+    source_item = next((s for s in discovered.get("sources", []) if s.get("name") == body.name), None)
+    if not source_item:
+        raise HTTPException(status_code=404, detail="Discovered source not found")
+
+    # Add to ingestion config if not already there
+    if not any(s.get("url") == source_item.get("url") for s in config.get("sources", [])):
+        config.setdefault("sources", []).append({
+            "name": source_item.get("name"),
+            "url": source_item.get("url"),
+            "type": "github_readme" if "github.com" in source_item.get("url", "").lower() else "web",
+            "status": "active",
+            "added_at": datetime.now(timezone.utc).isoformat()
+        })
+        config["updated_at"] = datetime.now(timezone.utc).isoformat()
+        INGESTION_CONFIG_PATH.write_text(json.dumps(config, indent=2) + "\n")
+
+    # Update status in discovered list
+    source_item["status"] = "approved"
+    DISCOVERED_SOURCES_PATH.write_text(json.dumps(discovered, indent=2) + "\n")
+
+    return {"ok": True, "name": body.name}
+
+
 @app.post("/api/auto-apply/run")
 def run_auto_apply(body: AutoApplyRunBody):
     script = JOBS.get("auto_apply_orchestrator")
@@ -1726,7 +1706,9 @@ def run_auto_apply(body: AutoApplyRunBody):
     parsed: dict[str, Any] | None = None
     if proc.stdout.strip():
         try:
-            parsed = json.loads(proc.stdout)
+            idx = proc.stdout.find("{")
+            if idx != -1:
+                parsed = json.loads(proc.stdout[idx:])
         except Exception:
             parsed = None
 
