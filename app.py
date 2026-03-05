@@ -812,26 +812,40 @@ def get_github_snapshot():
 def get_network_metrics():
     jobs = get_network_jobs()
     queue = get_assisted_apply_queue()
+    auto_state = _read_json_file(DATA_DIR / "auto_apply_state.json", {"applications": []})
 
     simplify_snapshot = _read_json_file(DATA_DIR / "simplify_software_internships.json", {"roles": []})
-    ingest_total = len(simplify_snapshot.get("roles", [])) + len(jobs.get("roles", []))
+    manual_roles_count = len([r for r in jobs.get("roles", []) if r.get("source") != "simplify"])
+    ingest_total = len(simplify_snapshot.get("roles", [])) + manual_roles_count
 
     queue_items = queue.get("queue", [])
     queued_qualified = len([q for q in queue_items if q.get("status") in {"needs-review", "approved", "needs-approval", "drafted", "approval-queued"}])
 
     applications = jobs.get("applications", [])
-    total_qualified = queued_qualified + len(applications)
+
+    # Also include apps from auto_apply_state that are at least prepared
+    auto_apps = auto_state.get("applications", [])
 
     def _stage(app: dict[str, Any]) -> str:
         return str(app.get("stage") or app.get("status") or "").lower()
 
-    total_submitted = len([a for a in applications if any(x in _stage(a) for x in ["applied", "submitted", "oa", "interview", "reject", "closed", "offer", "accept"])])
-    waiting_response = len([a for a in applications if any(x in _stage(a) for x in ["applied", "submitted", "await", "waiting"])])
+    # De-duplicate or just combine? Typically they move from queue to auto_state to job_pipeline
+    # But for metrics, let's look at the union of statuses.
 
-    interview = len([a for a in applications if "interview" in _stage(a)])
-    oa = len([a for a in applications if "oa" in _stage(a) or "assessment" in _stage(a)])
-    rejected = len([a for a in applications if any(x in _stage(a) for x in ["reject", "closed"])])
-    accepted = len([a for a in applications if any(x in _stage(a) for x in ["offer", "accept"])])
+    # total_qualified includes everything we've decided is worth applying to
+    total_qualified = queued_qualified + len(applications) + len([a for a in auto_apps if _stage(a) in {"prepared", "enriched", "drafted", "approval-queued"}])
+
+    # Outcomes from both job_pipeline and auto_state
+    all_submitted_apps = [a for a in applications if any(x in _stage(a) for x in ["applied", "submitted", "oa", "interview", "reject", "closed", "offer", "accept"])]
+    all_submitted_apps += [a for a in auto_apps if _stage(a) in {"submitted", "oa", "interview", "reject", "rejected"}]
+
+    total_submitted = len(all_submitted_apps)
+
+    waiting_response = len([a for a in all_submitted_apps if any(x in _stage(a) for x in ["applied", "submitted", "await", "waiting"])])
+    interview = len([a for a in all_submitted_apps if "interview" in _stage(a)])
+    oa = len([a for a in all_submitted_apps if "oa" in _stage(a) or "assessment" in _stage(a)])
+    rejected = len([a for a in all_submitted_apps if any(x in _stage(a) for x in ["reject", "closed"])])
+    accepted = len([a for a in all_submitted_apps if any(x in _stage(a) for x in ["offer", "accept"])])
     other = max(0, total_submitted - (interview + oa + rejected + accepted + waiting_response))
 
     return {
@@ -1496,7 +1510,14 @@ def run_auto_apply(body: AutoApplyRunBody):
     parsed: dict[str, Any] | None = None
     if proc.stdout.strip():
         try:
-            parsed = json.loads(proc.stdout)
+            # The orchestrator might print other things before the JSON summary.
+            # Let's try to find the last occurrence of { and parse from there.
+            output = proc.stdout.strip()
+            start_idx = output.rfind('{')
+            if start_idx != -1:
+                parsed = json.loads(output[start_idx:])
+            else:
+                parsed = json.loads(output)
         except Exception:
             parsed = None
 
