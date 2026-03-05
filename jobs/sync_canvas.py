@@ -137,7 +137,7 @@ def main() -> None:
 
     context = json.loads(context_path.read_text()) if context_path.exists() else {}
 
-    canvas_url = os.getenv("CANVAS_URL")
+    canvas_url = os.getenv("CANVAS_URL") or os.getenv("CANVAS_BASE_URL")
     canvas_token = os.getenv("CANVAS_TOKEN")
     if not (canvas_url and canvas_token):
         cfg_url, cfg_token = load_openclaw_canvas_env()
