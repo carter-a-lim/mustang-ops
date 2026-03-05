@@ -110,6 +110,7 @@
         <a id="nav-coding" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('coding')"><span class="material-icons text-[18px]">code</span><span>Coding</span></a>
         <a id="nav-skills" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('skills')"><span class="material-icons text-[18px]">military_tech</span><span>Skills</span></a>
         <a id="nav-cron" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('cron')"><span class="material-icons text-[18px]">schedule</span><span>Cron</span></a>
+        <a id="nav-adapters" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('adapters')"><span class="material-icons text-[18px]">extension</span><span>Adapters</span></a>
         <a id="nav-todo" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('todo')"><span class="material-icons text-[18px]">checklist</span><span>Todo</span></a>
       </div>
 
@@ -393,6 +394,27 @@
             <div id="skills-grid" class="divide-y divide-border-light dark:divide-border-dark"></div>
           </div>
         </div>
+        <div id="section-adapters" class="section-content hidden max-w-7xl mx-auto space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">AI Scraper Adapters</h1>
+              <p class="text-sm text-gray-500">Fix low-confidence extractions by generating custom parsers.</p>
+            </div>
+            <button onclick="loadAdapters()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              <h3 class="text-xs uppercase text-gray-500 font-bold">Low-Confidence Fixtures</h3>
+              <div id="fixture-list" class="space-y-2"></div>
+            </div>
+            <div class="space-y-4">
+              <h3 class="text-xs uppercase text-gray-500 font-bold">AI Proposals</h3>
+              <div id="proposal-list" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+
         <div id="section-cron" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
             <div>
@@ -650,6 +672,7 @@ const sectionLoaders = {
   skills: () => loadSkills(),
   calendar: () => loadContext(),
   cron: () => loadCronList(),
+  adapters: () => loadAdapters(),
   todo: () => renderCronTodos(),
   network: () => loadNetworkJobs(),
   chat: () => loadSessions(),
@@ -1781,6 +1804,102 @@ async function loadUsageSummary() {
     usageCost.textContent = data?.pricing?.cost_estimation_enabled ? `Cost est: ${formatUsd(w5h.estimated_cost_usd || 0)} (5h) · ${formatUsd(w7d.estimated_cost_usd || 0)} (7d)` : 'Cost est: set MUSTANG_COST_INPUT_PER_1M / MUSTANG_COST_OUTPUT_PER_1M';
   } catch {
     usageCost.textContent = 'Cost est: failed to load usage summary';
+  }
+}
+
+async function loadAdapters() {
+  const [fRes, pRes] = await Promise.all([
+    fetch('/api/adapters/fixtures'),
+    fetch('/api/adapters/proposals')
+  ]);
+  const fData = await fRes.json();
+  const pData = await pRes.json();
+
+  const fixtureList = document.getElementById('fixture-list');
+  const proposalList = document.getElementById('proposal-list');
+
+  if (fixtureList) {
+    fixtureList.innerHTML = (fData.fixtures || []).map(f => `
+      <div class="p-3 panel-card space-y-2">
+        <div class="flex justify-between items-start">
+          <div class="min-w-0">
+            <div class="text-sm font-bold truncate">${f.company}</div>
+            <div class="text-xs text-gray-500 truncate">${f.title}</div>
+            <div class="text-[10px] text-gray-400 font-mono mt-1">${f.captured_at}</div>
+          </div>
+          <button onclick="proposeAdapter('${f.id}')" class="px-2 py-1 text-[10px] bg-primary text-white rounded hover:bg-primary-dark transition-colors">Propose</button>
+        </div>
+      </div>
+    `).join('') || '<div class="text-xs text-gray-500">No low-confidence fixtures.</div>';
+  }
+
+  if (proposalList) {
+    proposalList.innerHTML = (pData.proposals || []).map(p => `
+      <div class="p-3 panel-card space-y-2">
+        <div class="flex justify-between items-center">
+          <div class="text-xs font-mono text-gray-400">${p.id.slice(0,8)}...</div>
+          <div class="text-[10px] px-1.5 py-0.5 rounded border ${p.status === 'approved' ? 'badge-ok' : 'badge-warn'}">${p.status}</div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="testAdapter('${p.id}')" class="flex-1 px-2 py-1 text-[10px] border border-border-light dark:border-border-dark rounded hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors">Test</button>
+          <button onclick="approveAdapter('${p.id}')" class="flex-1 px-2 py-1 text-[10px] bg-success text-white rounded hover:opacity-90 transition-colors" ${p.status === 'approved' ? 'disabled' : ''}>Approve</button>
+        </div>
+      </div>
+    `).join('') || '<div class="text-xs text-gray-500">No proposals yet.</div>';
+  }
+}
+
+async function proposeAdapter(fixtureId) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  try {
+    await fetch('/api/adapters/propose', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ fixture_id: fixtureId })
+    });
+    loadAdapters();
+  } catch (err) {
+    alert('Failed to propose adapter');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Propose';
+  }
+}
+
+async function testAdapter(proposalId) {
+  const btn = event.target;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Testing...';
+  try {
+    const res = await fetch('/api/adapters/test', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ proposal_id: proposalId })
+    });
+    const result = await res.json();
+    alert(JSON.stringify(result, null, 2));
+  } catch (err) {
+    alert('Test failed');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+async function approveAdapter(proposalId) {
+  if (!confirm('Approve and activate this adapter?')) return;
+  try {
+    await fetch('/api/adapters/approve', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ proposal_id: proposalId })
+    });
+    loadAdapters();
+  } catch (err) {
+    alert('Failed to approve adapter');
   }
 }
 
