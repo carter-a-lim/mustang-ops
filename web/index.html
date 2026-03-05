@@ -110,6 +110,7 @@
         <a id="nav-coding" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('coding')"><span class="material-icons text-[18px]">code</span><span>Coding</span></a>
         <a id="nav-skills" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('skills')"><span class="material-icons text-[18px]">military_tech</span><span>Skills</span></a>
         <a id="nav-cron" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('cron')"><span class="material-icons text-[18px]">schedule</span><span>Cron</span></a>
+        <a id="nav-discovery" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('discovery')"><span class="material-icons text-[18px]">search</span><span>Discovery</span></a>
         <a id="nav-todo" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-accent-dark transition-colors" href="#" onclick="showSection('todo')"><span class="material-icons text-[18px]">checklist</span><span>Todo</span></a>
       </div>
 
@@ -393,6 +394,37 @@
             <div id="skills-grid" class="divide-y divide-border-light dark:divide-border-dark"></div>
           </div>
         </div>
+        <div id="section-discovery" class="section-content hidden max-w-7xl mx-auto space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">AI Discovery Agent</h1>
+              <p class="text-sm text-gray-500">Discovering new internship sources and job boards using LLMs.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="runDiscovery()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark bg-primary text-white hover:bg-primary-dark transition-colors">Run Discovery</button>
+              <button onclick="loadDiscoveredSources()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Discovered</p><p id="discovery-count" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">High Quality</p><p id="discovery-high" class="text-2xl font-bold">0</p></div>
+            <div class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Approved</p><p id="discovery-approved" class="text-2xl font-bold">0</p></div>
+            <div id="discovery-status" class="p-4 panel-card"><p class="text-[10px] uppercase text-gray-500">Status</p><p class="text-sm font-bold mt-2">Idle</p></div>
+          </div>
+
+          <div class="panel-card overflow-hidden">
+            <div class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark text-[10px] uppercase text-gray-500 font-semibold tracking-wider">
+              <div class="col-span-4">Source</div>
+              <div class="col-span-2">Score</div>
+              <div class="col-span-2">Frequency</div>
+              <div class="col-span-2">Signal</div>
+              <div class="col-span-2 text-right">Action</div>
+            </div>
+            <div id="discovery-grid" class="divide-y divide-border-light dark:divide-border-dark"></div>
+          </div>
+        </div>
+
         <div id="section-cron" class="section-content hidden max-w-7xl mx-auto space-y-5">
           <div class="flex items-center justify-between">
             <div>
@@ -517,12 +549,13 @@
     </aside>
 
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-border-light dark:border-border-dark bg-surface-light/95 dark:bg-[#0d1117]/95 backdrop-blur">
-      <div class="grid grid-cols-6">
+      <div class="grid grid-cols-7">
         <button id="navb-chat" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('chat')"><span class="material-icons text-[18px]">chat</span><span>Chat</span></button>
         <button id="navb-calendar" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('calendar')"><span class="material-icons text-[18px]">calendar_today</span><span>Cal</span></button>
         <button id="navb-network" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('network')"><span class="material-icons text-[18px]">hub</span><span>Net</span></button>
         <button id="navb-coding" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('coding')"><span class="material-icons text-[18px]">code</span><span>Build</span></button>
         <button id="navb-skills" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('skills')"><span class="material-icons text-[18px]">military_tech</span><span>Skills</span></button>
+        <button id="navb-discovery" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('discovery')"><span class="material-icons text-[18px]">search</span><span>Find</span></button>
         <button id="navb-todo" class="nav-bottom-link py-2 text-[11px] flex flex-col items-center gap-0.5 text-gray-500" onclick="showSection('todo')"><span class="material-icons text-[18px]">checklist</span><span>Todo</span></button>
       </div>
     </nav>
@@ -552,6 +585,11 @@ const calDeadlines = document.getElementById('cal-deadlines');
 const calEvents = document.getElementById('cal-events');
 const calNext = document.getElementById('cal-next');
 const cronList = document.getElementById('cron-list');
+const discoveryGrid = document.getElementById('discovery-grid');
+const discoveryCount = document.getElementById('discovery-count');
+const discoveryHigh = document.getElementById('discovery-high');
+const discoveryApproved = document.getElementById('discovery-approved');
+const discoveryStatus = document.getElementById('discovery-status');
 const cronTotal = document.getElementById('cron-total');
 const cronHighfreq = document.getElementById('cron-highfreq');
 const cronDaily = document.getElementById('cron-daily');
@@ -650,6 +688,7 @@ const sectionLoaders = {
   skills: () => loadSkills(),
   calendar: () => loadContext(),
   cron: () => loadCronList(),
+  discovery: () => loadDiscoveredSources(),
   todo: () => renderCronTodos(),
   network: () => loadNetworkJobs(),
   chat: () => loadSessions(),
@@ -1717,6 +1756,79 @@ function bindTodoNotepad() {
 function renderCronTodos() {
   bindTodoNotepad();
   renderTodoNotepad();
+}
+
+async function loadDiscoveredSources() {
+  if (!discoveryGrid) return;
+  try {
+    const res = await fetch('/api/discovery/sources');
+    const data = await res.json();
+    const sources = data.sources || [];
+
+    if (discoveryCount) discoveryCount.textContent = sources.length;
+    if (discoveryHigh) discoveryHigh.textContent = sources.filter(s => (s.final_score || 0) >= 80).length;
+    if (discoveryApproved) discoveryApproved.textContent = sources.filter(s => s.status === 'approved').length;
+
+    if (!sources.length) {
+      discoveryGrid.innerHTML = '<div class="p-4 text-xs text-gray-500 text-center">No sources discovered yet. Run the agent.</div>';
+      return;
+    }
+
+    discoveryGrid.innerHTML = sources.map(s => {
+      const isApproved = s.status === 'approved';
+      const scoreColor = s.final_score >= 80 ? 'text-success' : (s.final_score >= 60 ? 'text-yellow-500' : 'text-gray-500');
+      return `
+        <div class="grid grid-cols-12 gap-2 px-4 py-3 text-xs items-center hover:bg-gray-50 dark:hover:bg-accent-dark/40 transition-colors">
+          <div class="col-span-4 min-w-0">
+            <div class="font-semibold text-gray-900 dark:text-gray-100 truncate" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</div>
+            <div class="text-[10px] text-gray-500 truncate">${escapeHtml(s.url)}</div>
+          </div>
+          <div class="col-span-2 font-bold ${scoreColor}">${s.final_score || 0}</div>
+          <div class="col-span-2 text-gray-500">${s.update_frequency || '-'}</div>
+          <div class="col-span-2 text-gray-500 uppercase">${s.signal_level || '-'}</div>
+          <div class="col-span-2 text-right">
+            ${isApproved
+              ? '<span class="text-success font-bold text-[10px] uppercase">Approved</span>'
+              : `<button onclick="approveSource('${escapeHtml(s.name)}')" class="px-2 py-1 rounded border border-border-light dark:border-border-dark hover:bg-primary hover:text-white transition-colors text-[11px]">Approve</button>`
+            }
+          </div>
+        </div>
+        <div class="px-4 pb-3 text-[10px] text-gray-400 italic col-span-12">${escapeHtml(s.value_prop || s.description)}</div>
+      `;
+    }).join('');
+  } catch {
+    discoveryGrid.innerHTML = '<div class="p-4 text-xs text-red-500">Failed to load discovered sources.</div>';
+  }
+}
+
+async function runDiscovery() {
+  if (discoveryStatus) discoveryStatus.querySelector('p:last-child').textContent = 'Running...';
+  try {
+    const res = await fetch('/api/discovery/run', { method: 'POST' });
+    if (res.ok) {
+      appendMessage('assistant', 'Discovery agent started in background. Refresh in 30-60 seconds.');
+    }
+  } catch {
+    appendMessage('assistant', 'Failed to start discovery agent.');
+  } finally {
+    setTimeout(() => { if (discoveryStatus) discoveryStatus.querySelector('p:last-child').textContent = 'Idle'; }, 5000);
+  }
+}
+
+async function approveSource(name) {
+  try {
+    const res = await fetch('/api/discovery/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      loadDiscoveredSources();
+      appendMessage('assistant', `Approved source: ${name}. It has been added to ingestion configuration.`);
+    }
+  } catch {
+    alert('Failed to approve source');
+  }
 }
 
 async function loadCronList() {
