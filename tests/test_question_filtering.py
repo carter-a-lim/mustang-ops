@@ -5,7 +5,9 @@ import app
 
 
 class QuestionFilteringTests(unittest.TestCase):
-    def test_heuristic_removes_noise(self):
+    @patch("app._classify_questions_with_groq")
+    def test_heuristic_removes_noise(self, mock_classify):
+        mock_classify.return_value = {}
         questions = [
             "Attach",
             "Enter manually",
