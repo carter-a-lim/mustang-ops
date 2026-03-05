@@ -230,7 +230,26 @@
               <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar Intelligence</h1>
               <p class="text-sm text-gray-500">Deadlines, events, and upcoming pressure windows.</p>
             </div>
-            <button onclick="loadContext()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+            <div class="flex gap-2">
+              <button onclick="toggleAddEventModal()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark bg-primary text-white hover:bg-primary-dark transition-colors">Add Event</button>
+              <button onclick="loadContext()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark">Refresh</button>
+            </div>
+          </div>
+
+          <div id="add-event-modal" class="hidden panel-card p-4 bg-gray-50 dark:bg-surface-dark mb-4 border border-border-light dark:border-border-dark">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Add Calendar Event</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <input id="event-title" placeholder="Event title" class="w-full text-xs px-2 py-1.5 rounded border border-border-light dark:border-border-dark bg-white dark:bg-[#0f111a]" />
+              <input id="event-start" placeholder="Start (YYYY-MM-DD or YYYY-MM-DDTHH:MM)" class="w-full text-xs px-2 py-1.5 rounded border border-border-light dark:border-border-dark bg-white dark:bg-[#0f111a]" />
+              <input id="event-end" placeholder="End (optional)" class="w-full text-xs px-2 py-1.5 rounded border border-border-light dark:border-border-dark bg-white dark:bg-[#0f111a]" />
+              <input id="event-location" placeholder="Location (optional)" class="w-full text-xs px-2 py-1.5 rounded border border-border-light dark:border-border-dark bg-white dark:bg-[#0f111a]" />
+              <input id="event-description" placeholder="Description (optional)" class="w-full text-xs px-2 py-1.5 rounded border border-border-light dark:border-border-dark bg-white dark:bg-[#0f111a] md:col-span-2" />
+            </div>
+            <div class="flex justify-end gap-2">
+              <button onclick="toggleAddEventModal()" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark hover:bg-gray-200 dark:hover:bg-gray-700">Cancel</button>
+              <button onclick="addCalendarEvent()" id="save-event-btn" class="px-3 py-1.5 text-xs rounded-md border border-border-light dark:border-border-dark bg-primary text-white hover:bg-primary-dark">Save Event</button>
+            </div>
+            <div id="add-event-error" class="hidden text-xs text-red-500 mt-2"></div>
           </div>
 
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -930,8 +949,8 @@ async function loadContext() {
     if (contextDisplay) contextDisplay.textContent = JSON.stringify(data, null, 2);
 
     const rows = [];
-    (data.deadlines || []).forEach(d => rows.push({date: d.date || d.due_at, title: d.task || d.title, course: d.course, type: 'deadline'}));
-    (data.events || []).forEach(e => rows.push({date: e.date || e.start_at, title: e.title, course: e.course, type: 'event'}));
+    (data.deadlines || []).forEach(d => rows.push({id: d.id, date: d.date || d.due_at, title: d.task || d.title, course: d.course, type: 'deadline'}));
+    (data.events || []).forEach(e => rows.push({id: e.id, date: e.date || e.start_at, title: e.title, course: e.course, type: 'event'}));
     rows.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
     calendarRows = rows;
     renderCalendarGrid();
@@ -949,10 +968,13 @@ async function loadContext() {
 
     if (calendarItems) {
       calendarItems.innerHTML = rows.length ? rows.slice(0,40).map(r => `
-        <div class="p-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a]">
+        <div class="p-3 rounded-xl border border-border-light dark:border-border-dark bg-background-light dark:bg-[#0f111a] group relative">
           <div class="flex items-center justify-between gap-2">
             <div class="text-sm font-semibold truncate">${r.title || 'Untitled'}</div>
-            <span class="text-[10px] px-1.5 py-0.5 rounded border ${r.type==='deadline' ? 'text-orange-500 border-orange-500/30' : 'text-blue-500 border-blue-500/30'}">${r.type}</span>
+            <div class="flex items-center gap-1">
+              ${r.type === 'event' && r.id ? `<button onclick="deleteCalendarEvent('${r.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity" title="Delete event"><span class="material-icons text-[14px]">delete</span></button>` : ''}
+              <span class="text-[10px] px-1.5 py-0.5 rounded border ${r.type==='deadline' ? 'text-orange-500 border-orange-500/30' : 'text-blue-500 border-blue-500/30'}">${r.type}</span>
+            </div>
           </div>
           <div class="text-[11px] text-gray-500 mt-1">${r.course || 'General'}</div>
           <div class="text-[11px] text-gray-400 font-mono mt-0.5">${r.date || 'n/a'}</div>
@@ -961,6 +983,94 @@ async function loadContext() {
     }
   } catch {
     if (contextDisplay) contextDisplay.textContent = 'Failed to load context';
+  }
+}
+
+function toggleAddEventModal() {
+  const modal = document.getElementById('add-event-modal');
+  const errorEl = document.getElementById('add-event-error');
+  if (!modal) return;
+  modal.classList.toggle('hidden');
+  if (errorEl) errorEl.classList.add('hidden');
+  if (!modal.classList.contains('hidden')) {
+    const title = document.getElementById('event-title');
+    if (title) title.focus();
+  }
+}
+
+async function addCalendarEvent() {
+  const title = (document.getElementById('event-title')?.value || '').trim();
+  const start = (document.getElementById('event-start')?.value || '').trim();
+  const end = (document.getElementById('event-end')?.value || '').trim();
+  const location = (document.getElementById('event-location')?.value || '').trim();
+  const description = (document.getElementById('event-description')?.value || '').trim();
+  const errorEl = document.getElementById('add-event-error');
+  const saveBtn = document.getElementById('save-event-btn');
+
+  if (!title || !start) {
+    if (errorEl) {
+      errorEl.textContent = 'Title and Start are required.';
+      errorEl.classList.remove('hidden');
+    }
+    return;
+  }
+
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    const res = await fetch('/api/calendar/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        start,
+        end: end || null,
+        location: location || null,
+        description: description || null,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || 'Failed to create event');
+    }
+
+    ['event-title', 'event-start', 'event-end', 'event-location', 'event-description'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    toggleAddEventModal();
+    await loadContext();
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = err.message || 'Failed to create event';
+      errorEl.classList.remove('hidden');
+    }
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Event';
+    }
+  }
+}
+
+async function deleteCalendarEvent(eventId) {
+  if (!eventId) return;
+  if (!confirm('Delete this calendar event?')) return;
+
+  try {
+    const res = await fetch(`/api/calendar/events/${eventId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || 'Failed to delete event');
+    }
+    await loadContext();
+  } catch (err) {
+    alert(err.message || 'Failed to delete event');
   }
 }
 

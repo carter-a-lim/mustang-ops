@@ -49,8 +49,14 @@ Open: `http://localhost:8080`
 - `POST /api/network/apply/generate` -> generate draft answers from resume + answer memory
 - `PATCH /api/network/apply/queue/{job_id}` -> approve/reject/status updates for queue items
 - `POST /api/network/apply/queue/{job_id}/execute` -> run Playwright autofill worker (`dry-run` or `live`)
+- `POST /api/calendar/events` -> create calendar event via gog
+- `DELETE /api/calendar/events/{event_id}` -> delete calendar event via gog
 
 Valid jobs: `sync_canvas`, `morning_brief`, `linkedin_scout`, `token_sync`, `scrape_simplify_jobs`, `auto_apply_orchestrator`, `sync_gmail`
+
+Calendar API uses:
+- `GOG_ACCOUNT` (required)
+- `GOG_CALENDAR_ID` (optional, defaults to `primary`)
 
 ## Auto-apply orchestration (semi-auto)
 

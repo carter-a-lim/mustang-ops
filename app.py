@@ -137,10 +137,57 @@ class AutofillExecuteBody(BaseModel):
     mode: str = Field(default="dry-run", pattern="^(dry-run|live)$")
 
 
+class CalendarEventBody(BaseModel):
+    title: str
+    start: str  # YYYY-MM-DD or YYYY-MM-DDTHH:MM
+    end: str | None = None
+    location: str | None = None
+    description: str | None = None
+
+
 def read_context() -> dict:
     if not CONTEXT_PATH.exists():
         raise HTTPException(status_code=404, detail=f"Context not found: {CONTEXT_PATH}")
     return json.loads(CONTEXT_PATH.read_text())
+
+
+def _parse_calendar_dt(value: str) -> tuple[str, bool]:
+    value = (value or "").strip()
+    if not value:
+        raise HTTPException(status_code=400, detail="start is required")
+    # YYYY-MM-DD => all-day
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return value, True
+
+    # Accept HTML datetime-local like YYYY-MM-DDTHH:MM
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?", value):
+        if len(value) == 16:
+            value = value + ":00"
+        return value + "Z", False
+
+    # Accept RFC3339-ish already
+    return value, value.endswith("Z") or "+" in value
+
+
+def _append_context_event(event_id: str, title: str, start: str) -> None:
+    try:
+        ctx = read_context()
+    except Exception:
+        return
+    events = ctx.get("events", [])
+    events.append({"id": event_id, "title": title, "date": start, "course": "General"})
+    ctx["events"] = events
+    CONTEXT_PATH.write_text(json.dumps(ctx, indent=2) + "\n")
+
+
+def _remove_context_event(event_id: str) -> None:
+    try:
+        ctx = read_context()
+    except Exception:
+        return
+    if "events" in ctx:
+        ctx["events"] = [e for e in ctx["events"] if str(e.get("id")) != str(event_id)]
+    CONTEXT_PATH.write_text(json.dumps(ctx, indent=2) + "\n")
 
 
 def _tail_lines(path: Path, n: int = 20) -> list[str]:
@@ -592,6 +639,82 @@ def home():
 @app.get("/api/context")
 def get_context():
     return read_context()
+
+
+@app.post("/api/calendar/events")
+def create_calendar_event(body: CalendarEventBody):
+    account = os.getenv("GOG_ACCOUNT")
+    if not account:
+        raise HTTPException(status_code=500, detail="GOG_ACCOUNT is not configured")
+
+    calendar_id = os.getenv("GOG_CALENDAR_ID", "primary")
+    start_value, start_is_all_day = _parse_calendar_dt(body.start)
+
+    if body.end:
+        end_value, end_is_all_day = _parse_calendar_dt(body.end)
+    else:
+        if start_is_all_day:
+            end_value = start_value
+            end_is_all_day = True
+        else:
+            end_value = start_value
+            end_is_all_day = False
+
+    cmd = [
+        "gog", "calendar", "create", calendar_id,
+        "--summary", body.title,
+        "--from", start_value,
+        "--to", end_value,
+        "--json",
+        "--no-input",
+    ]
+    if start_is_all_day and end_is_all_day:
+        cmd.append("--all-day")
+    if body.location:
+        cmd.extend(["--location", body.location])
+    if body.description:
+        cmd.extend(["--description", body.description])
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GOG_ACCOUNT": account},
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"gog calendar create failed: {proc.stderr.strip()}")
+
+    event_id = str(uuid.uuid4())
+    try:
+        payload = json.loads(proc.stdout or "{}")
+        event_id = payload.get("event", {}).get("id") or payload.get("id") or event_id
+    except Exception:
+        pass
+
+    _append_context_event(event_id, body.title, start_value)
+    return {"ok": True, "id": event_id, "title": body.title, "start": start_value}
+
+
+@app.delete("/api/calendar/events/{event_id}")
+def delete_calendar_event(event_id: str):
+    account = os.getenv("GOG_ACCOUNT")
+    if not account:
+        raise HTTPException(status_code=500, detail="GOG_ACCOUNT is not configured")
+
+    calendar_id = os.getenv("GOG_CALENDAR_ID", "primary")
+    proc = subprocess.run(
+        ["gog", "calendar", "delete", calendar_id, event_id, "--no-input", "--force"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GOG_ACCOUNT": account},
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"gog calendar delete failed: {proc.stderr.strip()}")
+
+    _remove_context_event(event_id)
+    return {"ok": True, "deleted_id": event_id}
 
 
 @app.get("/api/skills")
