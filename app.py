@@ -660,6 +660,37 @@ def _filter_questions_for_answering(questions: list[str]) -> tuple[list[str], di
     }
 
 
+def _call_groq(prompt: str) -> str:
+    groq_key = os.getenv("GROQ_API_KEY")
+    groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    if not groq_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY is missing")
+
+    try:
+        res = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+            json={
+                "model": groq_model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.35,
+            },
+            timeout=90,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Groq upstream request failed: {exc}")
+
+    if res.status_code >= 400:
+        raise HTTPException(status_code=res.status_code, detail=res.text)
+
+    try:
+        data = res.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Groq upstream returned invalid JSON")
+
+    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+
 def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, str]:
     profile_data = _load_resume_profile()
     profile = profile_data.get("profile", {})
@@ -693,7 +724,15 @@ def _generate_draft_answers(company: str, role: str, questions: list[str]) -> di
             prompt += "\n" + memory_context
         prompt += "\nWrite only the final answer text."
 
-        answers[q] = _call_openclaw([{"role": "user", "content": prompt}]).strip()
+        # Prefer Groq for draft generation (cost/latency).
+        # If Groq fails, return a deterministic fallback template instead of failing the endpoint.
+        try:
+            answers[q] = _call_groq(prompt).strip()
+        except HTTPException:
+            answers[q] = (
+                f"I’m excited about the {role} role at {company}. "
+                "I learn quickly, take ownership, and focus on shipping high-impact work with clear outcomes."
+            )
 
     return answers
 
