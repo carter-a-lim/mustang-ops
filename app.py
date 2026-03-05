@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from resume_gen import generate_resume_variant
 import requests
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -131,6 +132,10 @@ class GenerateAnswersBody(BaseModel):
 
 class UpdateQueueItemBody(BaseModel):
     status: str
+
+
+class ResumeVariantGenerateBody(BaseModel):
+    jd_text: str | None = None
 
 
 class AutofillExecuteBody(BaseModel):
@@ -1111,6 +1116,53 @@ def update_assisted_apply_queue_item(job_id: str, body: UpdateQueueItemBody):
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
     ASSISTED_QUEUE_PATH.write_text(json.dumps(data, indent=2) + "\n")
     return {"ok": True, "job_id": job_id, "status": body.status}
+
+
+@app.post("/api/network/apply/queue/{job_id}/resume")
+def generate_resume_variant_for_queue(job_id: str, body: ResumeVariantGenerateBody):
+    data = get_assisted_apply_queue()
+    queue = data.get("queue", [])
+
+    job_item = next((item for item in queue if item.get("id") == job_id), None)
+    if not job_item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
+    profile_data = _load_resume_profile()
+
+    # Use provided JD text or fallback to something derived from job title
+    jd_text = body.jd_text or f"Role: {job_item.get('title')} at {job_item.get('company')}"
+
+    # Load style constraints if possible
+    style_path = DATA_DIR / "application_style_profile.json"
+    max_bullets = 3
+    if style_path.exists():
+        try:
+            style = json.loads(style_path.read_text())
+            max_bullets = style.get("resume_constraints", {}).get("max_bullets_per_role_or_project", 3)
+        except Exception:
+            pass
+
+    variant = generate_resume_variant(profile_data, jd_text, max_bullets_per_entry=max_bullets)
+
+    job_item["resume_variant"] = variant
+    job_item["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    ASSISTED_QUEUE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+
+    return {"ok": True, "job_id": job_id, "variant": variant}
+
+
+@app.get("/api/network/apply/queue/{job_id}/resume")
+def get_resume_variant_for_queue(job_id: str):
+    data = get_assisted_apply_queue()
+    queue = data.get("queue", [])
+
+    job_item = next((item for item in queue if item.get("id") == job_id), None)
+    if not job_item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
+    return job_item.get("resume_variant") or {"error": "Resume variant not generated yet"}
 
 
 @app.post("/api/network/apply/queue/{job_id}/execute")
