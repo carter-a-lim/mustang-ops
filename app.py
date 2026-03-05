@@ -27,6 +27,7 @@ ANSWER_MEMORY_PATH = DATA_DIR / "application_answer_memory.json"
 ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
 RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
+STYLE_PROFILE_PATH = DATA_DIR / "application_style_profile.json"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -131,6 +132,10 @@ class GenerateAnswersBody(BaseModel):
 
 class UpdateQueueItemBody(BaseModel):
     status: str
+
+
+class UpdateQueueAnswersBody(BaseModel):
+    answers: dict[str, dict[str, str]]
 
 
 class AutofillExecuteBody(BaseModel):
@@ -422,6 +427,50 @@ def _load_resume_profile() -> dict:
     return payload
 
 
+def _load_style_profile() -> dict:
+    return _read_json_file(
+        STYLE_PROFILE_PATH,
+        {
+            "updated_at": None,
+            "voice": {
+                "sentence_style": "medium_clear",
+                "confidence": "confident",
+                "ownership_language": "balanced",
+                "startup_energy": "high",
+            },
+            "content_rules": {"avoid": [], "prioritize": [], "hard_no_topics": []},
+        },
+    )
+
+
+def _check_answer_quality(answer: str, question: str, style_profile: dict) -> list[str]:
+    reasons = []
+    content_rules = style_profile.get("content_rules", {})
+    avoid = content_rules.get("avoid", [])
+    prioritize = content_rules.get("prioritize", [])
+
+    if len(answer) < 50:
+        reasons.append("Answer is too short (less than 50 characters)")
+
+    ans_lower = answer.lower()
+    for word in avoid:
+        if word.lower() in ans_lower:
+            reasons.append(f"Contains avoided buzzword: {word}")
+
+    generic_fillers = ["passionate", "synergy", "hard-working", "highly motivated"]
+    for word in generic_fillers:
+        if word in ans_lower:
+            reasons.append(f"Contains generic filler: {word}")
+
+    has_specificity = any(char.isdigit() for char in answer)
+    tech_keywords = ["python", "javascript", "react", "node", "aws", "docker", "git", "api", "sql"]
+    if not has_specificity:
+        if not any(k in ans_lower for k in tech_keywords) and not any(p.lower() in ans_lower for p in prioritize):
+            reasons.append("Answer lacks specificity (no numbers, tech terms, or prioritized keywords)")
+
+    return reasons
+
+
 def _fit_score_role(role: dict, profile: dict) -> tuple[int, list[str], str]:
     title = (role.get("title") or "").lower()
     location = (role.get("location") or "").lower()
@@ -556,11 +605,12 @@ def _call_openclaw(messages: list[dict[str, str]]) -> str:
     return data["choices"][0]["message"]["content"]
 
 
-def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, str]:
+def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, dict[str, str]]:
     profile_data = _load_resume_profile()
     profile = profile_data.get("profile", {})
     memory_data = _load_answer_memory()
     entries = memory_data.get("entries", [])
+    style_profile = _load_style_profile()
 
     context_lines = []
     if profile:
@@ -575,10 +625,17 @@ def _generate_draft_answers(company: str, role: str, questions: list[str]) -> di
         for e in entries[:5]:
             memory_context += f"- Q: {e.get('prompt')}\n  A: {e.get('answer')}\n"
 
-    answers: dict[str, str] = {}
+    style_context = f"\nStyle Profile:\nVoice: {json.dumps(style_profile.get('voice', {}))}\n"
+    content_rules = style_profile.get("content_rules", {})
+    if content_rules.get("prioritize"):
+        style_context += f"Prioritize: {', '.join(content_rules.get('prioritize'))}\n"
+    if content_rules.get("avoid"):
+        style_context += f"Avoid: {', '.join(content_rules.get('avoid'))}\n"
+
+    answers: dict[str, dict[str, str]] = {}
     for q in questions:
         prompt = (
-            "Draft a concise, natural-sounding answer for this job application question.\n"
+            "Draft a concise, natural-sounding answer for this job application question. Use a matter-of-fact, ambitious tone, avoiding buzzword fluff.\n"
             f"Company: {company}\n"
             f"Role: {role}\n"
             f"Question: {q}\n"
@@ -587,9 +644,29 @@ def _generate_draft_answers(company: str, role: str, questions: list[str]) -> di
             prompt += "\nProfile details:\n" + "\n".join(context_lines)
         if memory_context:
             prompt += "\n" + memory_context
+        if style_context:
+            prompt += style_context
         prompt += "\nWrite only the final answer text."
 
-        answers[q] = _call_openclaw([{"role": "user", "content": prompt}]).strip()
+        answer_text = _call_openclaw([{"role": "user", "content": prompt}]).strip()
+
+        # Quality Check Loop
+        quality_reasons = _check_answer_quality(answer_text, q, style_profile)
+        revision_reason = None
+
+        if quality_reasons:
+            revision_reason = "; ".join(quality_reasons)
+            retry_prompt = (
+                f"Your previous answer for '{q}' failed quality checks: {revision_reason}.\n"
+                "Please rewrite it to be more specific, avoid the listed buzzwords, and ensure it meets the style profile.\n"
+                f"Original Answer: {answer_text}\n"
+                "Provide only the revised answer text."
+            )
+            answer_text = _call_openclaw([{"role": "user", "content": prompt}, {"role": "assistant", "content": answer_text}, {"role": "user", "content": retry_prompt}]).strip()
+
+        answers[q] = {"answer": answer_text}
+        if revision_reason:
+            answers[q]["revision_reason"] = revision_reason
 
     return answers
 
@@ -1090,6 +1167,45 @@ def get_assisted_apply_queue():
             "queue": [],
         },
     )
+
+
+@app.post("/api/network/apply/queue/{job_id}/generate")
+def generate_queue_item_answers(job_id: str):
+    data = get_assisted_apply_queue()
+    queue = data.get("queue", [])
+
+    job_item = next((item for item in queue if item.get("id") == job_id), None)
+    if not job_item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
+    questions = job_item.get("questions_needed", [])
+    if not questions:
+        return {"answers": {}}
+
+    answers = _generate_draft_answers(job_item["company"], job_item["title"], questions)
+    job_item["draft_answers"] = answers
+    job_item["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    ASSISTED_QUEUE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+    return {"answers": answers}
+
+
+@app.patch("/api/network/apply/queue/{job_id}/answers")
+def update_queue_item_answers(job_id: str, body: UpdateQueueAnswersBody):
+    data = get_assisted_apply_queue()
+    queue = data.get("queue", [])
+
+    job_item = next((item for item in queue if item.get("id") == job_id), None)
+    if not job_item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
+    job_item["draft_answers"] = body.answers
+    job_item["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    ASSISTED_QUEUE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+    return {"ok": True, "job_id": job_id}
 
 
 @app.patch("/api/network/apply/queue/{job_id}")

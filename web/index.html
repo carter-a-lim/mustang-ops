@@ -49,6 +49,7 @@
     };
   </script>
   <style>
+    .modal-overlay { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
@@ -113,6 +114,21 @@
 
       <div id="chat-sessions" class="hidden"></div>
     </nav>
+
+    <div id="draft-answers-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="modal-overlay absolute inset-0"></div>
+      <div class="panel-card relative w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden bg-white dark:bg-surface-dark">
+        <div class="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+          <h3 class="font-bold text-gray-900 dark:text-white">Review & Edit Draft Answers</h3>
+          <button onclick="closeDraftModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><span class="material-icons">close</span></button>
+        </div>
+        <div id="draft-modal-content" class="p-6 overflow-y-auto space-y-6"></div>
+        <div class="p-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+          <button onclick="closeDraftModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-accent-dark rounded-lg">Cancel</button>
+          <button id="save-drafts-btn" class="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary-dark text-white rounded-lg shadow-glow">Save Changes</button>
+        </div>
+      </div>
+    </div>
 
     <div class="p-4 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-black/20">
       <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Usage Metering</h3>
@@ -1312,18 +1328,111 @@ async function loadApplyQueue() {
     const res = await fetch('/api/network/apply/queue');
     const data = await res.json();
     const queue = data.queue || [];
-    applyQueue.innerHTML = queue.length ? queue.slice(0, 10).map(item => `
-      <div class="p-2 panel-soft">
-        <div class="text-sm font-semibold truncate">${item.company} — ${item.title}</div>
-        <div class="text-[10px] text-gray-500">${item.location || ''}</div>
-        <div class="text-[10px] text-primary mt-1 uppercase">${item.status || 'needs-review'} · ${item.source || 'source'} · ${item.fit_tier || 'unrated'} (${item.fit_score ?? '--'})</div>
-        ${Array.isArray(item.fit_reasons) && item.fit_reasons.length ? `<div class="text-[10px] text-gray-500 mt-1">${item.fit_reasons[0]}</div>` : ''}
-        ${item.apply_url ? `<a class="text-[10px] text-blue-500 hover:underline" href="${item.apply_url}" target="_blank" rel="noopener">Open application</a>` : ''}
+    applyQueue.innerHTML = queue.length ? queue.slice(0, 10).map(item => {
+      const hasDrafts = item.draft_answers && Object.keys(item.draft_answers).length > 0;
+      return `
+      <div class="p-3 panel-soft relative">
+        <div class="text-sm font-semibold truncate">${escapeHtml(item.company)} — ${escapeHtml(item.title)}</div>
+        <div class="text-[10px] text-gray-500">${escapeHtml(item.location || '')}</div>
+        <div class="text-[10px] text-primary mt-1 uppercase font-mono">${item.status || 'needs-review'} · ${item.fit_tier || 'unrated'} (${item.fit_score ?? '--'})</div>
+
+        <div class="flex flex-wrap gap-2 mt-2">
+          ${item.apply_url ? `<a class="px-2 py-1 text-[10px] rounded border border-blue-500/30 text-blue-500 hover:bg-blue-500/5 transition-colors" href="${item.apply_url}" target="_blank" rel="noopener">Apply URL</a>` : ''}
+          <button onclick="generateDrafts('${item.id}')" class="px-2 py-1 text-[10px] rounded border border-purple-500/30 text-purple-500 hover:bg-purple-500/5 transition-colors">
+            ${hasDrafts ? 'Regenerate Drafts' : 'Generate Drafts'}
+          </button>
+          ${hasDrafts ? `<button onclick="openDraftModal('${item.id}')" class="px-2 py-1 text-[10px] rounded border border-primary/30 text-primary hover:bg-primary/5 transition-colors">Review Answers</button>` : ''}
+          <button onclick="approveQueueItem('${item.id}')" class="px-2 py-1 text-[10px] rounded border border-success/30 text-success hover:bg-success/5 transition-colors">Approve</button>
+        </div>
       </div>
-    `).join('') : '<div class="text-xs text-gray-500">No assisted queue yet. Click Build.</div>';
+    `}).join('') : '<div class="text-xs text-gray-500">No assisted queue yet. Click Build.</div>';
   } catch {
     applyQueue.innerHTML = '<div class="text-xs text-red-500">Failed to load assisted queue.</div>';
   }
+}
+
+async function approveQueueItem(id) {
+  try {
+    await fetch(\`/api/network/apply/queue/\${id}\`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status: 'approved'})
+    });
+    loadApplyQueue();
+  } catch {}
+}
+
+async function generateDrafts(id) {
+  const btn = event?.target;
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+  }
+  try {
+    const res = await fetch(\`/api/network/apply/queue/\${id}/generate\`, { method: 'POST' });
+    const data = await res.json();
+    loadApplyQueue();
+    if (data.answers) openDraftModal(id);
+  } catch {
+    alert('Generation failed');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function openDraftModal(id) {
+  const res = await fetch('/api/network/apply/queue');
+  const data = await res.json();
+  const job = (data.queue || []).find(j => j.id === id);
+  if (!job || !job.draft_answers) return;
+
+  const modal = document.getElementById('draft-answers-modal');
+  const content = document.getElementById('draft-modal-content');
+  const saveBtn = document.getElementById('save-drafts-btn');
+
+  content.innerHTML = '';
+  Object.entries(job.draft_answers).forEach(([q, details]) => {
+    const section = document.createElement('div');
+    section.className = 'space-y-2';
+    section.innerHTML = \`
+      <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">\${escapeHtml(q)}</div>
+      \${details.revision_reason ? \`<div class="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-500/20 flex items-center gap-1"><span class="material-icons text-xs">info</span> Auto-revised: \${escapeHtml(details.revision_reason)}</div>\` : ''}
+      <textarea data-q="\${escapeHtml(q)}" class="w-full text-sm p-3 rounded-lg border border-border-light dark:border-border-dark bg-gray-50 dark:bg-black/20 focus:ring-1 focus:ring-primary h-24">\${escapeHtml(details.answer)}</textarea>
+    \`;
+    content.appendChild(section);
+  });
+
+  saveBtn.onclick = async () => {
+    const updatedAnswers = {};
+    content.querySelectorAll('textarea').forEach(tx => {
+      updatedAnswers[tx.dataset.q] = { answer: tx.value };
+    });
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    try {
+      await fetch(\`/api/network/apply/queue/\${id}/answers\`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ answers: updatedAnswers })
+      });
+      closeDraftModal();
+      loadApplyQueue();
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Changes';
+    }
+  };
+
+  modal.classList.remove('hidden');
+}
+
+function closeDraftModal() {
+  document.getElementById('draft-answers-modal').classList.add('hidden');
 }
 
 async function buildApplyQueue() {
