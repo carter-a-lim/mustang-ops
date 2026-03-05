@@ -79,7 +79,20 @@ def get_fallback_data() -> dict:
     }
 
 
-def fill_form(page, data: dict) -> None:
+def get_job_pipeline_record(company: str, title: str) -> dict | None:
+    pipeline_path = DATA_DIR / "job_pipeline.json"
+    if not pipeline_path.exists():
+        return None
+    try:
+        data = json.loads(pipeline_path.read_text())
+        for a in data.get("applications", []):
+            if a.get("company", "").lower() == (company or "").lower() and a.get("title", "").lower() == (title or "").lower():
+                return a
+    except Exception:
+        pass
+    return None
+
+def fill_form(page, data: dict, job: dict | None = None) -> None:
     mappings = {
         "first.*name|fname": data["first_name"],
         "last.*name|lname": data["last_name"],
@@ -91,6 +104,49 @@ def fill_form(page, data: dict) -> None:
 
     import re
 
+    field_map = []
+    if job:
+        pipeline_record = get_job_pipeline_record(job.get("company", ""), job.get("title", ""))
+        if pipeline_record:
+            field_map = pipeline_record.get("field_map", [])
+            
+    # Structured field map filling (if available)
+    if field_map:
+        for field in field_map:
+            field_name = field.get("name")
+            field_label = field.get("label")
+            # Simple heuristic mapping for the extracted metadata
+            val_to_fill = None
+            for pattern, value in mappings.items():
+                if (field_name and re.search(pattern, field_name, re.I)) or (field_label and re.search(pattern, field_label, re.I)):
+                    val_to_fill = value
+                    break
+            
+            if val_to_fill:
+                try:
+                    if field_name:
+                        locators = page.locator(f'[name="{field_name}"]')
+                        if locators.count() > 0:
+                            locators.first.fill(val_to_fill)
+                            continue
+                except Exception:
+                    pass
+                
+                try:
+                    if field_label:
+                        labels = page.get_by_label(field_label, exact=True)
+                        if labels.count() > 0:
+                            labels.first.fill(val_to_fill)
+                            continue
+                        labels = page.get_by_label(field_label)
+                        if labels.count() > 0:
+                            labels.first.fill(val_to_fill)
+                            continue
+                except Exception:
+                    pass
+
+
+    # Generic fallback mapping logic
     for pattern, value in mappings.items():
         filled = False
         try:
@@ -170,7 +226,7 @@ def main() -> None:
             page = context.new_page()
 
             page.goto(apply_url, wait_until="networkidle", timeout=30000)
-            fill_form(page, get_fallback_data())
+            fill_form(page, get_fallback_data(), job)
 
             screenshot_path = ARTIFACTS_DIR / f"{args.job_id}_{args.mode}.png"
             page.screenshot(path=str(screenshot_path), full_page=True)
