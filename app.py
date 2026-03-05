@@ -574,6 +574,92 @@ def _call_openclaw(messages: list[dict[str, str]]) -> str:
     return data["choices"][0]["message"]["content"]
 
 
+def _classify_questions_with_groq(questions: list[str]) -> dict[str, str]:
+    groq_key = os.getenv("GROQ_API_KEY")
+    groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    if not groq_key or not questions:
+        return {}
+
+    prompt = (
+        "Classify each application field into one label: "
+        "screening_question | demographic_or_compliance | basic_profile_field | ui_noise. "
+        "Return strict JSON object: {\"items\":[{\"text\":\"...\",\"label\":\"...\"}]}.\n"
+        "Items:\n" + "\n".join(f"- {q}" for q in questions)
+    )
+
+    try:
+        res = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+            json={
+                "model": groq_model,
+                "messages": [{"role": "user", "content": prompt}],
+                "response_format": {"type": "json_object"},
+                "temperature": 0.1,
+            },
+            timeout=60,
+        )
+        if res.status_code >= 400:
+            return {}
+        content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        parsed = json.loads(content)
+        out: dict[str, str] = {}
+        for item in parsed.get("items", []):
+            t = str(item.get("text", "")).strip()
+            l = str(item.get("label", "")).strip()
+            if t and l:
+                out[t] = l
+        return out
+    except Exception:
+        return {}
+
+
+def _filter_questions_for_answering(questions: list[str]) -> tuple[list[str], dict[str, Any]]:
+    if not questions:
+        return [], {"kept": 0, "removed": 0, "method": "none"}
+
+    bad_exact = {
+        "attach", "attach resume", "enter manually", "close sidebar", "country", "preferred first name",
+        "greenhouse logo", "toggle flyout", "first name", "last name", "email", "phone"
+    }
+
+    heuristic_kept: list[str] = []
+    removed: list[str] = []
+    for q in questions:
+        t = (q or "").strip()
+        l = t.lower()
+        if not t or l in bad_exact or len(l) < 8:
+            removed.append(t)
+            continue
+        if any(x in l for x in ["attach", "upload", "manually", "sidebar", "logo", "search"]):
+            removed.append(t)
+            continue
+        heuristic_kept.append(t)
+
+    labels = _classify_questions_with_groq(heuristic_kept)
+    if not labels:
+        return heuristic_kept, {
+            "kept": len(heuristic_kept),
+            "removed": len(removed),
+            "method": "heuristic",
+        }
+
+    final_kept: list[str] = []
+    for q in heuristic_kept:
+        label = labels.get(q, "")
+        if label in {"screening_question", "basic_profile_field", "demographic_or_compliance"}:
+            final_kept.append(q)
+        else:
+            removed.append(q)
+
+    return final_kept, {
+        "kept": len(final_kept),
+        "removed": len(removed),
+        "method": "heuristic+groq",
+        "labels": labels,
+    }
+
+
 def _generate_draft_answers(company: str, role: str, questions: list[str]) -> dict[str, str]:
     profile_data = _load_resume_profile()
     profile = profile_data.get("profile", {})
@@ -1230,9 +1316,13 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
 @app.post("/api/network/apply/generate")
 def generate_application_answers(body: GenerateAnswersBody):
     if not body.questions:
-        return {"answers": {}}
+        return {"answers": {}, "questions_used": [], "filter": {"kept": 0, "removed": 0, "method": "none"}}
 
-    answers = _generate_draft_answers(body.company, body.title, body.questions)
+    filtered, filter_meta = _filter_questions_for_answering(body.questions)
+    if not filtered:
+        return {"answers": {}, "questions_used": [], "filter": filter_meta}
+
+    answers = _generate_draft_answers(body.company, body.title, filtered)
 
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
@@ -1240,13 +1330,15 @@ def generate_application_answers(body: GenerateAnswersBody):
         for a in applications:
             if a.get("company", "").lower() == body.company.lower() and a.get("title", "").lower() == body.title.lower():
                 a["draft_answers"] = answers
+                a["draft_questions_used"] = filtered
+                a["draft_filter_meta"] = filter_meta
                 data["updated_at"] = datetime.now(timezone.utc).isoformat()
                 JOB_PIPELINE_PATH.write_text(json.dumps(data, indent=2) + "\n")
                 break
     except Exception:
         pass
 
-    return {"answers": answers}
+    return {"answers": answers, "questions_used": filtered, "filter": filter_meta}
 
 
 @app.get("/api/network")
