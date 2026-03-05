@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-03-05T20:02:00.647917+00:00",
+  "updated_at": "2026-03-05T20:01:47.046213+00:00",
   "roles": [
     {
       "company": "OpenAI",
@@ -55,21 +55,7 @@
         "Q2"
       ],
       "parser_source": "test",
-      "extraction_confidence": 0.9,
-      "draft_answers": {
-        "Why here?": "Because it's cool."
-      },
-      "draft_questions_used": [
-        "Why here?"
-      ],
-      "draft_filter_meta": {
-        "kept": 1,
-        "removed": 0,
-        "method": "heuristic+groq",
-        "labels": {
-          "Why here?": "screening_question"
-        }
-      }
+      "extraction_confidence": 0.9
     }
   ],
   "outreach_targets": [
