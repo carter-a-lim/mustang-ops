@@ -35,6 +35,15 @@ If a user asks for "test resume", "show me the PDF", or "resume generation":
 - Default to the Google Docs pipeline above.
 - Only use local HTML/Playwright renderer for quick internal tests or when explicitly requested.
 
+## Apps Script configuration
+
+Configured Script ID:
+- `1ktwk_WByHoLEvLveYMETOKq41sbkGhOe_R3E60ZKm1DcwiH2BnYHTIjc`
+
+Notes:
+- Script ID is valid for identifying the Apps Script project.
+- For backend HTTP execution, we still need the deployed **Web App URL** (or another execution bridge such as clasp/Apps Script API with auth) wired into Mustang Ops.
+
 ## Current gap
 
-Need deployed Apps Script Web App endpoint (or equivalent execution path) wired into backend to automate doc copy/edit/export end-to-end.
+Need deployed Apps Script execution path wired into backend to automate doc copy/edit/export end-to-end.

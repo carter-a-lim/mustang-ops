@@ -108,7 +108,7 @@ curl -X POST "https://<your-n8n>/webhook/auto-apply-approve" \
 ## Resume Generation Pipeline
 
 Canonical pipeline documentation:
-- `docs/RESUME_PIPELINE_GDOCS.md`
+- `docs/RESUME_PIPELINE_GDOCS.md` (includes configured Apps Script ID)
 
 ### Important default
 
