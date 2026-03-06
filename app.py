@@ -29,6 +29,7 @@ DISCOVERED_SOURCES_PATH = DATA_DIR / "discovered_sources.json"
 INGESTION_CONFIG_PATH = DATA_DIR / "ingestion_config.json"
 RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
+ADAPTER_FIXTURES_DIR = DATA_DIR / "adapters" / "fixtures"
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -1252,6 +1253,40 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
     res = extract_questions_from_html(html_content, body.url or "")
     questions = res.get("questions", [])
 
+    fixture_id = None
+    try:
+        confidence = float(res.get("confidence") or 0.0)
+    except Exception:
+        confidence = 0.0
+    if confidence < 0.65 and html_content:
+        try:
+            ADAPTER_FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
+            fixture_id = str(uuid.uuid4())
+            fixture_path = ADAPTER_FIXTURES_DIR / f"{fixture_id}.json"
+            fixture_path.write_text(
+                json.dumps(
+                    {
+                        "id": fixture_id,
+                        "url": body.url,
+                        "company": body.company,
+                        "title": body.title,
+                        "captured_at": datetime.now(timezone.utc).isoformat(),
+                        "extraction": {
+                            "source": res.get("source"),
+                            "confidence": res.get("confidence"),
+                            "error": res.get("error"),
+                            "question_count": len(questions),
+                        },
+                        "html": html_content,
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )
+            res["fixture_id"] = fixture_id
+        except Exception:
+            pass
+
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
         applications = data.get("applications", [])
@@ -1276,6 +1311,8 @@ def scrape_application_questions(body: ScrapeQuestionsBody):
         app_record["extraction_confidence"] = res.get("confidence")
         if res.get("error"):
             app_record["extraction_error"] = res.get("error")
+        if fixture_id:
+            app_record["adapter_fixture_id"] = fixture_id
 
         data["applications"] = applications
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
