@@ -107,8 +107,13 @@ curl -X POST "https://<your-n8n>/webhook/auto-apply-approve" \
 
 ## Resume Generation Pipeline
 
-Mustang Ops includes an end-to-end ATS-optimized resume generation pipeline:
-- **Tailored Bullets:** Automatically selects the best-fitting resume bullets based on keyword overlap with the job description and the presence of impact metrics.
-- **Strict Formatting:** Adheres to a single-column, plain HTML/PDF layout designed to pass through ATS systems perfectly.
-- **Budgeting Guardrails:** Automatically drops the lowest-scored bullets until the resume fits strictly onto one page.
-- **UI Integration:** One-click generation available directly in the Assisted Apply Queue dashboard.
+Canonical pipeline documentation:
+- `docs/RESUME_PIPELINE_GDOCS.md`
+
+### Important default
+
+For production/test resumes that should match the original styled resume template, use:
+- **Google Docs template copy + Apps Script edits + PDF export**
+
+Do **not** default to the local Playwright HTML renderer for those cases.
+The local renderer is ATS-safe but primarily for internal/quick fallback generation.
