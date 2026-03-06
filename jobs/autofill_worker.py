@@ -184,7 +184,16 @@ def fill_form(page, data: dict, job: dict | None = None) -> None:
     try:
         file_inputs = page.locator('input[type="file"]')
         if file_inputs.count() > 0:
-            resume_path = DATA_DIR / "resume" / "latest_resume.txt"
+            # Check for generated resume artifact first
+            resume_path = None
+            if job and "resume_variant" in job and "pdf" in job["resume_variant"]:
+                potential_path = Path(job["resume_variant"]["pdf"])
+                if potential_path.exists():
+                    resume_path = potential_path
+            
+            if not resume_path:
+                resume_path = DATA_DIR / "resume" / "latest_resume.txt"
+                
             if resume_path.exists():
                 file_inputs.first.set_input_files(str(resume_path))
     except Exception:

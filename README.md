@@ -104,3 +104,11 @@ curl -X POST "https://<your-n8n>/webhook/auto-apply-approve" \
   -d '{"token":"change-me-strong-token","max":5}'
 ```
 
+
+## Resume Generation Pipeline
+
+Mustang Ops includes an end-to-end ATS-optimized resume generation pipeline:
+- **Tailored Bullets:** Automatically selects the best-fitting resume bullets based on keyword overlap with the job description and the presence of impact metrics.
+- **Strict Formatting:** Adheres to a single-column, plain HTML/PDF layout designed to pass through ATS systems perfectly.
+- **Budgeting Guardrails:** Automatically drops the lowest-scored bullets until the resume fits strictly onto one page.
+- **UI Integration:** One-click generation available directly in the Assisted Apply Queue dashboard.

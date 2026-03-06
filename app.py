@@ -62,6 +62,7 @@ JOBS = {
 
 app = FastAPI(title="Mustang Ops")
 app.mount("/web", StaticFiles(directory=str(ROOT / "web")), name="web")
+app.mount("/data/artifacts", StaticFiles(directory=str(ROOT / "data" / "artifacts")), name="artifacts")
 app.mount("/icons", StaticFiles(directory=str(ROOT / "web" / "icons")), name="icons")
 if (ROOT / "node_modules").exists():
     app.mount("/node_modules", StaticFiles(directory=str(ROOT / "node_modules")), name="node_modules")
@@ -130,6 +131,12 @@ class ScrapeQuestionsBody(BaseModel):
     company: str
     title: str
 
+
+
+class GenerateResumeBody(BaseModel):
+    company: str
+    title: str
+    jd_text: str | None = None
 
 class GenerateAnswersBody(BaseModel):
     company: str
@@ -1758,3 +1765,59 @@ def run_auto_apply(body: AutoApplyRunBody):
         "stderr": proc.stderr,
         "result": parsed,
     }
+
+
+@app.post("/api/network/apply/generate-resume/{job_id}")
+def generate_resume(job_id: str, body: GenerateResumeBody):
+    from jobs.resume_generator import generate_resume_for_job
+    
+    result = generate_resume_for_job(job_id, body.company, body.title, body.jd_text or "")
+    
+    try:
+        data = _read_json_file(JOB_PIPELINE_PATH, {})
+        # Look in applications first, then roles
+        app_record = None
+        
+        applications = data.get("applications", [])
+        for a in applications:
+            if a.get("company", "").lower() == body.company.lower() and a.get("title", "").lower() == body.title.lower():
+                app_record = a
+                break
+                
+        if not app_record:
+            roles = data.get("roles", [])
+            for r in roles:
+                if r.get("company", "").lower() == body.company.lower() and r.get("title", "").lower() == body.title.lower():
+                    app_record = r
+                    break
+
+        if app_record:
+            app_record["resume_variant"] = {
+                "pdf": result.get("pdf_path"),
+                "txt": result.get("txt_path"),
+                "status": result.get("status"),
+                "score": result.get("metadata", {}).get("score", 0),
+                "error": result.get("error")
+            }
+            data["updated_at"] = datetime.now(timezone.utc).isoformat()
+            JOB_PIPELINE_PATH.write_text(json.dumps(data, indent=2) + "\n")
+            
+        queue_data = get_assisted_apply_queue()
+        queue = queue_data.get("queue", [])
+        for item in queue:
+            if item.get("id") == job_id:
+                item["resume_variant"] = {
+                    "pdf": result.get("pdf_path"),
+                    "txt": result.get("txt_path"),
+                    "status": result.get("status"),
+                    "score": result.get("metadata", {}).get("score", 0),
+                    "error": result.get("error")
+                }
+                queue_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                ASSISTED_QUEUE_PATH.write_text(json.dumps(queue_data, indent=2) + "\n")
+                break
+                
+    except Exception as e:
+        print(f"Failed to update metadata: {e}")
+        
+    return result

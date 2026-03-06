@@ -1347,6 +1347,17 @@ async function loadApplyQueue() {
         <div class="text-[10px] text-primary mt-1 uppercase">${item.status || 'needs-review'} · ${item.source || 'source'} · ${item.fit_tier || 'unrated'} (${item.fit_score ?? '--'})</div>
         ${Array.isArray(item.fit_reasons) && item.fit_reasons.length ? `<div class="text-[10px] text-gray-500 mt-1">${item.fit_reasons[0]}</div>` : ''}
         ${item.apply_url ? `<a class="text-[10px] text-blue-500 hover:underline" href="${item.apply_url}" target="_blank" rel="noopener">Open application</a>` : ''}
+        
+        <div class="mt-2 text-[10px] flex gap-2 flex-wrap items-center">
+          <button onclick="generateResume('${item.id}', '${item.company ? item.company.replace(/'/g, "\\'") : ''}', '${item.title ? item.title.replace(/'/g, "\\'") : ''}')" class="px-2 py-1 border border-purple-200 bg-purple-50 text-purple-700 rounded hover:bg-purple-100">Gen Resume</button>
+          
+          ${item.resume_variant 
+            ? `<span class="px-1.5 py-0.5 bg-${item.resume_variant.status === 'generated' ? 'purple' : 'red'}-100 text-${item.resume_variant.status === 'generated' ? 'purple' : 'red'}-700 rounded border border-${item.resume_variant.status === 'generated' ? 'purple' : 'red'}-200">
+                 Resume: ${item.resume_variant.status} (${item.resume_variant.score || 0}) 
+                 ${item.resume_variant.pdf ? `<a href="/data/artifacts/${item.resume_variant.pdf.split('/').pop()}" target="_blank" class="underline hover:text-purple-900 ml-1">PDF</a>` : ''}
+               </span>`
+            : ''}
+        </div>
       </div>
     `).join('') : '<div class="text-xs text-gray-500">No assisted queue yet. Click Build.</div>';
   } catch {
@@ -1363,6 +1374,22 @@ async function buildApplyQueue() {
     body: JSON.stringify({ limit: 25, include_keywords: include, exclude_keywords: exclude, use_resume_fit: true }),
   });
   loadApplyQueue();
+}
+
+
+async function generateResume(jobId, company, title) {
+  try {
+    const res = await fetch(`/api/network/apply/generate-resume/${jobId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ company: company, title: title })
+    });
+    if (res.ok) {
+      setTimeout(loadApplyQueue, 500);
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function syncResumeAndBuildQueue() {
