@@ -127,6 +127,12 @@ By default it expects the repo at `../resume-applier`.
 Override with env var:
 - `RESUME_APPLIER_ROOT=/absolute/path/to/resume-applier`
 
+Recommended policy env for hands-off split:
+- `SCRAPE_AGENT=codex`
+- `GEN_MODEL_PROVIDER=groq`
+- `GENERATION_STRICT_PROVIDER=true`
+- `GROQ_API_KEY=...`
+
 ### Important default
 
 For production/test resumes that should match the original styled resume template, use:
