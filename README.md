@@ -110,6 +110,13 @@ curl -X POST "https://<your-n8n>/webhook/auto-apply-approve" \
 Canonical pipeline documentation:
 - `docs/RESUME_PIPELINE_GDOCS.md` (includes configured Apps Script ID)
 
+### Extraction note
+
+Resume/apply logic has been extracted into a dedicated modular repo at:
+- `../resume-applier`
+
+Keep Mustang Ops focused on dashboard/orchestration and consume the extracted module/service for resume operations.
+
 ### Important default
 
 For production/test resumes that should match the original styled resume template, use:
