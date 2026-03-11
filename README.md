@@ -117,6 +117,16 @@ Resume/apply logic has been extracted into a dedicated modular repo at:
 
 Keep Mustang Ops focused on dashboard/orchestration and consume the extracted module/service for resume operations.
 
+### Integration contract (current)
+
+Mustang Ops now shells out to `resume-applier` for:
+- `POST /api/auto-apply/run` → `python3 -m resume_applier.cli orchestrate ...`
+- `POST /api/network/apply/generate-resume/{job_id}` → `python3 -m resume_applier.cli generate ...`
+
+By default it expects the repo at `../resume-applier`.
+Override with env var:
+- `RESUME_APPLIER_ROOT=/absolute/path/to/resume-applier`
+
 ### Important default
 
 For production/test resumes that should match the original styled resume template, use:

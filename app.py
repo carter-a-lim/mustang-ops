@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 ROOT = Path(__file__).resolve().parent
+RESUME_APPLIER_ROOT = Path(os.getenv("RESUME_APPLIER_ROOT", str(ROOT.parent / "resume-applier")))
 DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 USAGE_EVENTS_PATH = DATA_DIR / "usage_events.jsonl"
@@ -55,10 +56,19 @@ JOBS = {
     "linkedin_scout": ROOT / "jobs" / "linkedin_scout.py",
     "token_sync": ROOT / "jobs" / "token_sync.py",
     "scrape_simplify_jobs": ROOT / "jobs" / "scrape_simplify_jobs.py",
-    "auto_apply_orchestrator": ROOT / "jobs" / "auto_apply_orchestrator.py",
     "sync_gmail": ROOT / "jobs" / "sync_gmail.py",
     "discovery_agent": ROOT / "jobs" / "discovery_agent.py",
 }
+
+
+def _run_resume_applier(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if not RESUME_APPLIER_ROOT.exists():
+        raise HTTPException(status_code=500, detail=f"resume-applier repo not found at {RESUME_APPLIER_ROOT}")
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "src"
+    cmd = ["python3", "-m", "resume_applier.cli", *args]
+    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(RESUME_APPLIER_ROOT), env=env)
 
 app = FastAPI(title="Mustang Ops")
 app.mount("/web", StaticFiles(directory=str(ROOT / "web")), name="web")
@@ -1729,37 +1739,30 @@ def approve_discovered_source(body: ApproveSourceBody):
 
 @app.post("/api/auto-apply/run")
 def run_auto_apply(body: AutoApplyRunBody):
-    script = JOBS.get("auto_apply_orchestrator")
-    if not script or not script.exists():
-        raise HTTPException(status_code=404, detail="Auto apply orchestrator not found")
-
-    cmd = [
-        "python3",
-        str(script),
+    args = [
+        "orchestrate",
         "--stage",
         body.stage,
         "--max",
         str(max(1, min(body.max, 500))),
     ]
     if body.dry_run:
-        cmd.append("--dry-run")
+        args.append("--dry-run")
 
     started = datetime.now(timezone.utc).isoformat()
-    proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    proc = _run_resume_applier(args)
 
     parsed: dict[str, Any] | None = None
     if proc.stdout.strip():
         try:
-            idx = proc.stdout.find("{")
-            if idx != -1:
-                parsed = json.loads(proc.stdout[idx:])
+            parsed = json.loads(proc.stdout.strip())
         except Exception:
             parsed = None
 
     return {
         "job": "auto_apply_orchestrator",
         "started_at": started,
-        "cmd": cmd,
+        "cmd": ["python3", "-m", "resume_applier.cli", *args],
         "exit_code": proc.returncode,
         "stdout": proc.stdout,
         "stderr": proc.stderr,
@@ -1769,10 +1772,21 @@ def run_auto_apply(body: AutoApplyRunBody):
 
 @app.post("/api/network/apply/generate-resume/{job_id}")
 def generate_resume(job_id: str, body: GenerateResumeBody):
-    from jobs.resume_generator import generate_resume_for_job
-    
-    result = generate_resume_for_job(job_id, body.company, body.title, body.jd_text or "")
-    
+    proc = _run_resume_applier([
+        "generate",
+        "--job-id", job_id,
+        "--company", body.company,
+        "--title", body.title,
+        "--jd", body.jd_text or "",
+    ])
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"resume-applier failed: {proc.stderr.strip() or proc.stdout.strip()}")
+
+    try:
+        result = json.loads(proc.stdout.strip())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed parsing resume-applier output: {e}")
+
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})
         # Look in applications first, then roles
