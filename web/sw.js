@@ -1,4 +1,4 @@
-const CACHE_NAME = "mustang-ops-v1";
+const CACHE_NAME = "mustang-ops-v2";
 const CORE_ASSETS = [
   "/",
   "/web/index.html",
@@ -25,6 +25,14 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+
+  // Never cache API responses; always go to network for fresh dashboard state.
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
