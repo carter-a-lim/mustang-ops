@@ -1196,29 +1196,34 @@ async function renderPipelineFlowchart(metrics = {}) {
   const p = metrics.pipeline || {};
   const c = metrics.conversions || {};
 
-  const source = p.ingest_total ?? 0;
-  const qualified = p.qualified?.total ?? 0;
-  const queued = p.qualified?.currently_queued ?? 0;
-  const submitted = p.applications?.total_submitted ?? 0;
-  const waiting = p.applications?.waiting_response ?? 0;
+  const source = p.snapshot?.ingested_now ?? p.ingest_total ?? 0;
+  const sourceTotal = p.cumulative?.ingested_total ?? p.ingest_total ?? 0;
+  const qualified = p.snapshot?.qualified_now ?? p.qualified?.total ?? 0;
+  const qualifiedTotal = p.cumulative?.qualified_total ?? p.qualified?.total ?? 0;
+  const queued = p.snapshot?.queued_now ?? p.qualified?.currently_queued ?? 0;
+  const submitted = p.snapshot?.submitted_now ?? p.applications?.total_submitted ?? 0;
+  const submittedTotal = p.cumulative?.submitted_total ?? p.applications?.total_submitted ?? 0;
+  const waiting = p.snapshot?.waiting_now ?? p.applications?.waiting_response ?? 0;
+  const waitingTotal = p.cumulative?.waiting_total ?? p.applications?.waiting_response ?? 0;
   const interview = p.outcomes?.interview ?? 0;
   const oa = p.outcomes?.oa ?? 0;
   const rejected = p.outcomes?.rejected ?? 0;
-  const accepted = p.outcomes?.accepted ?? 0;
+  const accepted = p.snapshot?.accepted_now ?? p.outcomes?.accepted ?? 0;
+  const acceptedTotal = p.cumulative?.accepted_total ?? p.outcomes?.accepted ?? 0;
 
   pipelineFlowchart.innerHTML = `
     <div class="pipeline-grid">
-      <div class="pipeline-node"><div class="pipeline-title">1) Ingested (All-time)</div><div id="p-source" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">1) Ingested (Now)</div><div id="p-source" class="pipeline-count">0</div><div id="p-source-total" class="text-[10px] text-gray-500">total 0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">2) Qualified (All-time)</div><div id="p-qualified" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">2) Qualified (Now)</div><div id="p-qualified" class="pipeline-count">0</div><div id="p-qualified-total" class="text-[10px] text-gray-500">total 0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
       <div class="pipeline-node"><div class="pipeline-title">3) In Queue (Now)</div><div id="p-queued" class="pipeline-count">0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">4) Submitted (All-time)</div><div id="p-submitted" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">4) Submitted (Now)</div><div id="p-submitted" class="pipeline-count">0</div><div id="p-submitted-total" class="text-[10px] text-gray-500">total 0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">5) Waiting Response</div><div id="p-waiting" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">5) Waiting (Now)</div><div id="p-waiting" class="pipeline-count">0</div><div id="p-waiting-total" class="text-[10px] text-gray-500">total 0</div></div>
       <div class="pipeline-link"><span class="pipeline-dot"></span></div>
-      <div class="pipeline-node"><div class="pipeline-title">6) Accepted</div><div id="p-accepted" class="pipeline-count">0</div></div>
+      <div class="pipeline-node"><div class="pipeline-title">6) Accepted (Now)</div><div id="p-accepted" class="pipeline-count">0</div><div id="p-accepted-total" class="text-[10px] text-gray-500">total 0</div></div>
     </div>
     <div class="text-[10px] text-gray-500 mt-2">
       Outcomes: interview ${interview} · OA ${oa} · rejected ${rejected}
@@ -1228,7 +1233,17 @@ async function renderPipelineFlowchart(metrics = {}) {
     </div>
   `;
 
-  if (pipelineFlowMeta) pipelineFlowMeta.textContent = `ingested:${source} qualified:${qualified} queued:${queued} submitted:${submitted}`;
+  if (pipelineFlowMeta) pipelineFlowMeta.textContent = `now ingest:${source} qualified:${qualified} queued:${queued} submitted:${submitted} · totals ingest:${sourceTotal} qualified:${qualifiedTotal} submitted:${submittedTotal}`;
+
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `total ${Number(val || 0).toLocaleString()}`;
+  };
+  setText('p-source-total', sourceTotal);
+  setText('p-qualified-total', qualifiedTotal);
+  setText('p-submitted-total', submittedTotal);
+  setText('p-waiting-total', waitingTotal);
+  setText('p-accepted-total', acceptedTotal);
 
   try {
     const CountUp = await ensureCountUp();

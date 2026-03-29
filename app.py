@@ -958,6 +958,11 @@ def get_network_metrics():
     accepted = len([a for a in applications if any(x in _stage(a) for x in ["offer", "accept"])])
     other = max(0, total_submitted - (interview + oa + rejected + accepted + waiting_response))
 
+    # Current snapshot (now) vs cumulative totals (all-time/source totals)
+    current_ingested = len(jobs.get("roles", []))
+    current_qualified = queued_qualified
+    current_submitted = len([a for a in applications if any(x in _stage(a) for x in ["submitted", "applied"])])
+
     return {
         "pipeline": {
             "ingest_total": ingest_total,
@@ -975,6 +980,21 @@ def get_network_metrics():
                 "rejected": rejected,
                 "accepted": accepted,
                 "other": other,
+            },
+            "snapshot": {
+                "ingested_now": current_ingested,
+                "qualified_now": current_qualified,
+                "queued_now": queued_qualified,
+                "submitted_now": current_submitted,
+                "waiting_now": waiting_response,
+                "accepted_now": accepted,
+            },
+            "cumulative": {
+                "ingested_total": ingest_total,
+                "qualified_total": total_qualified,
+                "submitted_total": total_submitted,
+                "waiting_total": waiting_response,
+                "accepted_total": accepted,
             },
         },
         "conversions": {
