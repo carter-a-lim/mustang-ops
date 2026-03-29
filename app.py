@@ -31,6 +31,7 @@ INGESTION_CONFIG_PATH = DATA_DIR / "ingestion_config.json"
 RESUME_TXT_PATH = DATA_DIR / "resume" / "latest_resume.txt"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
 ADAPTER_FIXTURES_DIR = DATA_DIR / "adapters" / "fixtures"
+FIXED_RESUME_PATH = Path(os.getenv("FIXED_RESUME_PATH", str(ROOT.parent / "resume-applier" / "data" / "resume_master.pdf")))
 
 FALLBACK_CONTEXT = ROOT / "data" / "mustang_context.json"
 CONTEXT_PATH = Path(os.getenv("MUSTANG_CONTEXT_PATH", str(FALLBACK_CONTEXT)))
@@ -1772,20 +1773,20 @@ def run_auto_apply(body: AutoApplyRunBody):
 
 @app.post("/api/network/apply/generate-resume/{job_id}")
 def generate_resume(job_id: str, body: GenerateResumeBody):
-    proc = _run_resume_applier([
-        "generate",
-        "--job-id", job_id,
-        "--company", body.company,
-        "--title", body.title,
-        "--jd", body.jd_text or "",
-    ])
-    if proc.returncode != 0:
-        raise HTTPException(status_code=500, detail=f"resume-applier failed: {proc.stderr.strip() or proc.stdout.strip()}")
-
-    try:
-        result = json.loads(proc.stdout.strip())
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed parsing resume-applier output: {e}")
+    # Fixed-resume mode: skip generation and return canonical resume path directly.
+    fixed_txt = FIXED_RESUME_PATH.with_suffix('.txt')
+    result = {
+        "job_id": job_id,
+        "status": "fixed",
+        "pdf_path": str(FIXED_RESUME_PATH),
+        "txt_path": str(fixed_txt if fixed_txt.exists() else ""),
+        "error": None if FIXED_RESUME_PATH.exists() else f"Fixed resume not found at {FIXED_RESUME_PATH}",
+        "metadata": {
+            "mode": "fixed-resume-direct",
+            "score": 100,
+            "keywords_matched": [],
+        },
+    }
 
     try:
         data = _read_json_file(JOB_PIPELINE_PATH, {})

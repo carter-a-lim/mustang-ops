@@ -1,11 +1,1 @@
-{
-  "updated_at": null,
-  "count": 0,
-  "filters": {},
-  "resume_profile": {
-    "skills": [],
-    "grad_year": null,
-    "work_auth": "unknown"
-  },
-  "queue": []
-}
+{"updated_at":null,"count":0,"filters":{"include_keywords":[],"exclude_keywords":[],"limit":25,"use_resume_fit":true},"resume_profile":{},"queue":[]}
