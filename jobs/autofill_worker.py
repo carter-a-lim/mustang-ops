@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 ASSISTED_QUEUE_PATH = DATA_DIR / "assisted_apply_queue.json"
 RESUME_PROFILE_PATH = DATA_DIR / "resume_profile.json"
+APPLICANT_PROFILE_PATH = DATA_DIR / "applicant_profile.json"
 ARTIFACTS_DIR = DATA_DIR / "artifacts"
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -66,17 +67,31 @@ def get_fallback_data() -> dict:
         except Exception:
             profile = {}
 
-    return {
+    applicant = {}
+    if APPLICANT_PROFILE_PATH.exists():
+        try:
+            applicant = json.loads(APPLICANT_PROFILE_PATH.read_text())
+        except Exception:
+            applicant = {}
+
+    defaults = {
         "first_name": "Applicant",
         "last_name": "Mustang",
         "email": "mustang@example.com",
         "phone": "555-0100",
         "linkedin": "https://linkedin.com/in/mustang",
         "github": "https://github.com/mustang",
+        "website": "",
+        "city": "",
+        "state": "",
+        "country": "",
         "skills": profile.get("skills", ["python", "javascript"]),
         "grad_year": str(profile.get("grad_year", "2025")),
         "work_auth": profile.get("work_auth", "us-citizen"),
+        "education_on_resume": True,
     }
+    defaults.update({k: v for k, v in applicant.items() if v is not None})
+    return defaults
 
 
 def get_job_pipeline_record(company: str, title: str) -> dict | None:
@@ -98,8 +113,12 @@ def fill_form(page, data: dict, job: dict | None = None) -> None:
         "last.*name|lname": data["last_name"],
         "email": data["email"],
         "phone|mobile": data["phone"],
-        "linkedin": data["linkedin"],
-        "github": data["github"],
+        "linkedin": data.get("linkedin", ""),
+        "github": data.get("github", ""),
+        "website|portfolio|personal\\s*site": data.get("website", ""),
+        "city": data.get("city", ""),
+        "state|province|region": data.get("state", ""),
+        "country": data.get("country", ""),
     }
 
     import re
