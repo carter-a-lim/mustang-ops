@@ -107,6 +107,36 @@ def get_job_pipeline_record(company: str, title: str) -> dict | None:
         pass
     return None
 
+def _combo_key_select(page, selector: str, text: str) -> bool:
+    """Best-effort selection for custom combobox-like inputs.
+
+    Pattern: click -> type first letter(s) -> ArrowDown -> Enter -> Tab
+    """
+    try:
+        loc = page.locator(selector)
+        if loc.count() == 0:
+            return False
+        field = loc.first
+        field.click(timeout=800)
+        field.fill("")
+        seed = (text or "").strip()
+        if not seed:
+            return False
+        field.type(seed[:1], delay=30)
+        try:
+            field.press("ArrowDown")
+        except Exception:
+            pass
+        field.press("Enter")
+        try:
+            field.press("Tab")
+        except Exception:
+            pass
+        return True
+    except Exception:
+        return False
+
+
 def fill_form(page, data: dict, job: dict | None = None) -> None:
     mappings = {
         "first.*name|fname": data["first_name"],
@@ -200,6 +230,19 @@ def fill_form(page, data: dict, job: dict | None = None) -> None:
             except Exception:
                 pass
 
+    # Greenhouse-style custom combobox fallback (no stable labels/select tags)
+    combo_values = {
+        "#country": data.get("country", "United States"),
+        "#question_15514607004": "Yes" if str(data.get("work_authorized", "Yes")).lower().startswith("y") else "No",
+        "#question_15514608004": "No" if str(data.get("needs_sponsorship", "No")).lower().startswith("n") else "Yes",
+        "#gender": data.get("gender", "Male"),
+        "#hispanic_ethnicity": data.get("hispanic_latino", "No"),
+        "#veteran_status": data.get("veteran_status", "No"),
+        "#disability_status": data.get("disability_status", "No"),
+    }
+    for sel, txt in combo_values.items():
+        _combo_key_select(page, sel, str(txt))
+
     try:
         file_inputs = page.locator('input[type="file"]')
         if file_inputs.count() > 0:
@@ -209,10 +252,13 @@ def fill_form(page, data: dict, job: dict | None = None) -> None:
                 potential_path = Path(job["resume_variant"]["pdf"])
                 if potential_path.exists():
                     resume_path = potential_path
-            
+
             if not resume_path:
-                resume_path = DATA_DIR / "resume" / "latest_resume.txt"
-                
+                # fixed-resume mode default
+                resume_path = DATA_DIR.parent / "resume-applier" / "data" / "resume_master.pdf"
+                if not resume_path.exists():
+                    resume_path = DATA_DIR / "resume" / "latest_resume.txt"
+
             if resume_path.exists():
                 file_inputs.first.set_input_files(str(resume_path))
     except Exception:
