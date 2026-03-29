@@ -119,6 +119,9 @@ Keep Mustang Ops focused on dashboard/orchestration and consume the extracted mo
 
 ### Integration contract (current)
 
+Canonical contract lives in:
+- `../resume-applier/INTEGRATION_CONTRACT.md`
+
 Mustang Ops now shells out to `resume-applier` for:
 - `POST /api/auto-apply/run` → `python3 -m resume_applier.cli orchestrate ...`
 - `POST /api/network/apply/generate-resume/{job_id}` → `python3 -m resume_applier.cli generate ...`
